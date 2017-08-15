@@ -45,13 +45,13 @@ uint16_t ButtonMap[16] = {
 	0x200, //Plus
 	0x400, //L-stick
 	0x800, //R-stick
-	0x1000, //Unk
-	0x2000, //Unk
+	0x1000, //Home
+	0x2000, //Capture
 	0x4000, //Unk
 	0x8000, //Unk
 };
 
-uint8_t image_data[0x12c1];
+const uint8_t image_data[0x12c1] PROGMEM;
 
 /*** Debounce ****
 The following is some -really bad- debounce code. I have a more robust library
@@ -222,7 +222,7 @@ bool print_right = true;
 bool other = true;
 
 bool reset_request = false;
-bool reset = true;
+bool reset = true, sync_setup = true;
 int reset_count = 0;
 
 bool done_printing = false;
@@ -298,6 +298,16 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 	   
 	   ReportData->HAT = 0x2;
 	   
+   	   if (
+		reset_count % 100 == 0 &&
+		reset_count < 400 &&
+		sync_setup == true
+	   )
+	   	ReportData->Button |= 0x30;
+
+	   if (reset_count == 500 && sync_setup == true)
+	   	ReportData->Button |= 0x04;
+
 	   if (reset_count >= 800)
 	   {
 	      reset_count = 0;
@@ -309,6 +319,8 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 	   return;
 	}
 	
+	sync_setup = false;
+
 	input_brakes++;
 	
 	if (input_brakes >= 5)
@@ -351,7 +363,7 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 	         xpos--;
 	   }
 	   
-	   if ((image_data[(xpos / 8)+(ypos*40)] & 1 << (xpos % 8)) && (xpos >= 0))
+	   if ((pgm_read_byte(&(image_data[(xpos / 8)+(ypos*40)])) & 1 << (xpos % 8)) && (xpos >= 0))
 	      ReportData->Button |= 0x4;
 	      
 	   if (xpos <= 0 && ypos >= 120-1) done_printing = true;
