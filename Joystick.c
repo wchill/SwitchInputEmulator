@@ -54,12 +54,16 @@ void SetupHardware(void) {
 	clock_prescale_set(clock_div_1);
 	// We can then initialize our hardware and peripherals, including the USB stack.
 
-	// Both PORTD and PORTB will be used for handling the buttons and stick.
-	DDRD  &= ~0xFF;
-	PORTD |=  0xFF;
-
-	DDRB  &= ~0xFF;
-	PORTB |=  0xFF;
+	#ifdef ALERT_WHEN_DONE
+	// Both PORTD and PORTB will be used for the optional LED flashing and buzzer.
+	#warning LED and Buzzer functionality enabled. All pins on both PORTB and \
+PORTD will toggle when printing is done.
+	DDRD  = 0xFF; //Teensy uses PORTD
+	PORTD =  0x0;
+                  //We'll just flash all pins on both ports since the UNO R3
+	DDRB  = 0xFF; //uses PORTB. Micro can use either or, but both give us 2 LEDs
+	PORTB =  0x0; //The ATmega328P on the UNO will be resetting, so unplug it?
+	#endif
 	// The USB stack should be initialized last.
 	USB_Init();
 }
@@ -183,6 +187,7 @@ int echo_wait_time = 0;
 int report_count = 0;
 int xpos = 0;
 int ypos = 0;
+int portsval = 0;
 
 // Prepare the next report for the host.
 void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
@@ -192,7 +197,7 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 	ReportData->LX = STICK_CENTER;
 	ReportData->LY = STICK_CENTER;
 	ReportData->RX = STICK_CENTER;
-	ReportData->RY = STICK_CENTER;	
+	ReportData->RY = STICK_CENTER;
 	ReportData->HAT = HAT_CENTER;
 
 	if (echo_wait_time > ECHO_DELAY_MS)
@@ -208,7 +213,7 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 	{
 		case SYNC_CONTROLLER:
 			report_count++;
-	
+
 			if (report_count % 10 == 0 && report_count < 40)
 			{
 				ReportData->Button |= SWITCH_L | SWITCH_R;
@@ -276,9 +281,14 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 			}
 			break;
 		case DONE:
+			#ifdef ALERT_WHEN_DONE
+			portsval = ~portsval;
+			PORTD = portsval; //flash LED(s) and sound buzzer if attached
+			PORTB = portsval;
+			_delay_ms(250);
+			#endif
 			return;
 	}
 	memcpy(&last_report, ReportData, sizeof(USB_JoystickReport_Input_t));
 	echo_wait_time = ECHO_WAIT_TIME_MS;
-
 }

@@ -36,3 +36,7 @@ include $(LUFA_PATH)/Build/lufa_dfu.mk
 include $(LUFA_PATH)/Build/lufa_hid.mk
 include $(LUFA_PATH)/Build/lufa_avrdude.mk
 include $(LUFA_PATH)/Build/lufa_atprogram.mk
+
+# Target for LED/buzzer to alert when print is done
+with-alert: all
+with-alert: CC_FLAGS += -DALERT_WHEN_DONE

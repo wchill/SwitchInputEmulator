@@ -121,4 +121,3 @@ void EVENT_USB_Device_ControlRequest(void);
 void GetNextReport(USB_JoystickReport_Input_t* const ReportData);
 
 #endif
-

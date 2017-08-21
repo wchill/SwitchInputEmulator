@@ -204,4 +204,3 @@ uint16_t CALLBACK_USB_GetDescriptor(
 	*DescriptorAddress = Address;
 	return Size;
 }
-
