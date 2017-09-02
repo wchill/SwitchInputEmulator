@@ -4,7 +4,6 @@ import sys, getopt
 
 def main(argv):
   opts, args = getopt.getopt(argv, "hi")
-  data = open(args[0], 'rb').read()
 
   invertColormap = False
   for opt, arg in opts:
@@ -13,6 +12,8 @@ def main(argv):
       sys.exit()
     elif opt == '-i':
       invertColormap = True
+
+  data = open(args[0], 'rb').read()
 
   str_out = "#include <stdint.h>\n#include <avr/pgmspace.h>\n\nconst uint8_t image_data[0x12c1] PROGMEM = {"
   for i in range(0, (320*120) / 8):
@@ -28,7 +29,7 @@ def main(argv):
 
     str_out += hex(val) + ", "
 
-  str_out += "0x0};"
+  str_out += "0x0};\n"
 
   with open('image.c', 'w') as f:
     f.write(str_out)
@@ -43,4 +44,8 @@ def usage():
   print("To convert to an inverted image.c: bin2c.py -i yourImage.data")
 
 if __name__ == "__main__":
-  main(sys.argv[1:])
+  if len(sys.argv[1:]) == 0:
+    usage()
+    sys.exit
+  else:
+    main(sys.argv[1:])

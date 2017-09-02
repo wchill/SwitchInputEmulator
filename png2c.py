@@ -53,7 +53,7 @@ def main(argv):
 
        str_out += hex(val) + ", "         # append hexidecimal bytes
                                           # to the output .c array
-    str_out += "0x0};"                    # of bytes
+    str_out += "0x0};\n"                  # of bytes
 
     with open('image.c', 'w') as f:       # save output into image.c
       f.write(str_out)
@@ -70,4 +70,8 @@ def usage():
   print("To save bilevel image: png2c.py -s <yourImage.png>")
 
 if __name__ == "__main__":
-  main(sys.argv[1:])
+  if len(sys.argv[1:]) == 0:
+    usage()
+    sys.exit
+  else:
+    main(sys.argv[1:])
