@@ -30,9 +30,9 @@ DPAD_LEFT        = 0x06
 DPAD_UP_LEFT     = 0x07
 DPAD_CENTER      = 0x08
 
-STICK_MIN        = 0
-STICK_CENTER     = 128
-STICK_MAX        = 255
+STICK_MIN        = -1.0
+STICK_CENTER     = 0.0
+STICK_MAX        = 1.0
 
 UPDATES_PER_SEC  = 20
 DELAY_PER_UPDATE = 1.0 / UPDATES_PER_SEC
@@ -47,6 +47,9 @@ class Packet:
         self.ry = STICK_CENTER
         self.vendorspec = b'\x00'
         self.lock = threading.Lock()
+
+    def f2b(val):
+        return int((val + 1.0) / 2.0 * 255).to_bytes(1, byteorder='big')
 
     def press_buttons(self, *buttons):
         with self.lock:
@@ -89,7 +92,7 @@ class Packet:
 
     def get_bytes(self):
         with self.lock:
-            return sum(self.buttons).to_bytes(2, byteorder='big') + self.dpad.to_bytes(1, byteorder='big') + self.lx.to_bytes(1, byteorder='big') + self.ly.to_bytes(1, byteorder='big') + self.rx.to_bytes(1, byteorder='big') + self.ry.to_bytes(1, byteorder='big') + self.vendorspec
+            return sum(self.buttons).to_bytes(2, byteorder='big') + self.dpad.to_bytes(1, byteorder='big') + Packet.f2b(self.lx) + Packet.f2b(self.ly) + Packet.f2b(self.rx) + Packet.f2b(self.ry) + self.vendorspec
 
 class Controller:
     def __init__(self, serial_port=None):
@@ -116,9 +119,9 @@ class Controller:
         last_time = self._last_update
         while last_time == self._last_update:
             pass
-        last_time = self._last_update
-        while time.clock() - last_time < max(DELAY_PER_UPDATE, wait_time):
-            pass
+        if wait_time > 0:
+            while time.clock() - last_time < wait_time:
+                pass
         return self
 
     def hold_buttons(self, *buttons):

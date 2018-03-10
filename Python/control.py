@@ -1,5 +1,4 @@
 from switch_controller import *
-import time
 
 def main():
     with Controller() as controller:
