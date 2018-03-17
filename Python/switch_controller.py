@@ -30,6 +30,36 @@ DPAD_LEFT        = 0x06
 DPAD_UP_LEFT     = 0x07
 DPAD_CENTER      = 0x08
 
+BUTTON_NAMES = {
+    0x00: 'None', 
+    0x01: 'Y',
+    0x02: 'B',
+    0x04: 'A',
+    0x08: 'X',
+    0x10: 'L',
+    0x20: 'R',
+    0x40: 'ZL',
+    0x80: 'ZR',
+    0x100: 'Minus',
+    0x200: 'Plus',
+    0x400: 'LStick',
+    0x800: 'RStick',
+    0x1000: 'Home',
+    0x2000: 'Capture'
+}
+
+DPAD_NAMES = {
+    0: 'Up',
+    1: 'UpRight',
+    2: 'Right',
+    3: 'DownRight',
+    4: 'Down',
+    5: 'DownLeft',
+    6: 'Left',
+    7: 'UpLeft',
+    8: 'None',
+}
+
 STICK_MIN        = -1.0
 STICK_CENTER     = 0.0
 STICK_MAX        = 1.0
@@ -95,13 +125,15 @@ class Packet:
             return sum(self.buttons).to_bytes(2, byteorder='big') + self.dpad.to_bytes(1, byteorder='big') + Packet.f2b(self.lx) + Packet.f2b(self.ly) + Packet.f2b(self.rx) + Packet.f2b(self.ry) + self.vendorspec
 
 class Controller:
-    def __init__(self, serial_port=None):
+    def __init__(self, default_wait=None, serial_port=None, debug=False):
         if serial_port is None:
             serial_port = Controller.find_arduino()
         self.serial_port = serial_port
         self.state = Packet()
         self._write_thread = None
         self._last_update = time.clock()
+        self._default_wait = default_wait
+        self._debug=debug
 
     def find_arduino():
         arduino_ports = [
@@ -125,23 +157,33 @@ class Controller:
         return self
 
     def hold_buttons(self, *buttons):
+        if self._debug:
+            print('Holding [{}]'.format(', '.join([BUTTON_NAMES[x] for x in buttons])))
         self.state.press_buttons(*buttons)
         return self
 
     def release_buttons(self, *buttons):
+        if self._debug:
+            print('Releasing [{}]'.format(', '.join([BUTTON_NAMES[x] for x in buttons])))
         self.state.release_buttons(*buttons)
         return self
 
     def push_button(self, button, wait=None):
+        if self._debug:
+            print('Pushing [{}]{}'.format(BUTTON_NAMES[button], ' for %.2fs' % wait if wait else ''))
         return self.push_buttons(button, wait=wait)
 
     def push_buttons(self, *buttons, wait=None):
         self.hold_buttons(*buttons).wait().release_buttons(*buttons)
+        if wait is None:
+            wait = self._default_wait
         if wait is not None:
             time.sleep(wait)
         return self
 
     def hold_dpad(self, dpad, wait=None):
+        if self._debug:
+            print('Holding dpad {}{}'.format(DPAD_NAMES[dpad], ' for %.2fs' % wait if wait else ''))
         self.state.press_dpad(dpad)
         if wait is not None:
             time.sleep(wait)
@@ -149,24 +191,36 @@ class Controller:
         return self
 
     def release_dpad(self):
+        if self._debug:
+            print('Releasing dpad')
         self.state.press_dpad(DPAD_CENTER)
         return self
 
     def push_dpad(self, dpad, wait=None):
+        if self._debug:
+            print('Pushing dpad {}{}'.format(DPAD_NAMES[dpad], ' and waiting %.2fs' % wait if wait else ''))
         self.hold_dpad(dpad).wait().release_dpad()
+        if wait is None:
+            wait = self._default_wait
         if wait is not None:
             time.sleep(wait)
         return self
 
     def move_left_stick(self, x, y):
+        if self._debug:
+            print('Moving left stick to (%d, %d)' % (x, y))
         self.state.move_left_stick(x, y)
         return self
 
     def move_right_stick(self, x, y):
+        if self._debug:
+            print('Moving right stick to (%d, %d)' % (x, y))
         self.state.move_right_stick(x, y)
         return self
 
     def reset(self):
+        if self._debug:
+            print('Clearing all inputs')
         self.state.reset()
         return self
 

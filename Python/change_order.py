@@ -5,6 +5,7 @@ def main():
         # Presses L and R to activate controller in controller order change menu.
 
         controller.push_buttons(BUTTON_L, BUTTON_R, wait=2.0)
+        controller.push_buttons(BUTTON_A, wait=2.0)
         controller.reset().wait()
 
 if __name__ == '__main__':
