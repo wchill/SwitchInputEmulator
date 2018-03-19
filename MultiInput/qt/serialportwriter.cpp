@@ -3,8 +3,10 @@
 #include <QSerialPort>
 #include <QTime>
 
-SerialPortWriter::SerialPortWriter(QObject *parent) : QThread(parent) {
-
+SerialPortWriter::SerialPortWriter(QObject *parent, ILogger *parentLogger) : QThread(parent) {
+    logger = new ILogger(parentLogger);
+    //connect(this, SIGNAL(error(QString)), this, SLOT(onError(QString)));
+    //connect(this, SIGNAL(timeout(QString)), this, SLOT(onTimeout(QString)));
 }
 
 SerialPortWriter::~SerialPortWriter() {
@@ -15,6 +17,14 @@ SerialPortWriter::~SerialPortWriter() {
     wait();
 }
 
+void SerialPortWriter::onError(const QString &s) {
+    logger->logError(s);
+}
+
+void SerialPortWriter::onTimeout(const QString &s) {
+    logger->logWarning(s);
+}
+
 void SerialPortWriter::transaction(const QString &portName, int waitTimeout, const QByteArray &request) {
     const QMutexLocker locker(&m_mutex);
     m_portName = portName;
@@ -22,6 +32,7 @@ void SerialPortWriter::transaction(const QString &portName, int waitTimeout, con
     m_request = request;
 
     if (!isRunning()) {
+        //logger->logMessage("Opening serial port " + m_portName);
         start();
     } else {
         m_cond.wakeOne();
@@ -60,6 +71,7 @@ void SerialPortWriter::run() {
             }
         }
         // write request
+        //logger->logMessage("Writing to serial port");
         serial.write(m_request);
         if (!serial.waitForBytesWritten(m_waitTimeout)) {
             emit timeout(tr("Wait write request timeout %1")

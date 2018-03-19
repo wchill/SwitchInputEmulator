@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include "serialportwriter.h"
 #include "controllerwindow.h"
+#include "ilogger.h"
 
 using std::unordered_map;
 
@@ -16,35 +17,32 @@ namespace Ui {
 class MultiInput;
 }
 
-class MultiInput : public QWidget
+class MultiInput : public QWidget, public ILogger
 {
     Q_OBJECT
-
 public:
-    explicit MultiInput(QWidget *parent = 0);
+    explicit MultiInput(QWidget *parent = nullptr);
     ~MultiInput();
 
-protected:
-    void keyPressEvent(QKeyEvent *event);
-    void keyReleaseEvent(QKeyEvent *event);
+public slots:
+    void logMessage(const QString &message);
+    void logWarning(const QString &message);
+    void logError(const QString &message);
 
 private slots:
     void serialPortIndexChanged(int index);
-
-    void on_startButton_clicked();
+    void onStartButtonClicked();
+    void onControllerWindowClosed();
 
 private:
-    void updatePressedKeys(QKeyEvent *event);
     void enumerateSerialPorts();
 
     Ui::MultiInput *ui;
-    unordered_map<int, bool> keys;
-    unordered_map<qint64, int> keyRemap;
 
     QList<QSerialPortInfo> availableSerialPorts;
-    SerialPortWriter serialPort;
+    QSerialPortInfo currentPort;
 
-    ControllerWindow *controllerWindow;
+    ControllerWindow *controllerWindow = nullptr;
 };
 
 #endif // MULTIINPUT_H

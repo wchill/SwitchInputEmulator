@@ -45,7 +45,7 @@
     <layout class="QHBoxLayout" name="horizontalLayout"/>
    </item>
    <item>
-    <widget class="QTextEdit" name="keyEventLog">
+    <widget class="QTextEdit" name="eventLog">
      <property name="readOnly">
       <bool>true</bool>
      </property>

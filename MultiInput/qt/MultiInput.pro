@@ -16,12 +16,14 @@ SOURCES += main.cpp\
         multiinput.cpp \
     serialportwriter.cpp \
     controllerwindow.cpp \
-    controllerui.cpp
+    controller.cpp
 
 HEADERS  += multiinput.h \
     serialportwriter.h \
     controllerwindow.h \
-    controllerui.h
+    controller.h \
+    controllerconstants.h \
+    ilogger.h
 
 FORMS    += multiinput.ui \
     controllerwindow.ui
@@ -30,3 +32,6 @@ CONFIG += c++11 static
 QMAKE_CXXFLAGS += -std=c++11 -stdlib=libc++
 QMAKE_LFLAGS += -Xlinker
 LIBS += -stdlib=libc++
+
+RESOURCES += \
+    resources.qrc

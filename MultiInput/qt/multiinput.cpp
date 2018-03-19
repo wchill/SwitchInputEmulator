@@ -1,14 +1,15 @@
 #include "multiinput.h"
 #include "ui_multiinput.h"
-#include "controllerui.h"
 
 MultiInput::MultiInput(QWidget *parent) :
     QWidget(parent),
+    ILogger(),
     ui(new Ui::MultiInput)
 {
     ui->setupUi(this);
+
     connect(ui->serialPortSelect, SIGNAL(currentIndexChanged(int)), this, SLOT(serialPortIndexChanged(int)));
-    connect(ui->startButton, SIGNAL(clicked()), this, SLOT(on_startButton_clicked()));
+    connect(ui->startButton, SIGNAL(clicked()), this, SLOT(onStartButtonClicked()));
 
     this->availableSerialPorts = QSerialPortInfo::availablePorts();
     for (const auto &portInfo : availableSerialPorts) {
@@ -16,15 +17,14 @@ MultiInput::MultiInput(QWidget *parent) :
     }
 
     if (this->availableSerialPorts.length() > 0) {
-        const auto &info = availableSerialPorts.at(0);
-        ui->serialPortDescription->setText(info.description());
+        currentPort = availableSerialPorts.at(0);
+        ui->serialPortDescription->setText(currentPort.description());
     }
-
-    controllerWindow = new ControllerWindow(this);
 }
 
 void MultiInput::serialPortIndexChanged(int index) {
     const auto &info = this->availableSerialPorts.at(index);
+    currentPort = info;
     ui->serialPortDescription->setText(info.description());
     QString s = QObject::tr("Port: ") + info.portName() + "\n"
                         + QObject::tr("Location: ") + info.systemLocation() + "\n"
@@ -34,56 +34,47 @@ void MultiInput::serialPortIndexChanged(int index) {
                         + QObject::tr("Vendor Identifier: ") + (info.hasVendorIdentifier() ? QString::number(info.vendorIdentifier(), 16) : QString()) + "\n"
                         + QObject::tr("Product Identifier: ") + (info.hasProductIdentifier() ? QString::number(info.productIdentifier(), 16) : QString()) + "\n"
                         + QObject::tr("Busy: ") + (info.isBusy() ? QObject::tr("Yes") : QObject::tr("No")) + "\n";
-    ui->keyEventLog->append(s);
-}
-
-void MultiInput::updatePressedKeys(QKeyEvent *event)
-{
-    QString str = "";
-    for(auto it = keys.begin(); it != keys.end(); it++) {
-        if((*it).second)
-            str += QKeySequence((*it).first).toString() + " ";
-            //str += "0x" + QString::number((*it).first, 16) + " ";
-    }
-    //ui->keysPressed->setText(str);
+    //ui->eventLog->append(s);
 }
 
 MultiInput::~MultiInput()
 {
+    delete controllerWindow;
     delete ui;
 }
 
-void MultiInput::keyPressEvent(QKeyEvent *event)
+void MultiInput::onStartButtonClicked()
 {
-    keys[event->key()] = true;
-    updatePressedKeys(event);
-    int k = event->key();
-    if(k != -1) {
-        char buf[32];
-        buf[0] = '+';
-        buf[1] = (char) k;
-        buf[2] = '\r';
-        buf[3] = '\n';
-        buf[4] = 0;
-    }
-}
-
-void MultiInput::keyReleaseEvent(QKeyEvent *event)
-{
-    keys[event->key()] = false;
-    updatePressedKeys(event);
-    int k = event->key();
-    if(k != -1) {
-        char buf[32];
-        buf[0] = '-';
-        buf[1] = (char) k;
-        buf[2] = '\r';
-        buf[3] = '\n';
-        buf[4] = 0;
-    }
-}
-
-void MultiInput::on_startButton_clicked()
-{
+    ui->startButton->setEnabled(false);
+    ui->serialPortSelect->setEnabled(false);
+    controllerWindow = new ControllerWindow(currentPort.portName(), this, this);
+    connect(controllerWindow, SIGNAL(controllerWindowClosing()), this, SLOT(onControllerWindowClosed()));
     controllerWindow->show();
+}
+
+void MultiInput::onControllerWindowClosed() {
+    disconnect(controllerWindow, SIGNAL(controllerWindowClosing()), this, SLOT(onControllerWindowClosed()));
+    ui->startButton->setEnabled(true);
+    ui->serialPortSelect->setEnabled(true);
+}
+
+void MultiInput::logMessage(const QString &message) {
+    ui->eventLog->setTextBackgroundColor(Qt::white);
+    ui->eventLog->setTextColor(Qt::black);
+    ui->eventLog->append(message);
+    ui->eventLog->append("\n");
+}
+
+void MultiInput::logWarning(const QString &message) {
+    ui->eventLog->setTextBackgroundColor(Qt::yellow);
+    ui->eventLog->setTextColor(Qt::black);
+    ui->eventLog->append(message);
+    ui->eventLog->append("\n");
+}
+
+void MultiInput::logError(const QString &message) {
+    ui->eventLog->setTextBackgroundColor(Qt::red);
+    ui->eventLog->setTextColor(Qt::white);
+    ui->eventLog->append(message);
+    ui->eventLog->append("\n");
 }
