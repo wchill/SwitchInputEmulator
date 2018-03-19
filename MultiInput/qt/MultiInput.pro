@@ -4,13 +4,14 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network serialport
+QT       += core gui network serialport gamepad
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = MultiInput
 TEMPLATE = app
 
+DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += main.cpp\
         multiinput.cpp \
@@ -28,10 +29,7 @@ HEADERS  += multiinput.h \
 FORMS    += multiinput.ui \
     controllerwindow.ui
 
-CONFIG += c++11 static
-QMAKE_CXXFLAGS += -std=c++11 -stdlib=libc++
-QMAKE_LFLAGS += -Xlinker
-LIBS += -stdlib=libc++
-
 RESOURCES += \
     resources.qrc
+
+CONFIG += c++11

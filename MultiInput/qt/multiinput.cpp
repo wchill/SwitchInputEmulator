@@ -18,23 +18,16 @@ MultiInput::MultiInput(QWidget *parent) :
 
     if (this->availableSerialPorts.length() > 0) {
         currentPort = availableSerialPorts.at(0);
-        ui->serialPortDescription->setText(currentPort.description());
+        ui->serialPortDescription->setText("Description: " + currentPort.description() + "\n" +
+                                           "Manufacturer: " + currentPort.manufacturer());
     }
 }
 
 void MultiInput::serialPortIndexChanged(int index) {
     const auto &info = this->availableSerialPorts.at(index);
     currentPort = info;
-    ui->serialPortDescription->setText(info.description());
-    QString s = QObject::tr("Port: ") + info.portName() + "\n"
-                        + QObject::tr("Location: ") + info.systemLocation() + "\n"
-                        + QObject::tr("Description: ") + info.description() + "\n"
-                        + QObject::tr("Manufacturer: ") + info.manufacturer() + "\n"
-                        + QObject::tr("Serial number: ") + info.serialNumber() + "\n"
-                        + QObject::tr("Vendor Identifier: ") + (info.hasVendorIdentifier() ? QString::number(info.vendorIdentifier(), 16) : QString()) + "\n"
-                        + QObject::tr("Product Identifier: ") + (info.hasProductIdentifier() ? QString::number(info.productIdentifier(), 16) : QString()) + "\n"
-                        + QObject::tr("Busy: ") + (info.isBusy() ? QObject::tr("Yes") : QObject::tr("No")) + "\n";
-    //ui->eventLog->append(s);
+    ui->serialPortDescription->setText("Description: " + info.description() + "\n" +
+                                       "Manufacturer: " + info.manufacturer());
 }
 
 MultiInput::~MultiInput()

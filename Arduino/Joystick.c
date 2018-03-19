@@ -83,11 +83,11 @@ int main(void) {
 
     // We also need to initialize the initial input reports.
     memset(&buffer, 0, sizeof(USB_JoystickReport_Input_t));
-    buffer->LX = STICK_CENTER;
-    buffer->LY = STICK_CENTER;
-    buffer->RX = STICK_CENTER;
-    buffer->RY = STICK_CENTER;
-    buffer->HAT = HAT_CENTER;
+    buffer.LX = STICK_CENTER;
+    buffer.LY = STICK_CENTER;
+    buffer.RX = STICK_CENTER;
+    buffer.RY = STICK_CENTER;
+    buffer.HAT = HAT_CENTER;
 
     // We'll start by performing hardware and peripheral setup.
     SetupHardware();

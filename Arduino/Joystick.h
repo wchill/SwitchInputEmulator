@@ -115,7 +115,6 @@ inline void enable_rx_isr(void);
 inline void send_byte(uint8_t c);
 inline uint8_t recv_byte(void);
 inline void send_string(const char *str);
-inline void swap_report_buffer(void);
 
 // Setup all necessary hardware, including USB initialization.
 void SetupHardware(void);

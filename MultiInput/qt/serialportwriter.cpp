@@ -2,6 +2,10 @@
 
 #include <QSerialPort>
 #include <QTime>
+#include <iostream>
+
+using std::cout;
+using std::endl;
 
 SerialPortWriter::SerialPortWriter(QObject *parent, ILogger *parentLogger) : QThread(parent) {
     logger = new ILogger(parentLogger);
@@ -32,7 +36,7 @@ void SerialPortWriter::transaction(const QString &portName, int waitTimeout, con
     m_request = request;
 
     if (!isRunning()) {
-        //logger->logMessage("Opening serial port " + m_portName);
+        std::cout << "Opening serial port " << m_portName.toStdString() << std::endl;
         start();
     } else {
         m_cond.wakeOne();
@@ -55,6 +59,7 @@ void SerialPortWriter::run() {
     QSerialPort serial;
 
     if (currentPortName.isEmpty()) {
+        std::cout << tr("No port name specified").toStdString() << std::endl;
         emit error(tr("No port name specified"));
         return;
     }
@@ -65,13 +70,14 @@ void SerialPortWriter::run() {
             serial.setPortName(currentPortName);
 
             if (!serial.open(QIODevice::ReadWrite)) {
+                std::cout << tr("Can't open %1, error code %2")
+                             .arg(m_portName).arg(serial.error()).toStdString() << std::endl;
                 emit error(tr("Can't open %1, error code %2")
                            .arg(m_portName).arg(serial.error()));
                 return;
             }
         }
         // write request
-        //logger->logMessage("Writing to serial port");
         serial.write(m_request);
         if (!serial.waitForBytesWritten(m_waitTimeout)) {
             emit timeout(tr("Wait write request timeout %1")

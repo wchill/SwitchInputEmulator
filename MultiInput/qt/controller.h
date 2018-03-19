@@ -2,8 +2,9 @@
 #define CONTROLLER_H
 
 #include <QObject>
-#include <QVector2D>
+#include <QPair>
 #include <QByteArray>
+#include <QTimer>
 #include "controllerconstants.h"
 #include "serialportwriter.h"
 #include "ilogger.h"
@@ -17,42 +18,46 @@ public:
 
     void start();
 
-    Controller *reset(bool update=true);
-    Controller *pressButtons(Button_t pressed, bool update=true);
-    Controller *releaseButtons(Button_t released, bool update=true);
-    Controller *pressDpad(Dpad_t pressed, bool update=true);
-    Controller *releaseDpad(bool update=true);
-    Controller *moveLeftStick(const QVector2D newLs, bool update=true);
-    Controller *moveRightStick(const QVector2D newRs, bool update=true);
+    Controller *reset();
+    Controller *pressButtons(Button_t pressed);
+    Controller *releaseButtons(Button_t released);
+    Controller *pressDpad(Dpad_t pressed);
+    Controller *releaseDpad();
+    Controller *moveLeftStick(const quint8 newLx, const quint8 newLy);
+    Controller *moveRightStick(const quint8 newRx, const quint8 newRy);
+    Controller *moveLeftStickX(const quint8 newLx);
+    Controller *moveLeftStickY(const quint8 newLx);
+    Controller *moveRightStickX(const quint8 newRx);
+    Controller *moveRightStickY(const quint8 newRy);
 
-    Controller *pushButtons(Button_t pushed, unsigned long waitMsecs, bool update=true);
-    Controller *pushDpad(Dpad_t pushed, unsigned long waitMsecs, bool update=true);
-    Controller *pushButtons(Button_t pushed, bool update=true);
-    Controller *pushDpad(Dpad_t pushed, bool update=true);
+    Controller *pushButtons(Button_t pushed, unsigned long waitMsecs);
+    Controller *pushDpad(Dpad_t pushed, unsigned long waitMsecs);
+    Controller *pushButtons(Button_t pushed);
+    Controller *pushDpad(Dpad_t pushed);
     Controller *wait(unsigned long waitMsecs);
     Controller *wait();
 
-    void getLeftStickAsByte(uint8_t *outX, uint8_t *outY);
-    void getRightStickAsByte(uint8_t *outX, uint8_t *outY);
-
-    void getState(QVector2D *outLs, QVector2D *outRs, Dpad_t *outDpad, Button_t *outButtons, uint8_t *outVendorspec);
+    void getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, quint8 *outRy, Dpad_t *outDpad, Button_t *outButtons, uint8_t *outVendorspec);
     QByteArray getStateAsBytes();
+    bool isStateDifferent(QByteArray oldState);
 signals:
     void stateChanged();
 public slots:
-    void changeState(const QVector2D &newLs, const QVector2D &newRs, const Dpad_t newDpad, const Button_t newButtons, const uint8_t newVendorspec=0x00, bool update=true);
-private slots:
+    void changeState(const quint8 newLx, const quint8 newLy, const quint8 newRx, const quint8 newRy, const Dpad_t newDpad, const Button_t newButtons, const uint8_t newVendorspec=0x00);
     void sendUpdate();
 private:
-    QVector2D ls;
-    QVector2D rs;
+    QPair<quint8, quint8> ls;
+    QPair<quint8, quint8> rs;
     Dpad_t dpad;
     Button_t buttons;
-    uint8_t vendorspec;
+    quint8 vendorspec;
 
     QString portName;
     SerialPortWriter *port;
     ILogger *logger;
+
+    QByteArray lastState;
+    QTimer updateTimer;
 };
 
 #endif // CONTROLLER_H

@@ -20,10 +20,9 @@
 #define BUTTON_CAPTURE 0x2000
 #define BUTTON_ALL     0x3FFF
 
-#define STICK_MIN       -1.0f
-#define STICK_CENTER    0.0f
-#define STICK_MAX       1.0f
-#define STICK_RESET     QVector2D(STICK_CENTER, STICK_CENTER)
+#define STICK_MIN       0
+#define STICK_CENTER    128
+#define STICK_MAX       255
 
 #define BUTTON_NONE_NAME    "None"
 #define BUTTON_Y_NAME       "Y"

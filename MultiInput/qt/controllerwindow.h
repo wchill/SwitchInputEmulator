@@ -4,7 +4,7 @@
 #include <QDialog>
 #include <QImage>
 #include <QRect>
-#include <vector>
+#include <QtGamepad/QGamepad>
 #include "controllerconstants.h"
 #include "controller.h"
 #include "ilogger.h"
@@ -31,8 +31,28 @@ signals:
 protected:
     virtual void paintEvent(QPaintEvent *event);
     virtual void closeEvent(QCloseEvent *event);
-    virtual void keyPressEvent(QKeyEvent *event);
-    virtual void keyReleaseEvent(QKeyEvent *event);
+
+private slots:
+    void invalidateUi();
+
+    void onLeftStickX(double value);
+    void onLeftStickY(double value);
+    void onRightStickX(double value);
+    void onRightStickY(double value);
+    void onButtonZLChange(double value);
+    void onButtonZRChange(double value);
+    void onButtonAChange(bool pressed);
+    void onButtonBChange(bool pressed);
+    void onButtonXChange(bool pressed);
+    void onButtonYChange(bool pressed);
+    void onHatChange(bool pressed);
+    void onButtonLChange(bool pressed);
+    void onButtonRChange(bool pressed);
+    void onButtonL3Change(bool pressed);
+    void onButtonR3Change(bool pressed);
+    void onButtonMinusChange(bool pressed);
+    void onButtonPlusChange(bool pressed);
+    void onButtonHomeChange(bool pressed);
 
 private:
     void drawFilledRect(QPainter &painter, const QRectF &rect);
@@ -41,8 +61,10 @@ private:
 
     void renderDpad(QPainter &painter, const Dpad_t dpad);
     void renderButtons(QPainter &painter, const Button_t buttons);
-    void renderLeftStick(QPainter &painter, const QVector2D &ls);
-    void renderRightStick(QPainter &painter, const QVector2D &rs);
+    void renderLeftStick(QPainter &painter, const quint8 lx, const quint8 ly);
+    void renderRightStick(QPainter &painter, const quint8 rx, const quint8 ry);
+
+    quint8 quantizeDouble(double val);
 
     Ui::ControllerWindow *ui;
     std::unique_ptr<QImage> image;
@@ -51,8 +73,7 @@ private:
     std::unique_ptr<Controller> controller;
     ILogger *logger;
 
-private slots:
-    void invalidateUi();
+    std::unique_ptr<QGamepad> gamepad;
 };
 
 #endif // CONTROLLERWINDOW_H

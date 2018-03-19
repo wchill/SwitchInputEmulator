@@ -2,3 +2,7 @@
 thumbs.db
 .idea
 build-*
+moc_*.cpp
+moc_*.h
+.qmake.stash
+*.pro.user.*

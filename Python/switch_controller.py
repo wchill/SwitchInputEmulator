@@ -64,9 +64,6 @@ STICK_MIN        = -1.0
 STICK_CENTER     = 0.0
 STICK_MAX        = 1.0
 
-UPDATES_PER_SEC  = 20
-DELAY_PER_UPDATE = 1.0 / UPDATES_PER_SEC
-
 class Packet:
     def __init__(self):
         self.buttons = set()
@@ -79,6 +76,12 @@ class Packet:
         self.lock = threading.Lock()
 
     def f2b(val):
+        if val == 0.0:
+            return b'\x80'
+        elif val == -1.0:
+            return b'\x00'
+        elif val == 1.0:
+            return b'\xff'
         return int((val + 1.0) / 2.0 * 255).to_bytes(1, byteorder='big')
 
     def press_buttons(self, *buttons):
@@ -147,13 +150,11 @@ class Controller:
             print('Found multiple Arduinos, using the first')
         return arduino_ports[0]
 
-    def wait(self, wait_time=0):
-        last_time = self._last_update
-        while last_time == self._last_update:
+    def wait(self, wait_time=None):
+        if wait_time is None:
+            wait_time = self._default_wait
+        while time.clock() - last_time < wait_time:
             pass
-        if wait_time > 0:
-            while time.clock() - last_time < wait_time:
-                pass
         return self
 
     def hold_buttons(self, *buttons):
@@ -175,19 +176,15 @@ class Controller:
 
     def push_buttons(self, *buttons, wait=None):
         self.hold_buttons(*buttons).wait().release_buttons(*buttons)
-        if wait is None:
-            wait = self._default_wait
-        if wait is not None:
-            time.sleep(wait)
+        self.wait(wait)
         return self
 
     def hold_dpad(self, dpad, wait=None):
         if self._debug:
             print('Holding dpad {}{}'.format(DPAD_NAMES[dpad], ' for %.2fs' % wait if wait else ''))
         self.state.press_dpad(dpad)
-        if wait is not None:
-            time.sleep(wait)
-            self.release_dpad()
+        self.wait(wait)
+        self.release_dpad()
         return self
 
     def release_dpad(self):
@@ -200,10 +197,7 @@ class Controller:
         if self._debug:
             print('Pushing dpad {}{}'.format(DPAD_NAMES[dpad], ' and waiting %.2fs' % wait if wait else ''))
         self.hold_dpad(dpad).wait().release_dpad()
-        if wait is None:
-            wait = self._default_wait
-        if wait is not None:
-            time.sleep(wait)
+        self.wait(wait)
         return self
 
     def move_left_stick(self, x, y):
@@ -225,15 +219,12 @@ class Controller:
         return self
 
     def _write_handler(self):
+        old_state = b'\x00\x00\x08\x80\x80\x80\x80\x00'
         while self.ser.is_open:
-            self._write_packet(self.state)
-            while time.clock() - self._last_update < DELAY_PER_UPDATE:
-                pass
-            self.ser.read(1)
-            self._last_update = time.clock()
-
-    def _write_packet(self, packet):
-        self.ser.write(packet.get_bytes())
+            current_state = self.state.get_bytes()
+            if old_state != current_state:
+                old_state = current_state
+                self.ser.write(self.state)
 
     def __enter__(self):
         print('Opening port {}'.format(self.serial_port))
