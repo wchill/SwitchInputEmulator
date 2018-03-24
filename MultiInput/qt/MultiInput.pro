@@ -32,4 +32,4 @@ FORMS    += multiinput.ui \
 RESOURCES += \
     resources.qrc
 
-CONFIG += c++11
+CONFIG += c++11 debug

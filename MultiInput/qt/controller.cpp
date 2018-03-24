@@ -1,112 +1,134 @@
 #include <QtEndian>
 #include <QThread>
-#include <QTimer>
 #include "controller.h"
 
 #include <iostream>
 using std::cout;
 using std::endl;
 
-Controller::Controller(const QString &newPortName, QObject *parent, ILogger *parentLogger) :
-    QObject(parent), ls(STICK_CENTER, STICK_CENTER), rs(STICK_CENTER, STICK_CENTER), dpad(DPAD_NONE), buttons(BUTTON_NONE), vendorspec(0x00), updateTimer(this) {
+Controller::Controller(QString const &newPortName, QObject *parent, ILogger *parentLogger) :
+    QObject(parent), ls(STICK_CENTER, STICK_CENTER), rs(STICK_CENTER, STICK_CENTER), dpad(DPAD_NONE), buttons(BUTTON_NONE), vendorspec(0x00) {
     portName = newPortName;
     logger = new ILogger(parentLogger);
-    port = new SerialPortWriter(this, logger);
 
-    // The controller update timer: this sends updates every 12ms to the hardware.
-    // We can't update faster than about every 9ms at 9600 baud without data corruption,
-    // but setting the baud rate higher risks buffer overrun on the hardware side. We set it to 12ms to be safe.
-    // TODO: Minimize input lag by being smarter about the update - right now this method can have up to 28ms of input lag.
-    connect(&updateTimer, SIGNAL(timeout()), this, SLOT(sendUpdate()));
-    updateTimer.setTimerType(Qt::PreciseTimer);
-    updateTimer.start(12);
+    port = new SerialPortWriter(portName);
+    port->moveToThread(&writerThread);
+    connect(port, SIGNAL(error(QString)), this, SLOT(onSerialError(QString)));
+    connect(port, SIGNAL(timeout(QString)), this, SLOT(onSerialTimeout(QString)));
+    connect(port, SIGNAL(message(QString)), this, SLOT(onSerialMessage(QString)));
+    connect(this, SIGNAL(operate(QByteArray)), port, SLOT(doWork(QByteArray)));
+    writerThread.start();
+    writerThread.setPriority(QThread::TimeCriticalPriority);
+    emit operate(getData());
 
     logger->logMessage("Controller initialized");
 }
 Controller::~Controller() {
     delete port;
+    writerThread.quit();
+    writerThread.wait();
     delete logger;
+}
+void Controller::onSerialError(const QString &error) {
+    logger->logError(error);
+}
+void Controller::onSerialTimeout(const QString &error) {
+    logger->logWarning(error);
+}
+void Controller::onSerialMessage(const QString &error) {
+    logger->logMessage(error);
 }
 void Controller::sendUpdate() {
     if (isStateDifferent(lastState)) {
-        lastState = getStateAsBytes();
-        port->transaction(portName, 5000, lastState);
+        lastState = getData();
+        port->changeData(getData());
         emit stateChanged();
     }
 }
-void Controller::changeState(const quint8 newLx, const quint8 newLy, const quint8 newRx, const quint8 newRy, const Dpad_t newDpad, const Button_t newButtons, const uint8_t newVendorspec) {
-    moveLeftStick(newLx, newLy);
-    moveRightStick(newRx, newRy);
-    pressDpad(newDpad);
-    releaseButtons(BUTTON_ALL);
-    pressButtons(newButtons);
+void Controller::changeState(quint8 const newLx, quint8 const newLy, quint8 const newRx, quint8 const newRy, Dpad_t const newDpad, Button_t const newButtons, uint8_t const newVendorspec, bool update) {
+    moveLeftStick(newLx, newLy, false);
+    moveRightStick(newRx, newRy, false);
+    pressDpad(newDpad, false);
+    releaseButtons(BUTTON_ALL, false);
+    pressButtons(newButtons, false);
     vendorspec = newVendorspec;
+    if (update) sendUpdate();
 }
-Controller *Controller::reset() {
-    changeState(STICK_CENTER, STICK_CENTER, STICK_CENTER, STICK_CENTER, DPAD_NONE, BUTTON_NONE, 0x00);
+Controller *Controller::reset(bool update) {
+    changeState(STICK_CENTER, STICK_CENTER, STICK_CENTER, STICK_CENTER, DPAD_NONE, BUTTON_NONE, 0x00, update);
     return this;
 }
-Controller *Controller::pressButtons(Button_t pressed) {
+Controller *Controller::pressButtons(Button_t const pressed, bool update) {
     buttons |= pressed;
+    if (update) sendUpdate();
     return this;
 }
-Controller *Controller::releaseButtons(Button_t released) {
+Controller *Controller::releaseButtons(Button_t const released, bool update) {
     buttons &= ~released;
+    if (update) sendUpdate();
     return this;
 }
-Controller *Controller::pressDpad(Dpad_t pressed) {
+Controller *Controller::pressDpad(Dpad_t const pressed, bool update) {
     dpad = pressed;
+    if (update) sendUpdate();
     return this;
 }
-Controller *Controller::releaseDpad() {
+Controller *Controller::releaseDpad(bool update) {
     dpad = DPAD_NONE;
+    if (update) sendUpdate();
     return this;
 }
-Controller *Controller::moveLeftStick(const quint8 newLx, const quint8 newLy) {
+Controller *Controller::moveLeftStick(quint8 const newLx, quint8 const newLy, bool update) {
     ls.first = newLx;
     ls.second = newLy;
+    if (update) sendUpdate();
     return this;
 }
-Controller *Controller::moveRightStick(const quint8 newRx, const quint8 newRy) {
+Controller *Controller::moveRightStick(quint8 const newRx, quint8 const newRy, bool update) {
     rs.first = newRx;
     rs.second = newRy;
+    if (update) sendUpdate();
     return this;
 }
-Controller *Controller::moveLeftStickX(const quint8 newLx) {
+Controller *Controller::moveLeftStickX(quint8 const newLx, bool update) {
     ls.first = newLx;
+    if (update) sendUpdate();
     return this;
 }
-Controller *Controller::moveLeftStickY(const quint8 newLy) {
+Controller *Controller::moveLeftStickY(quint8 const newLy, bool update) {
     ls.second = newLy;
+    if (update) sendUpdate();
     return this;
 }
-Controller *Controller::moveRightStickX(const quint8 newRx) {
+Controller *Controller::moveRightStickX(quint8 const newRx, bool update) {
     rs.first = newRx;
+    if (update) sendUpdate();
     return this;
 }
-Controller *Controller::moveRightStickY(const quint8 newRy) {
+Controller *Controller::moveRightStickY(quint8 const newRy, bool update) {
     rs.second = newRy;
+    if (update) sendUpdate();
     return this;
 }
-Controller *Controller::pushButtons(Button_t pushed, unsigned long waitMsecs) {
-    pressButtons(pushed);
+Controller *Controller::pushButtons(Button_t const pushed, unsigned long const waitMsecs) {
+    pressButtons(pushed, true);
     wait(waitMsecs);
-    releaseButtons(pushed);
+    releaseButtons(pushed, true);
     return this;
 }
-Controller *Controller::pushDpad(Dpad_t pushed, unsigned long waitMsecs) {
-    pressDpad(pushed);
+Controller *Controller::pushDpad(Dpad_t const pushed, unsigned long const waitMsecs) {
+    pressDpad(pushed, true);
     wait(waitMsecs);
-    releaseDpad();
+    releaseDpad(true);
     return this;
 }
-Controller *Controller::pushButtons(Button_t pushed) {
+Controller *Controller::pushButtons(Button_t const pushed) {
     return pushButtons(pushed, WAIT_TIME);
 }
-Controller *Controller::pushDpad(Dpad_t pushed) {
+Controller *Controller::pushDpad(Dpad_t const pushed) {
     return pushDpad(pushed, WAIT_TIME);
 }
-Controller *Controller::wait(unsigned long waitMsecs) {
+Controller *Controller::wait(unsigned long const waitMsecs) {
     QThread::msleep(waitMsecs);
     return this;
 }
@@ -122,7 +144,7 @@ void Controller::getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, quint8 *o
     if (outButtons != nullptr) *outButtons = buttons;
     if (outVendorspec != nullptr) *outVendorspec = vendorspec;
 }
-QByteArray Controller::getStateAsBytes() {
+QByteArray Controller::getData() {
     quint8 buf[8];
     qToBigEndian(buttons, &buf[0]);
     buf[2] = dpad;
@@ -134,7 +156,7 @@ QByteArray Controller::getStateAsBytes() {
 
     return QByteArray((char*) buf, 8);
 }
-bool Controller::isStateDifferent(QByteArray oldState) {
-    QByteArray currentState = getStateAsBytes();
+bool Controller::isStateDifferent(QByteArray const oldState) {
+    QByteArray currentState = getData();
     return currentState != oldState;
 }

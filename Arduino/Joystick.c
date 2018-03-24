@@ -24,14 +24,26 @@ these buttons for our use.
 RingBuffer_t USART_Buffer;
 uint8_t buf[128];
 
+typedef enum {
+    NEW_PACKET,
+    REPLAY_PACKET,
+    SYNC_START,
+    SYNC_1,
+    OUT_OF_SYNC
+} State_t;
+
 USB_JoystickReport_Input_t buffer;
+USB_JoystickReport_Input_t defaultBuf;
+State_t state = OUT_OF_SYNC;
+uint8_t syncBuf[4];
+int syncIndex = 0;
 
 // Initializes the USART, note that the RX/TX interrupts need to be enabled manually.
 void USART_Init(void) {
     UCSR1A = 0;                         // disable double speed mode
     UCSR1C = _BV(UCSZ11) | _BV(UCSZ10); // no parity, 8 data bits, 1 stop bit
     UCSR1D = 0;                         // no cts, no rts
-    UBRR1  = SERIAL_UBBRVAL(9600);      // 9600 baud
+    UBRR1  = SERIAL_UBBRVAL(19200);     // 19200 baud
     UCSR1B = _BV(RXEN1) | _BV(TXEN1);   // enable RX and TX
     DDRD  |= _BV(3);                    // set TX pin as output
     PORTD |= _BV(2);                    // set RX pin as input
@@ -62,17 +74,43 @@ inline uint8_t recv_byte(void) {
 }
 
 ISR(USART1_RX_vect) {
-    RingBuffer_Insert(&USART_Buffer, recv_byte());
-    if (RingBuffer_GetCount(&USART_Buffer) >= sizeof(USB_JoystickReport_Input_t)) {
-        // Pop 8 bytes off the buffer and create a new USB input report
-        // We do it in the ISR to prevent data corruption
-        buffer.Button     = (RingBuffer_Remove(&USART_Buffer) << 8) | RingBuffer_Remove(&USART_Buffer);
-        buffer.HAT        = RingBuffer_Remove(&USART_Buffer);
-        buffer.LX         = RingBuffer_Remove(&USART_Buffer);
-        buffer.LY         = RingBuffer_Remove(&USART_Buffer);
-        buffer.RX         = RingBuffer_Remove(&USART_Buffer);
-        buffer.RY         = RingBuffer_Remove(&USART_Buffer);
-        buffer.VendorSpec = RingBuffer_Remove(&USART_Buffer);
+    if (state == SYNC_START) {
+        if (recv_byte() == 0x33) {
+            state = SYNC_1;
+            send_byte(0xCC);
+        }
+        else state = OUT_OF_SYNC;
+    } else if (state == SYNC_1) {
+        if (recv_byte() == 0xCC) {
+            state = NEW_PACKET;
+            send_byte(0x33);
+        }
+        else state = OUT_OF_SYNC;
+    } else if (state == NEW_PACKET || state == REPLAY_PACKET) {
+        RingBuffer_Insert(&USART_Buffer, recv_byte());
+        if (RingBuffer_GetCount(&USART_Buffer) >= sizeof(USB_JoystickReport_Input_t)) {
+            // Pop 8 bytes off the buffer and create a new USB input report
+            // We do it in the ISR to prevent data corruption
+            buffer.Button     = (RingBuffer_Remove(&USART_Buffer) << 8) | RingBuffer_Remove(&USART_Buffer);
+            buffer.HAT        = RingBuffer_Remove(&USART_Buffer);
+            buffer.LX         = RingBuffer_Remove(&USART_Buffer);
+            buffer.LY         = RingBuffer_Remove(&USART_Buffer);
+            buffer.RX         = RingBuffer_Remove(&USART_Buffer);
+            buffer.RY         = RingBuffer_Remove(&USART_Buffer);
+            buffer.VendorSpec = RingBuffer_Remove(&USART_Buffer);
+            if (buffer.VendorSpec == COMMAND_SYNC) {
+                state = SYNC_START;
+                RingBuffer_InitBuffer(&USART_Buffer, buf, sizeof(buf));
+                send_byte(COMMAND_SYNC);
+            } else {
+                state = NEW_PACKET;
+            }
+        }
+    } else if (state == OUT_OF_SYNC) {
+        if (recv_byte() == COMMAND_SYNC) {
+            state = SYNC_START;
+            send_byte(COMMAND_SYNC);
+        }
     }
 }
 
@@ -82,12 +120,13 @@ int main(void) {
     RingBuffer_InitBuffer(&USART_Buffer, buf, sizeof(buf));
 
     // We also need to initialize the initial input reports.
-    memset(&buffer, 0, sizeof(USB_JoystickReport_Input_t));
-    buffer.LX = STICK_CENTER;
-    buffer.LY = STICK_CENTER;
-    buffer.RX = STICK_CENTER;
-    buffer.RY = STICK_CENTER;
-    buffer.HAT = HAT_CENTER;
+    memset(&defaultBuf, 0, sizeof(USB_JoystickReport_Input_t));
+    defaultBuf.LX = STICK_CENTER;
+    defaultBuf.LY = STICK_CENTER;
+    defaultBuf.RX = STICK_CENTER;
+    defaultBuf.RY = STICK_CENTER;
+    defaultBuf.HAT = HAT_CENTER;
+    memcpy(&buffer, &defaultBuf, sizeof(USB_JoystickReport_Input_t));
 
     // We'll start by performing hardware and peripheral setup.
     SetupHardware();
@@ -183,8 +222,12 @@ void HID_Task(void) {
         USB_JoystickReport_Input_t JoystickInputData;
 
         // We'll then populate this report with what we want to send to the host.
-        disable_rx_isr();                
-        memcpy(&JoystickInputData, &buffer, sizeof(USB_JoystickReport_Input_t));
+        disable_rx_isr();
+        if (state == NEW_PACKET || state == REPLAY_PACKET) {                
+            memcpy(&JoystickInputData, &buffer, sizeof(USB_JoystickReport_Input_t));
+        } else {
+            memcpy(&JoystickInputData, &defaultBuf, sizeof(USB_JoystickReport_Input_t));
+        }
         enable_rx_isr();
 
         // Once populated, we can output this data to the host. We do this by first writing the data to the control stream.
@@ -192,5 +235,10 @@ void HID_Task(void) {
         
         // We then send an IN packet on this endpoint.
         Endpoint_ClearIN();
+
+        if (state == NEW_PACKET) {
+            send_byte(0x90);
+            state = REPLAY_PACKET;
+        }
     }
 }

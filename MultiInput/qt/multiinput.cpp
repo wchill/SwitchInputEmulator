@@ -55,19 +55,16 @@ void MultiInput::logMessage(const QString &message) {
     ui->eventLog->setTextBackgroundColor(Qt::white);
     ui->eventLog->setTextColor(Qt::black);
     ui->eventLog->append(message);
-    ui->eventLog->append("\n");
 }
 
 void MultiInput::logWarning(const QString &message) {
     ui->eventLog->setTextBackgroundColor(Qt::yellow);
     ui->eventLog->setTextColor(Qt::black);
     ui->eventLog->append(message);
-    ui->eventLog->append("\n");
 }
 
 void MultiInput::logError(const QString &message) {
     ui->eventLog->setTextBackgroundColor(Qt::red);
     ui->eventLog->setTextColor(Qt::white);
     ui->eventLog->append(message);
-    ui->eventLog->append("\n");
 }

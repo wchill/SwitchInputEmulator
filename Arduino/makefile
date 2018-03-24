@@ -40,3 +40,8 @@ include $(LUFA_PATH)/Build/lufa_atprogram.mk
 # Target for LED/buzzer to alert when print is done
 with-alert: all
 with-alert: CC_FLAGS += -DALERT_WHEN_DONE
+
+flash: all
+	sudo dfu-programmer $(MCU) erase
+	sudo dfu-programmer $(MCU) flash $(TARGET).hex
+	sudo dfu-programmer $(MCU) reset

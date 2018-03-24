@@ -53,6 +53,7 @@ private slots:
     void onButtonMinusChange(bool pressed);
     void onButtonPlusChange(bool pressed);
     void onButtonHomeChange(bool pressed);
+    void onButtonCaptureChange(bool pressed);
 
 private:
     void drawFilledRect(QPainter &painter, const QRectF &rect);

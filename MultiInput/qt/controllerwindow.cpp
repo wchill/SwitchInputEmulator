@@ -32,40 +32,44 @@ ControllerWindow::ControllerWindow(const QString &portName, QWidget *parent, ILo
 
     auto gamepads = QGamepadManager::instance()->connectedGamepads();
     if (gamepads.isEmpty()) {
+        logger->logWarning("Could not find a connected gamepad.");
         return;
+    } else {
+        gamepad = std::unique_ptr<QGamepad>(new QGamepad(*gamepads.begin(), this));
+        connect(gamepad.get(), SIGNAL(axisLeftXChanged(double)), this, SLOT(onLeftStickX(double)));
+        connect(gamepad.get(), SIGNAL(axisLeftYChanged(double)), this, SLOT(onLeftStickY(double)));
+        connect(gamepad.get(), SIGNAL(axisRightXChanged(double)), this, SLOT(onRightStickX(double)));
+        connect(gamepad.get(), SIGNAL(axisRightYChanged(double)), this, SLOT(onRightStickY(double)));
+
+        // Need to translate analog to clicks
+        connect(gamepad.get(), SIGNAL(buttonL2Changed(double)), this, SLOT(onButtonZLChange(double)));
+        connect(gamepad.get(), SIGNAL(buttonR2Changed(double)), this, SLOT(onButtonZRChange(double)));
+
+        // A and B are swapped on Nintendo controllers
+        connect(gamepad.get(), SIGNAL(buttonAChanged(bool)), this, SLOT(onButtonBChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonBChanged(bool)), this, SLOT(onButtonAChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonXChanged(bool)), this, SLOT(onButtonXChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonYChanged(bool)), this, SLOT(onButtonYChange(bool)));
+
+        // Handle hat presses with special code
+        connect(gamepad.get(), SIGNAL(buttonLeftChanged(bool)), this, SLOT(onHatChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonRightChanged(bool)), this, SLOT(onHatChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonUpChanged(bool)), this, SLOT(onHatChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonDownChanged(bool)), this, SLOT(onHatChange(bool)));
+
+        connect(gamepad.get(), SIGNAL(buttonL1Changed(bool)), this, SLOT(onButtonLChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonR1Changed(bool)), this, SLOT(onButtonRChange(bool)));
+
+        connect(gamepad.get(), SIGNAL(buttonL3Changed(bool)), this, SLOT(onButtonL3Change(bool)));
+        connect(gamepad.get(), SIGNAL(buttonR3Changed(bool)), this, SLOT(onButtonR3Change(bool)));
+
+        connect(gamepad.get(), SIGNAL(buttonSelectChanged(bool)), this, SLOT(onButtonMinusChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonStartChanged(bool)), this, SLOT(onButtonPlusChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonGuideChanged(bool)), this, SLOT(onButtonHomeChange(bool)));
+        // connect(gamepad.get(), SIGNAL(buttonCenterChanged(bool)), this, SLOT(onButtonCaptureChange(bool)));
+
+        logger->logMessage(tr("Gamepad %1 initialized").arg(gamepad.get()->deviceId()));
     }
-
-    gamepad = std::unique_ptr<QGamepad>(new QGamepad(*gamepads.begin(), this));
-    connect(gamepad.get(), SIGNAL(axisLeftXChanged(double)), this, SLOT(onLeftStickX(double)));
-    connect(gamepad.get(), SIGNAL(axisLeftYChanged(double)), this, SLOT(onLeftStickY(double)));
-    connect(gamepad.get(), SIGNAL(axisRightXChanged(double)), this, SLOT(onRightStickX(double)));
-    connect(gamepad.get(), SIGNAL(axisRightYChanged(double)), this, SLOT(onRightStickY(double)));
-
-    // Need to translate analog to clicks
-    connect(gamepad.get(), SIGNAL(buttonL2Changed(double)), this, SLOT(onButtonZLChange(double)));
-    connect(gamepad.get(), SIGNAL(buttonR2Changed(double)), this, SLOT(onButtonZRChange(double)));
-
-    // A and B are swapped on Nintendo controllers
-    connect(gamepad.get(), SIGNAL(buttonAChanged(bool)), this, SLOT(onButtonBChange(bool)));
-    connect(gamepad.get(), SIGNAL(buttonBChanged(bool)), this, SLOT(onButtonAChange(bool)));
-    connect(gamepad.get(), SIGNAL(buttonXChanged(bool)), this, SLOT(onButtonXChange(bool)));
-    connect(gamepad.get(), SIGNAL(buttonYChanged(bool)), this, SLOT(onButtonYChange(bool)));
-
-    // Handle hat presses with special code
-    connect(gamepad.get(), SIGNAL(buttonLeftChanged(bool)), this, SLOT(onHatChange(bool)));
-    connect(gamepad.get(), SIGNAL(buttonRightChanged(bool)), this, SLOT(onHatChange(bool)));
-    connect(gamepad.get(), SIGNAL(buttonUpChanged(bool)), this, SLOT(onHatChange(bool)));
-    connect(gamepad.get(), SIGNAL(buttonDownChanged(bool)), this, SLOT(onHatChange(bool)));
-
-    connect(gamepad.get(), SIGNAL(buttonL1Changed(bool)), this, SLOT(onButtonLChange(bool)));
-    connect(gamepad.get(), SIGNAL(buttonR1Changed(bool)), this, SLOT(onButtonRChange(bool)));
-
-    connect(gamepad.get(), SIGNAL(buttonL3Changed(bool)), this, SLOT(onButtonL3Change(bool)));
-    connect(gamepad.get(), SIGNAL(buttonR3Changed(bool)), this, SLOT(onButtonR3Change(bool)));
-
-    connect(gamepad.get(), SIGNAL(buttonSelectChanged(bool)), this, SLOT(onButtonMinusChange(bool)));
-    connect(gamepad.get(), SIGNAL(buttonStartChanged(bool)), this, SLOT(onButtonPlusChange(bool)));
-    connect(gamepad.get(), SIGNAL(buttonGuideChanged(bool)), this, SLOT(onButtonHomeChange(bool)));
 }
 
 ControllerWindow::~ControllerWindow() {
@@ -161,7 +165,14 @@ void ControllerWindow::onButtonHomeChange(bool pressed) {
     else controller.get()->releaseButtons(BUTTON_HOME);
 }
 
+void ControllerWindow::onButtonCaptureChange(bool pressed) {
+    if (pressed) controller.get()->pressButtons(BUTTON_CAPTURE);
+    else controller.get()->releaseButtons(BUTTON_CAPTURE);
+}
+
 void ControllerWindow::onHatChange(bool pressed) {
+    Q_UNUSED(pressed);
+
     bool up = gamepad.get()->buttonUp();
     bool right = gamepad.get()->buttonRight();
     bool down = gamepad.get()->buttonDown();
@@ -185,7 +196,7 @@ void ControllerWindow::onHatChange(bool pressed) {
 }
 
 void ControllerWindow::invalidateUi() {
-    repaint();
+    update();
 }
 
 void ControllerWindow::drawFilledRect(QPainter &painter, const QRectF &rect) {
