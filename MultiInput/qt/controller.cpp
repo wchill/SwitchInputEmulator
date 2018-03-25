@@ -6,38 +6,27 @@
 using std::cout;
 using std::endl;
 
-Controller::Controller(QString const &newPortName, QObject *parent, ILogger *parentLogger) :
+Controller::Controller(QString const &newPortName, QObject *parent) :
     QObject(parent), ls(STICK_CENTER, STICK_CENTER), rs(STICK_CENTER, STICK_CENTER), dpad(DPAD_NONE), buttons(BUTTON_NONE), vendorspec(0x00) {
     portName = newPortName;
-    logger = new ILogger(parentLogger);
 
     port = new SerialPortWriter(portName);
     port->moveToThread(&writerThread);
-    connect(port, SIGNAL(error(QString)), this, SLOT(onSerialError(QString)));
-    connect(port, SIGNAL(timeout(QString)), this, SLOT(onSerialTimeout(QString)));
-    connect(port, SIGNAL(message(QString)), this, SLOT(onSerialMessage(QString)));
+    connect(port, SIGNAL(error(QString)), this, SIGNAL(error(QString)));
+    connect(port, SIGNAL(timeout(QString)), this, SIGNAL(warning(QString)));
+    connect(port, SIGNAL(message(QString)), this, SIGNAL(message(QString)));
     connect(port, SIGNAL(writeComplete()), this, SIGNAL(stateChanged()));
     connect(this, SIGNAL(operate(QByteArray)), port, SLOT(doWork(QByteArray)));
     writerThread.start();
     writerThread.setPriority(QThread::TimeCriticalPriority);
     emit operate(getData());
 
-    logger->logMessage("Controller initialized");
+    emit message("Controller initialized");
 }
 Controller::~Controller() {
     delete port;
     writerThread.quit();
     writerThread.wait();
-    delete logger;
-}
-void Controller::onSerialError(const QString &error) {
-    logger->logError(error);
-}
-void Controller::onSerialTimeout(const QString &error) {
-    logger->logWarning(error);
-}
-void Controller::onSerialMessage(const QString &error) {
-    logger->logMessage(error);
 }
 quint8 Controller::quantizeDouble(double const val) {
     double scaled = (val + 1.0) * 128.0;
@@ -138,20 +127,25 @@ Controller *Controller::wait(unsigned long const waitMsecs) {
     QThread::msleep(waitMsecs);
     return this;
 }
-Controller *Controller::wait() {
-    return wait(WAIT_TIME);
-}
 void Controller::onLeftStickXDouble(const double value) {
     onLeftStickX(quantizeDouble(value));
 }
 void Controller::onLeftStickYDouble(const double value) {
     onLeftStickY(quantizeDouble(value));
 }
+void Controller::onLeftStickXYDouble(const double x, const double y) {
+    moveLeftStickX(quantizeDouble(x), false);
+    moveLeftStickY(quantizeDouble(y));
+}
 void Controller::onRightStickXDouble(const double value) {
     onRightStickX(quantizeDouble(value));
 }
 void Controller::onRightStickYDouble(const double value) {
     onRightStickY(quantizeDouble(value));
+}
+void Controller::onRightStickXYDouble(const double x, const double y) {
+    moveRightStickX(quantizeDouble(x), false);
+    moveRightStickY(quantizeDouble(y));
 }
 void Controller::onLeftStickX(const quint8 value) {
     moveLeftStickX(value);
@@ -223,6 +217,18 @@ void Controller::onButtonCaptureChange(const bool pressed) {
 }
 void Controller::onHatChange(const Dpad_t pressed) {
     pressDpad(pressed);
+}
+void Controller::onButtonPress(const Button_t pressed) {
+    pressButtons(pressed);
+}
+void Controller::onButtonRelease(const Button_t released) {
+    releaseButtons(released);
+}
+void Controller::onWait(const unsigned long waitMsecs) {
+    wait(waitMsecs);
+}
+void Controller::onReset() {
+    reset();
 }
 void Controller::getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, quint8 *outRy, Dpad_t *outDpad, Button_t *outButtons, uint8_t *outVendorspec) {
     if (outLx != nullptr) *outLx = ls.first;

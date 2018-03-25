@@ -17,14 +17,15 @@ TwitchIrcBotWindow::TwitchIrcBotWindow(std::shared_ptr<Controller> controller, Q
     p.setColor(QPalette::Text, Qt::white);
     ui->chatLog->setPalette(p);
 
-    bot = new TwitchIrcBot("twitchplaysswitchgames", "");
+    bot = new TwitchIrcBot("twitchplaysswitchgames", "oauth:fwqinndr4ix4gvl8l42uzcxocvlq00", controller);
     bot->moveToThread(&thread);
     connect(bot, SIGNAL(logStatus(QString)), this, SLOT(onStatus(QString)));
     connect(bot, SIGNAL(logMessage(QString)), this, SLOT(onMessage(QString)));
     connect(bot, SIGNAL(connecting()), this, SLOT(onConnecting()));
     connect(bot, SIGNAL(loggedIn(QString)), this, SLOT(onLogin(QString)));
-    connect(bot, SIGNAL(newPrivmsg(IrcResponse)), this, SLOT(onPrivmsg(IrcResponse)));
-    connect(bot, SIGNAL(newWhisper(IrcResponse)), this, SLOT(onWhisper(IrcResponse)));
+    //connect(bot, SIGNAL(newPrivmsg(IrcResponse)), this, SLOT(onPrivmsg(IrcResponse)));
+    //connect(bot, SIGNAL(newWhisper(IrcResponse)), this, SLOT(onWhisper(IrcResponse)));
+    connect(bot, SIGNAL(playerCommandIssued(QString)), this, SLOT(onMessage(QString)));
     connect(this, SIGNAL(connectToServer()), bot, SLOT(connectToServer()));
     connect(this, SIGNAL(joinChannels(QStringList)), bot, SLOT(joinChannels(QStringList)));
     thread.start();

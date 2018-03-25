@@ -14,9 +14,10 @@
 using std::cout;
 using std::endl;
 
-ControllerWindow::ControllerWindow(const QString &portName, QWidget *parent, ILogger *parentLogger) :
+ControllerWindow::ControllerWindow(std::shared_ptr<Controller> controller, QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::ControllerWindow)
+    ui(new Ui::ControllerWindow),
+    controller(controller)
 {
     ui->setupUi(this);
 
@@ -26,28 +27,11 @@ ControllerWindow::ControllerWindow(const QString &portName, QWidget *parent, ILo
     zl = std::unique_ptr<QImage>(new QImage(":/images/btn_ZL.png"));
     zr = std::unique_ptr<QImage>(new QImage(":/images/btn_ZR.png"));
 
-    logger = new ILogger(parentLogger);
-
-    controller = std::make_shared<Controller>(portName, this, logger);
     connect(controller.get(), SIGNAL(stateChanged()), this, SLOT(invalidateUi()));
 
     auto gamepads = QGamepadManager::instance()->connectedGamepads();
     if (gamepads.isEmpty()) {
-        logger->logMessage("Could not find a connected gamepad, starting IRC bot instead.");
-        bot = new TwitchIrcBotWindow(this);
-        bot->show();
-        /*
-        bot = new TwitchBot(controller, this);
-        bot->setHost(bot->server);
-        bot->setUserName(bot->username);
-        bot->setNickName(bot->username);
-        bot->setRealName(bot->username);
-        bot->setPort(bot->port);
-        bot->setSecure(false);
-        bot->setPassword(bot->oauth);
-        bot->join("#wchill");
-        bot->open();
-        */
+        emit message("Could not find a connected gamepad.");
     } else {
         gamepad = std::unique_ptr<QGamepad>(new QGamepad(*gamepads.begin(), this));
         connect(gamepad.get(), SIGNAL(axisLeftXChanged(double)), controller.get(), SLOT(onLeftStickXDouble(double)));
@@ -82,23 +66,20 @@ ControllerWindow::ControllerWindow(const QString &portName, QWidget *parent, ILo
         connect(gamepad.get(), SIGNAL(buttonGuideChanged(bool)), controller.get(), SLOT(onButtonHomeChange(bool)));
         // connect(gamepad.get(), SIGNAL(buttonCenterChanged(bool)), this, SLOT(onButtonCaptureChange(bool)));
 
-        logger->logMessage(tr("Gamepad %1 initialized").arg(gamepad.get()->deviceId()));
+        emit message(tr("Gamepad %1 initialized").arg(gamepad.get()->deviceId()));
     }
 }
 
 ControllerWindow::~ControllerWindow() {
-    delete logger;
     delete ui;
 }
 
 void ControllerWindow::onButtonZLChange(double const value) {
-    if (value > 0.6) controller.get()->pressButtons(BUTTON_ZL);
-    else controller.get()->releaseButtons(BUTTON_ZL);
+    emit changeButtonZL(value > 0.6);
 }
 
 void ControllerWindow::onButtonZRChange(double const value) {
-    if (value > 0.6) controller.get()->pressButtons(BUTTON_ZR);
-    else controller.get()->releaseButtons(BUTTON_ZR);
+    emit changeButtonZR(value > 0.6);
 }
 
 void ControllerWindow::onHatChange(bool const pressed) {
@@ -109,21 +90,25 @@ void ControllerWindow::onHatChange(bool const pressed) {
     bool down = gamepad.get()->buttonDown();
     bool left = gamepad.get()->buttonLeft();
 
+    Dpad_t press;
+
     if (up) {
-        if (right) controller.get()->pressDpad(DPAD_UP_RIGHT);
-        else if (left) controller.get()->pressDpad(DPAD_UP_LEFT);
-        else controller.get()->pressDpad(DPAD_UP);
+        if (right) press = DPAD_UP_RIGHT;
+        else if (left) press = DPAD_UP_LEFT;
+        else press = DPAD_UP;
     } else if (down) {
-        if (right) controller.get()->pressDpad(DPAD_DOWN_RIGHT);
-        else if (left) controller.get()->pressDpad(DPAD_DOWN_LEFT);
-        else controller.get()->pressDpad(DPAD_DOWN);
+        if (right) press = DPAD_DOWN_RIGHT;
+        else if (left) press = DPAD_DOWN_LEFT;
+        else press = DPAD_DOWN;
     } else if (right) {
-        controller.get()->pressDpad(DPAD_RIGHT);
+        press = DPAD_RIGHT;
     } else if (left) {
-        controller.get()->pressDpad(DPAD_LEFT);
+        press = DPAD_LEFT;
     } else {
-        controller.get()->pressDpad(DPAD_NONE);
+        press = DPAD_NONE;
     }
+
+    emit changeHat(press);
 }
 
 void ControllerWindow::invalidateUi() {

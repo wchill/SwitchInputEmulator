@@ -3,7 +3,6 @@
 
 MultiInput::MultiInput(QWidget *parent) :
     QWidget(parent),
-    ILogger(),
     ui(new Ui::MultiInput)
 {
     ui->setupUi(this);
@@ -32,7 +31,10 @@ void MultiInput::serialPortIndexChanged(int index) {
 
 MultiInput::~MultiInput()
 {
+    controllerThread.quit();
+    controllerThread.wait();
     delete controllerWindow;
+    delete botWindow;
     delete ui;
 }
 
@@ -40,9 +42,24 @@ void MultiInput::onStartButtonClicked()
 {
     ui->startButton->setEnabled(false);
     ui->serialPortSelect->setEnabled(false);
-    controllerWindow = new ControllerWindow(currentPort.portName(), this, this);
+
+    controller = std::make_shared<Controller>(currentPort.portName());
+    controller.get()->moveToThread(&controllerThread);
+    connect(controller.get(), SIGNAL(error(QString)), this, SLOT(logError(QString)));
+    connect(controller.get(), SIGNAL(warning(QString)), this, SLOT(logWarning(QString)));
+    connect(controller.get(), SIGNAL(message(QString)), this, SLOT(logMessage(QString)));
+    controllerThread.start();
+    controllerThread.setPriority(QThread::TimeCriticalPriority);
+
+    controllerWindow = new ControllerWindow(controller, this);
     connect(controllerWindow, SIGNAL(controllerWindowClosing()), this, SLOT(onControllerWindowClosed()));
+    connect(controllerWindow, SIGNAL(message(QString)), this, SLOT(logMessage(QString)));
+    connect(controllerWindow, SIGNAL(warning(QString)), this, SLOT(logWarning(QString)));
+    connect(controllerWindow, SIGNAL(error(QString)), this, SLOT(logError(QString)));
     controllerWindow->show();
+
+    botWindow = new TwitchIrcBotWindow(controller, this);
+    botWindow->show();
 }
 
 void MultiInput::onControllerWindowClosed() {

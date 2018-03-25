@@ -5,6 +5,7 @@
 
 IrcResponse::IrcResponse(const QString &line) : m_line(line)
 {
+    // http://danieloaks.net/irc-regex/
     QRegularExpression ircRegex("^(?:@([^\r\n ]*) +|())(?::([^\r\n ]+) +|())([^\r\n ]+)(?: +([^:\r\n ]+[^\r\n ]*(?: +[^:\r\n ]+[^\r\n ]*)*)|())?(?: +:([^\r\n]*)| +())?[\r\n]*$");
     QRegularExpressionMatch match = ircRegex.match(line);
 

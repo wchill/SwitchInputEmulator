@@ -68,11 +68,17 @@ void SerialPortWriter::doWork(const QByteArray &newData) {
 
         if(writeAndExpectResponse(&serial, sync_bytes[1], sync_resp[1]))
             emit message(tr("Handshake stage 2 complete"));
-        else emit timeout(tr("Handshake failed at stage 2, retrying..."));
+        else {
+            emit timeout(tr("Handshake failed at stage 2, retrying..."));
+            continue;
+        }
 
         if(writeAndExpectResponse(&serial, sync_bytes[2], sync_resp[2]))
             emit message(tr("Handshake stage 3 complete"));
-        else emit timeout(tr("Handshake failed at stage 3, retrying..."));
+        else {
+            emit timeout(tr("Handshake failed at stage 3, retrying..."));
+            continue;
+        }
 
         synced = true;
     }

@@ -7,7 +7,6 @@
 #include <QtGamepad/QGamepad>
 #include "controllerconstants.h"
 #include "controller.h"
-#include "ilogger.h"
 #include "twitchircbotwindow.h"
 
 using std::vector;
@@ -21,7 +20,7 @@ class ControllerWindow : public QDialog
     Q_OBJECT
 
 public:
-    explicit ControllerWindow(const QString &portName, QWidget *parent = nullptr, ILogger *parentLogger = nullptr);
+    explicit ControllerWindow(std::shared_ptr<Controller> controller, QWidget *parent = nullptr);
     ~ControllerWindow();
     virtual QSize minimumSizeHint() const;
     virtual QSize maximumSizeHint() const;
@@ -29,6 +28,13 @@ public:
 
 signals:
     void controllerWindowClosing();
+    void error(const QString &error);
+    void warning(const QString &warning);
+    void message(const QString &message);
+
+    void changeHat(const Dpad_t pressed);
+    void changeButtonZL(const bool pressed);
+    void changeButtonZR(const bool pressed);
 
 protected:
     virtual void paintEvent(QPaintEvent *event);
@@ -52,11 +58,10 @@ private:
     void renderRightStick(QPainter &painter, const quint8 rx, const quint8 ry);
 
     Ui::ControllerWindow *ui;
+    std::shared_ptr<Controller> controller;
     std::unique_ptr<QImage> image;
     std::unique_ptr<QImage> zl;
     std::unique_ptr<QImage> zr;
-    std::shared_ptr<Controller> controller;
-    ILogger *logger;
 
     std::unique_ptr<QGamepad> gamepad;
     TwitchIrcBotWindow *bot;

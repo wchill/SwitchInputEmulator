@@ -27,7 +27,6 @@ HEADERS  += multiinput.h \
     controllerwindow.h \
     controller.h \
     controllerconstants.h \
-    ilogger.h \
     ircresponse.h \
     twitchircbotwindow.h \
     twitchircbot.h

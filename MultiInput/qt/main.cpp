@@ -1,5 +1,6 @@
 #include "multiinput.h"
 #include "ircresponse.h"
+#include "controllerconstants.h"
 #include <QApplication>
 
 int main(int argc, char *argv[])
@@ -8,6 +9,8 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
 
     qRegisterMetaType<IrcResponse>();
+    qRegisterMetaType<Dpad_t>();
+    qRegisterMetaType<Button_t>("Button_t");
 
     MultiInput w;
     w.show();

@@ -3,21 +3,19 @@
 
 #include <QWidget>
 #include <QtGui>
-#include <QKeyEvent>
 #include <QSerialPort>
 #include <QSerialPortInfo>
-#include <unordered_map>
+#include <QThread>
 #include "serialportwriter.h"
 #include "controllerwindow.h"
-#include "ilogger.h"
-
-using std::unordered_map;
+#include "controller.h"
+#include "twitchircbotwindow.h"
 
 namespace Ui {
 class MultiInput;
 }
 
-class MultiInput : public QWidget, public ILogger
+class MultiInput : public QWidget
 {
     Q_OBJECT
 public:
@@ -43,6 +41,9 @@ private:
     QSerialPortInfo currentPort;
 
     ControllerWindow *controllerWindow = nullptr;
+    TwitchIrcBotWindow *botWindow = nullptr;
+    std::shared_ptr<Controller> controller;
+    QThread controllerThread;
 };
 
 #endif // MULTIINPUT_H

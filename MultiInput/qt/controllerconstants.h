@@ -2,6 +2,7 @@
 #define CONTROLLERCONSTANTS_H
 
 #include <QVector2D>
+#include <QMetaType>
 
 #define BUTTON_NONE      0x00
 #define BUTTON_Y         0x01
@@ -63,6 +64,9 @@ typedef enum {
 } Dpad_t;
 
 typedef uint16_t Button_t;
+
+Q_DECLARE_METATYPE(Dpad_t)
+Q_DECLARE_METATYPE(Button_t)
 
 // 50 ms update time (20hz)
 #define WAIT_TIME 50

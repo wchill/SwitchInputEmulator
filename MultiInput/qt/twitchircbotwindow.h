@@ -17,7 +17,7 @@ class TwitchIrcBotWindow : public QDialog
     Q_OBJECT
 
 public:
-    explicit TwitchIrcBotWindow(QWidget *parent = 0);
+    explicit TwitchIrcBotWindow(std::shared_ptr<Controller> controller, QWidget *parent = 0);
     ~TwitchIrcBotWindow();
 
 signals:
@@ -34,13 +34,13 @@ public slots:
 
 private:
     Ui::TwitchIrcBotWindow *ui;
+    std::shared_ptr<Controller> controller;
 
     QFont chatFont;
     QFont statusFont;
 
     TwitchIrcBot *bot;
     QThread thread;
-    std::shared_ptr<Controller> controller;
 };
 
 #endif // TWITCHIRCBOTWINDOW_H
