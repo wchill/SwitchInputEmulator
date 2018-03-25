@@ -17,6 +17,7 @@ signals:
     void error(const QString &s);
     void timeout(const QString &s);
     void message(const QString &s);
+    void writeComplete();
 
 public slots:
     void doWork(const QByteArray &newData);

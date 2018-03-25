@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QPair>
 #include <QByteArray>
-#include <QTimer>
+#include <QTime>
 #include <QThread>
 #include "controllerconstants.h"
 #include "serialportwriter.h"
@@ -49,9 +49,35 @@ public slots:
     void onSerialError(const QString &error);
     void onSerialTimeout(const QString &error);
     void onSerialMessage(const QString &error);
+
+    void onLeftStickXDouble(double const value);
+    void onLeftStickYDouble(double const value);
+    void onLeftStickX(quint8 const value);
+    void onLeftStickY(quint8 const value);
+    void onRightStickXDouble(double const value);
+    void onRightStickYDouble(double const value);
+    void onRightStickX(quint8 const value);
+    void onRightStickY(quint8 const value);
+    void onButtonZLChange(bool const value);
+    void onButtonZRChange(bool const value);
+    void onButtonAChange(bool const pressed);
+    void onButtonBChange(bool const pressed);
+    void onButtonXChange(bool const pressed);
+    void onButtonYChange(bool const pressed);
+    void onHatChange(Dpad_t const pressed);
+    void onButtonLChange(bool const pressed);
+    void onButtonRChange(bool const pressed);
+    void onButtonL3Change(bool const pressed);
+    void onButtonR3Change(bool const pressed);
+    void onButtonMinusChange(bool const pressed);
+    void onButtonPlusChange(bool const pressed);
+    void onButtonHomeChange(bool const pressed);
+    void onButtonCaptureChange(bool const pressed);
 private slots:
     void sendUpdate();
 private:
+    quint8 quantizeDouble(double const val);
+
     QPair<quint8, quint8> ls;
     QPair<quint8, quint8> rs;
     Dpad_t dpad;
@@ -64,6 +90,7 @@ private:
     ILogger *logger;
 
     QByteArray lastState;
+    QTime lastUpdateTime;
 };
 
 #endif // CONTROLLER_H

@@ -12,7 +12,7 @@ using std::endl;
 
 SerialPortWriter::SerialPortWriter(const QString &portName, QObject *parent) : QObject(parent) {
     m_portName = portName;
-    m_waitTimeout = 1000;
+    m_waitTimeout = 33;
 }
 
 SerialPortWriter::~SerialPortWriter() {
@@ -80,14 +80,13 @@ void SerialPortWriter::doWork(const QByteArray &newData) {
 
     while (!m_quit) {
         serial.write(data);
-        if (!serial.waitForBytesWritten(m_waitTimeout)) {
-            emit timeout(tr("Wait write response timeout %1").arg(QTime::currentTime().toString()));
-        } else if(!serial.waitForReadyRead(m_waitTimeout)) {
+        if(!serial.waitForReadyRead(m_waitTimeout)) {
             emit timeout(tr("Wait read response timeout %1").arg(QTime::currentTime().toString()));
         } else {
             serial.readAll();
-            QCoreApplication::processEvents();
+            emit writeComplete();
         }
+        QCoreApplication::processEvents();
     }
 
     serial.close();

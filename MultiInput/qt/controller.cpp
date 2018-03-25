@@ -16,6 +16,7 @@ Controller::Controller(QString const &newPortName, QObject *parent, ILogger *par
     connect(port, SIGNAL(error(QString)), this, SLOT(onSerialError(QString)));
     connect(port, SIGNAL(timeout(QString)), this, SLOT(onSerialTimeout(QString)));
     connect(port, SIGNAL(message(QString)), this, SLOT(onSerialMessage(QString)));
+    connect(port, SIGNAL(writeComplete()), this, SIGNAL(stateChanged()));
     connect(this, SIGNAL(operate(QByteArray)), port, SLOT(doWork(QByteArray)));
     writerThread.start();
     writerThread.setPriority(QThread::TimeCriticalPriority);
@@ -38,11 +39,16 @@ void Controller::onSerialTimeout(const QString &error) {
 void Controller::onSerialMessage(const QString &error) {
     logger->logMessage(error);
 }
+quint8 Controller::quantizeDouble(double const val) {
+    double scaled = (val + 1.0) * 128.0;
+    if (scaled < 0) scaled = 0;
+    else if (scaled > 255) scaled = 255;
+    return (quint8) scaled;
+}
 void Controller::sendUpdate() {
     if (isStateDifferent(lastState)) {
         lastState = getData();
         port->changeData(getData());
-        emit stateChanged();
     }
 }
 void Controller::changeState(quint8 const newLx, quint8 const newLy, quint8 const newRx, quint8 const newRy, Dpad_t const newDpad, Button_t const newButtons, uint8_t const newVendorspec, bool update) {
@@ -134,6 +140,89 @@ Controller *Controller::wait(unsigned long const waitMsecs) {
 }
 Controller *Controller::wait() {
     return wait(WAIT_TIME);
+}
+void Controller::onLeftStickXDouble(const double value) {
+    onLeftStickX(quantizeDouble(value));
+}
+void Controller::onLeftStickYDouble(const double value) {
+    onLeftStickY(quantizeDouble(value));
+}
+void Controller::onRightStickXDouble(const double value) {
+    onRightStickX(quantizeDouble(value));
+}
+void Controller::onRightStickYDouble(const double value) {
+    onRightStickY(quantizeDouble(value));
+}
+void Controller::onLeftStickX(const quint8 value) {
+    moveLeftStickX(value);
+}
+void Controller::onLeftStickY(const quint8 value) {
+    moveLeftStickY(value);
+}
+void Controller::onRightStickX(const quint8 value) {
+    moveRightStickX(value);
+}
+void Controller::onRightStickY(const quint8 value) {
+    moveRightStickY(value);
+}
+void Controller::onButtonAChange(const bool pressed) {
+    if (pressed) pressButtons(BUTTON_A);
+    else releaseButtons(BUTTON_A);
+}
+void Controller::onButtonBChange(const bool pressed) {
+    if (pressed) pressButtons(BUTTON_B);
+    else releaseButtons(BUTTON_B);
+}
+void Controller::onButtonXChange(const bool pressed) {
+    if (pressed) pressButtons(BUTTON_X);
+    else releaseButtons(BUTTON_X);
+}
+void Controller::onButtonYChange(const bool pressed) {
+    if (pressed) pressButtons(BUTTON_Y);
+    else releaseButtons(BUTTON_Y);
+}
+void Controller::onButtonLChange(const bool pressed) {
+    if (pressed) pressButtons(BUTTON_L);
+    else releaseButtons(BUTTON_L);
+}
+void Controller::onButtonRChange(const bool pressed) {
+    if (pressed) pressButtons(BUTTON_R);
+    else releaseButtons(BUTTON_R);
+}
+void Controller::onButtonZLChange(const bool pressed) {
+    if (pressed) pressButtons(BUTTON_ZL);
+    else releaseButtons(BUTTON_ZL);
+}
+void Controller::onButtonZRChange(const bool pressed) {
+    if (pressed) pressButtons(BUTTON_ZR);
+    else releaseButtons(BUTTON_ZR);
+}
+void Controller::onButtonL3Change(const bool pressed) {
+    if (pressed) pressButtons(BUTTON_LCLICK);
+    else releaseButtons(BUTTON_LCLICK);
+}
+void Controller::onButtonR3Change(const bool pressed) {
+    if (pressed) pressButtons(BUTTON_RCLICK);
+    else releaseButtons(BUTTON_RCLICK);
+}
+void Controller::onButtonMinusChange(const bool pressed) {
+    if (pressed) pressButtons(BUTTON_MINUS);
+    else releaseButtons(BUTTON_MINUS);
+}
+void Controller::onButtonPlusChange(const bool pressed) {
+    if (pressed) pressButtons(BUTTON_PLUS);
+    else releaseButtons(BUTTON_PLUS);
+}
+void Controller::onButtonHomeChange(const bool pressed) {
+    if (pressed) pressButtons(BUTTON_HOME);
+    else releaseButtons(BUTTON_HOME);
+}
+void Controller::onButtonCaptureChange(const bool pressed) {
+    if (pressed) pressButtons(BUTTON_CAPTURE);
+    else releaseButtons(BUTTON_CAPTURE);
+}
+void Controller::onHatChange(const Dpad_t pressed) {
+    pressDpad(pressed);
 }
 void Controller::getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, quint8 *outRy, Dpad_t *outDpad, Button_t *outButtons, uint8_t *outVendorspec) {
     if (outLx != nullptr) *outLx = ls.first;

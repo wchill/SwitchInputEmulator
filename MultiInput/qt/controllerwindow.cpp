@@ -5,6 +5,7 @@
 #include <QBrush>
 #include <QColor>
 #include <QDebug>
+#include <QLayout>
 #include <QtGamepad/QGamepad>
 #include "controllerwindow.h"
 #include "ui_controllerwindow.h"
@@ -27,29 +28,42 @@ ControllerWindow::ControllerWindow(const QString &portName, QWidget *parent, ILo
 
     logger = new ILogger(parentLogger);
 
-    controller = std::unique_ptr<Controller>(new Controller(portName, this, logger));
+    controller = std::make_shared<Controller>(portName, this, logger);
     connect(controller.get(), SIGNAL(stateChanged()), this, SLOT(invalidateUi()));
 
     auto gamepads = QGamepadManager::instance()->connectedGamepads();
     if (gamepads.isEmpty()) {
-        logger->logWarning("Could not find a connected gamepad.");
-        return;
+        logger->logMessage("Could not find a connected gamepad, starting IRC bot instead.");
+        bot = new TwitchIrcBotWindow(this);
+        bot->show();
+        /*
+        bot = new TwitchBot(controller, this);
+        bot->setHost(bot->server);
+        bot->setUserName(bot->username);
+        bot->setNickName(bot->username);
+        bot->setRealName(bot->username);
+        bot->setPort(bot->port);
+        bot->setSecure(false);
+        bot->setPassword(bot->oauth);
+        bot->join("#wchill");
+        bot->open();
+        */
     } else {
         gamepad = std::unique_ptr<QGamepad>(new QGamepad(*gamepads.begin(), this));
-        connect(gamepad.get(), SIGNAL(axisLeftXChanged(double)), this, SLOT(onLeftStickX(double)));
-        connect(gamepad.get(), SIGNAL(axisLeftYChanged(double)), this, SLOT(onLeftStickY(double)));
-        connect(gamepad.get(), SIGNAL(axisRightXChanged(double)), this, SLOT(onRightStickX(double)));
-        connect(gamepad.get(), SIGNAL(axisRightYChanged(double)), this, SLOT(onRightStickY(double)));
+        connect(gamepad.get(), SIGNAL(axisLeftXChanged(double)), controller.get(), SLOT(onLeftStickXDouble(double)));
+        connect(gamepad.get(), SIGNAL(axisLeftYChanged(double)), controller.get(), SLOT(onLeftStickYDouble(double)));
+        connect(gamepad.get(), SIGNAL(axisRightXChanged(double)), controller.get(), SLOT(onRightStickXDouble(double)));
+        connect(gamepad.get(), SIGNAL(axisRightYChanged(double)), controller.get(), SLOT(onRightStickYDouble(double)));
 
         // Need to translate analog to clicks
         connect(gamepad.get(), SIGNAL(buttonL2Changed(double)), this, SLOT(onButtonZLChange(double)));
         connect(gamepad.get(), SIGNAL(buttonR2Changed(double)), this, SLOT(onButtonZRChange(double)));
 
         // A and B are swapped on Nintendo controllers
-        connect(gamepad.get(), SIGNAL(buttonAChanged(bool)), this, SLOT(onButtonBChange(bool)));
-        connect(gamepad.get(), SIGNAL(buttonBChanged(bool)), this, SLOT(onButtonAChange(bool)));
-        connect(gamepad.get(), SIGNAL(buttonXChanged(bool)), this, SLOT(onButtonXChange(bool)));
-        connect(gamepad.get(), SIGNAL(buttonYChanged(bool)), this, SLOT(onButtonYChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonAChanged(bool)), controller.get(), SLOT(onButtonBChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonBChanged(bool)), controller.get(), SLOT(onButtonAChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonXChanged(bool)), controller.get(), SLOT(onButtonXChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonYChanged(bool)), controller.get(), SLOT(onButtonYChange(bool)));
 
         // Handle hat presses with special code
         connect(gamepad.get(), SIGNAL(buttonLeftChanged(bool)), this, SLOT(onHatChange(bool)));
@@ -57,15 +71,15 @@ ControllerWindow::ControllerWindow(const QString &portName, QWidget *parent, ILo
         connect(gamepad.get(), SIGNAL(buttonUpChanged(bool)), this, SLOT(onHatChange(bool)));
         connect(gamepad.get(), SIGNAL(buttonDownChanged(bool)), this, SLOT(onHatChange(bool)));
 
-        connect(gamepad.get(), SIGNAL(buttonL1Changed(bool)), this, SLOT(onButtonLChange(bool)));
-        connect(gamepad.get(), SIGNAL(buttonR1Changed(bool)), this, SLOT(onButtonRChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonL1Changed(bool)), controller.get(), SLOT(onButtonLChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonR1Changed(bool)), controller.get(), SLOT(onButtonRChange(bool)));
 
-        connect(gamepad.get(), SIGNAL(buttonL3Changed(bool)), this, SLOT(onButtonL3Change(bool)));
-        connect(gamepad.get(), SIGNAL(buttonR3Changed(bool)), this, SLOT(onButtonR3Change(bool)));
+        connect(gamepad.get(), SIGNAL(buttonL3Changed(bool)), controller.get(), SLOT(onButtonL3Change(bool)));
+        connect(gamepad.get(), SIGNAL(buttonR3Changed(bool)), controller.get(), SLOT(onButtonR3Change(bool)));
 
-        connect(gamepad.get(), SIGNAL(buttonSelectChanged(bool)), this, SLOT(onButtonMinusChange(bool)));
-        connect(gamepad.get(), SIGNAL(buttonStartChanged(bool)), this, SLOT(onButtonPlusChange(bool)));
-        connect(gamepad.get(), SIGNAL(buttonGuideChanged(bool)), this, SLOT(onButtonHomeChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonSelectChanged(bool)), controller.get(), SLOT(onButtonMinusChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonStartChanged(bool)), controller.get(), SLOT(onButtonPlusChange(bool)));
+        connect(gamepad.get(), SIGNAL(buttonGuideChanged(bool)), controller.get(), SLOT(onButtonHomeChange(bool)));
         // connect(gamepad.get(), SIGNAL(buttonCenterChanged(bool)), this, SLOT(onButtonCaptureChange(bool)));
 
         logger->logMessage(tr("Gamepad %1 initialized").arg(gamepad.get()->deviceId()));
@@ -77,100 +91,17 @@ ControllerWindow::~ControllerWindow() {
     delete ui;
 }
 
-quint8 ControllerWindow::quantizeDouble(double val) {
-    double scaled = (val + 1.0) * 128.0;
-    if (scaled < 0) scaled = 0;
-    else if (scaled > 255) scaled = 255;
-    return (quint8) scaled;
-}
-
-void ControllerWindow::onLeftStickX(double value) {
-    controller.get()->moveLeftStickX(quantizeDouble(value));
-}
-
-void ControllerWindow::onLeftStickY(double value) {
-    controller.get()->moveLeftStickY(quantizeDouble(value));
-}
-
-void ControllerWindow::onRightStickX(double value) {
-    controller.get()->moveRightStickX(quantizeDouble(value));
-}
-
-void ControllerWindow::onRightStickY(double value) {
-    controller.get()->moveRightStickY(quantizeDouble(value));
-}
-
-void ControllerWindow::onButtonZLChange(double value) {
+void ControllerWindow::onButtonZLChange(double const value) {
     if (value > 0.6) controller.get()->pressButtons(BUTTON_ZL);
     else controller.get()->releaseButtons(BUTTON_ZL);
 }
 
-void ControllerWindow::onButtonZRChange(double value) {
+void ControllerWindow::onButtonZRChange(double const value) {
     if (value > 0.6) controller.get()->pressButtons(BUTTON_ZR);
     else controller.get()->releaseButtons(BUTTON_ZR);
 }
 
-void ControllerWindow::onButtonAChange(bool pressed) {
-    if (pressed) controller.get()->pressButtons(BUTTON_A);
-    else controller.get()->releaseButtons(BUTTON_A);
-}
-
-void ControllerWindow::onButtonBChange(bool pressed) {
-    if (pressed) controller.get()->pressButtons(BUTTON_B);
-    else controller.get()->releaseButtons(BUTTON_B);
-}
-
-void ControllerWindow::onButtonXChange(bool pressed) {
-    if (pressed) controller.get()->pressButtons(BUTTON_X);
-    else controller.get()->releaseButtons(BUTTON_X);
-}
-
-void ControllerWindow::onButtonYChange(bool pressed) {
-    if (pressed) controller.get()->pressButtons(BUTTON_Y);
-    else controller.get()->releaseButtons(BUTTON_Y);
-}
-
-void ControllerWindow::onButtonLChange(bool pressed) {
-    if (pressed) controller.get()->pressButtons(BUTTON_L);
-    else controller.get()->releaseButtons(BUTTON_L);
-}
-
-void ControllerWindow::onButtonRChange(bool pressed) {
-    if (pressed) controller.get()->pressButtons(BUTTON_R);
-    else controller.get()->releaseButtons(BUTTON_R);
-}
-
-void ControllerWindow::onButtonL3Change(bool pressed) {
-    if (pressed) controller.get()->pressButtons(BUTTON_LCLICK);
-    else controller.get()->releaseButtons(BUTTON_LCLICK);
-}
-
-void ControllerWindow::onButtonR3Change(bool pressed) {
-    if (pressed) controller.get()->pressButtons(BUTTON_RCLICK);
-    else controller.get()->releaseButtons(BUTTON_RCLICK);
-}
-
-void ControllerWindow::onButtonMinusChange(bool pressed) {
-    if (pressed) controller.get()->pressButtons(BUTTON_MINUS);
-    else controller.get()->releaseButtons(BUTTON_MINUS);
-}
-
-void ControllerWindow::onButtonPlusChange(bool pressed) {
-    if (pressed) controller.get()->pressButtons(BUTTON_PLUS);
-    else controller.get()->releaseButtons(BUTTON_PLUS);
-}
-
-void ControllerWindow::onButtonHomeChange(bool pressed) {
-    if (pressed) controller.get()->pressButtons(BUTTON_HOME);
-    else controller.get()->releaseButtons(BUTTON_HOME);
-}
-
-void ControllerWindow::onButtonCaptureChange(bool pressed) {
-    if (pressed) controller.get()->pressButtons(BUTTON_CAPTURE);
-    else controller.get()->releaseButtons(BUTTON_CAPTURE);
-}
-
-void ControllerWindow::onHatChange(bool pressed) {
+void ControllerWindow::onHatChange(bool const pressed) {
     Q_UNUSED(pressed);
 
     bool up = gamepad.get()->buttonUp();
@@ -370,8 +301,11 @@ void ControllerWindow::paintEvent(QPaintEvent *) {
     hints.setFlag(QPainter::SmoothPixmapTransform);
     painter.setRenderHints(hints);
     painter.drawImage((this->width() - scaledImage.width()) / 2.0, (this->height() - scaledImage.height()) / 2.0, scaledImage, 0, 0, -1, -1, Qt::NoOpaqueDetection);
-    painter.drawImage((this->width() / 2.0) - (2 * zlScaled.width()), this->height() * 0.75, zlScaled, 0, 0, -1, -1, Qt::NoOpaqueDetection);
-    painter.drawImage((this->width() / 2.0) + zrScaled.width(), this->height() * 0.75, zrScaled, 0, 0, -1, -1, Qt::NoOpaqueDetection);
+    painter.drawImage((this->width() / 2.0) - (2 * zlScaled.width()), 0.5 * this->height() + 0.25 * scaledImage.height(), zlScaled, 0, 0, -1, -1, Qt::NoOpaqueDetection);
+    painter.drawImage((this->width() / 2.0) + zrScaled.width(), 0.5 * this->height() + 0.25 * scaledImage.height(), zrScaled, 0, 0, -1, -1, Qt::NoOpaqueDetection);
+    double translateX = ((this->width() - scaledImage.width()) / 2.0);
+    double translateY = ((this->height() - scaledImage.height()) / 2.0);
+    painter.translate(translateX, translateY);
     painter.scale(scaleFactor, scaleFactor);
     painter.setPen(Qt::NoPen);
 
@@ -392,11 +326,15 @@ void ControllerWindow::paintEvent(QPaintEvent *) {
 }
 
 QSize ControllerWindow::minimumSizeHint() const {
-    return QSize(444, 310);
+    return QSize(888, 620);
 }
 
 QSize ControllerWindow::sizeHint() const {
     return QSize(888, 620);
+}
+
+QSize ControllerWindow::maximumSizeHint() const {
+    return QSize(1774, 1238);
 }
 
 void ControllerWindow::closeEvent(QCloseEvent *event) {

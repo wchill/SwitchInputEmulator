@@ -8,6 +8,7 @@
 #include "controllerconstants.h"
 #include "controller.h"
 #include "ilogger.h"
+#include "twitchircbotwindow.h"
 
 using std::vector;
 
@@ -23,6 +24,7 @@ public:
     explicit ControllerWindow(const QString &portName, QWidget *parent = nullptr, ILogger *parentLogger = nullptr);
     ~ControllerWindow();
     virtual QSize minimumSizeHint() const;
+    virtual QSize maximumSizeHint() const;
     virtual QSize sizeHint() const;
 
 signals:
@@ -35,25 +37,9 @@ protected:
 private slots:
     void invalidateUi();
 
-    void onLeftStickX(double value);
-    void onLeftStickY(double value);
-    void onRightStickX(double value);
-    void onRightStickY(double value);
-    void onButtonZLChange(double value);
-    void onButtonZRChange(double value);
-    void onButtonAChange(bool pressed);
-    void onButtonBChange(bool pressed);
-    void onButtonXChange(bool pressed);
-    void onButtonYChange(bool pressed);
-    void onHatChange(bool pressed);
-    void onButtonLChange(bool pressed);
-    void onButtonRChange(bool pressed);
-    void onButtonL3Change(bool pressed);
-    void onButtonR3Change(bool pressed);
-    void onButtonMinusChange(bool pressed);
-    void onButtonPlusChange(bool pressed);
-    void onButtonHomeChange(bool pressed);
-    void onButtonCaptureChange(bool pressed);
+    void onHatChange(bool const pressed);
+    void onButtonZLChange(double const value);
+    void onButtonZRChange(double const value);
 
 private:
     void drawFilledRect(QPainter &painter, const QRectF &rect);
@@ -65,16 +51,15 @@ private:
     void renderLeftStick(QPainter &painter, const quint8 lx, const quint8 ly);
     void renderRightStick(QPainter &painter, const quint8 rx, const quint8 ry);
 
-    quint8 quantizeDouble(double val);
-
     Ui::ControllerWindow *ui;
     std::unique_ptr<QImage> image;
     std::unique_ptr<QImage> zl;
     std::unique_ptr<QImage> zr;
-    std::unique_ptr<Controller> controller;
+    std::shared_ptr<Controller> controller;
     ILogger *logger;
 
     std::unique_ptr<QGamepad> gamepad;
+    TwitchIrcBotWindow *bot;
 };
 
 #endif // CONTROLLERWINDOW_H
