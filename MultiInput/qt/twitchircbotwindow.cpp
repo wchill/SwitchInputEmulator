@@ -17,7 +17,7 @@ TwitchIrcBotWindow::TwitchIrcBotWindow(std::shared_ptr<Controller> controller, Q
     p.setColor(QPalette::Text, Qt::white);
     ui->chatLog->setPalette(p);
 
-    bot = new TwitchIrcBot("twitchplaysswitchgames", "oauth:fwqinndr4ix4gvl8l42uzcxocvlq00", controller);
+    bot = new TwitchIrcBot("twitchplaysswitchgames", "oauth:qqe9gltqiyi321r63uu3yo3216dvaa", controller);
     bot->moveToThread(&thread);
     connect(bot, SIGNAL(logStatus(QString)), this, SLOT(onStatus(QString)));
     connect(bot, SIGNAL(logMessage(QString)), this, SLOT(onMessage(QString)));

@@ -49,7 +49,6 @@ void MultiInput::onStartButtonClicked()
     connect(controller.get(), SIGNAL(warning(QString)), this, SLOT(logWarning(QString)));
     connect(controller.get(), SIGNAL(message(QString)), this, SLOT(logMessage(QString)));
     controllerThread.start();
-    controllerThread.setPriority(QThread::TimeCriticalPriority);
 
     controllerWindow = new ControllerWindow(controller, this);
     connect(controllerWindow, SIGNAL(controllerWindowClosing()), this, SLOT(onControllerWindowClosed()));
@@ -57,9 +56,6 @@ void MultiInput::onStartButtonClicked()
     connect(controllerWindow, SIGNAL(warning(QString)), this, SLOT(logWarning(QString)));
     connect(controllerWindow, SIGNAL(error(QString)), this, SLOT(logError(QString)));
     controllerWindow->show();
-
-    botWindow = new TwitchIrcBotWindow(controller, this);
-    botWindow->show();
 }
 
 void MultiInput::onControllerWindowClosed() {

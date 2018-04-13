@@ -89,7 +89,6 @@ private:
     quint8 vendorspec;
 
     QString portName;
-    QThread writerThread;
     SerialPortWriter *port;
 
     QByteArray lastState;

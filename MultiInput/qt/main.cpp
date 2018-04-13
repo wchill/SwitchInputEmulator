@@ -12,6 +12,12 @@ int main(int argc, char *argv[])
     qRegisterMetaType<Dpad_t>();
     qRegisterMetaType<Button_t>("Button_t");
 
+    QGamepadManager* manager = QGamepadManager::instance();
+    QWindow* window = new QWindow();
+    window->show();
+    delete window;
+    QGuiApplication::processEvents();
+
     MultiInput w;
     w.show();
 

@@ -18,6 +18,7 @@ exception of Home and Capture. Descriptor modification allows us to unlock
 these buttons for our use.
 */
 
+#include <util/crc16.h>
 #include "Joystick.h"
 #define SERIAL_UBBRVAL(Baud)    ((((F_CPU / 16) + (Baud / 2)) / (Baud)) - 1)
 
@@ -32,11 +33,16 @@ typedef enum {
     OUT_OF_SYNC
 } State_t;
 
+typedef struct {
+    USB_JoystickReport_Input_t input;
+    uint8_t crc8_ccitt;
+    uint8_t received_bytes;
+} USB_Input_Packet_t;
+
+USB_Input_Packet_t usbInput;
 USB_JoystickReport_Input_t buffer;
 USB_JoystickReport_Input_t defaultBuf;
 State_t state = OUT_OF_SYNC;
-uint8_t syncBuf[4];
-int syncIndex = 0;
 
 // Initializes the USART, note that the RX/TX interrupts need to be enabled manually.
 void USART_Init(void) {
@@ -74,42 +80,45 @@ inline uint8_t recv_byte(void) {
 }
 
 ISR(USART1_RX_vect) {
+    uint8_t b = recv_byte();
     if (state == SYNC_START) {
-        if (recv_byte() == 0x33) {
+        if (b == COMMAND_SYNC_1) {
             state = SYNC_1;
-            send_byte(0xCC);
+            send_byte(RESP_SYNC_1);
         }
         else state = OUT_OF_SYNC;
     } else if (state == SYNC_1) {
-        if (recv_byte() == 0xCC) {
+        if (b == COMMAND_SYNC_2) {
             state = NEW_PACKET;
-            send_byte(0x33);
+            send_byte(RESP_SYNC_OK);
         }
         else state = OUT_OF_SYNC;
     } else if (state == NEW_PACKET || state == REPLAY_PACKET) {
-        RingBuffer_Insert(&USART_Buffer, recv_byte());
-        if (RingBuffer_GetCount(&USART_Buffer) >= sizeof(USB_JoystickReport_Input_t)) {
-            // Pop 8 bytes off the buffer and create a new USB input report
-            // We do it in the ISR to prevent data corruption
-            buffer.Button     = (RingBuffer_Remove(&USART_Buffer) << 8) | RingBuffer_Remove(&USART_Buffer);
-            buffer.HAT        = RingBuffer_Remove(&USART_Buffer);
-            buffer.LX         = RingBuffer_Remove(&USART_Buffer);
-            buffer.LY         = RingBuffer_Remove(&USART_Buffer);
-            buffer.RX         = RingBuffer_Remove(&USART_Buffer);
-            buffer.RY         = RingBuffer_Remove(&USART_Buffer);
-            buffer.VendorSpec = RingBuffer_Remove(&USART_Buffer);
-            if (buffer.VendorSpec == COMMAND_SYNC) {
-                state = SYNC_START;
-                RingBuffer_InitBuffer(&USART_Buffer, buf, sizeof(buf));
-                send_byte(COMMAND_SYNC);
+        if (usbInput.received_bytes == sizeof(USB_JoystickReport_Input_t)) {
+            if (usbInput.crc8_ccitt != b) {
+                if (usbInput.input.VendorSpec == COMMAND_SYNC_START && usbInput.crc8_ccitt == COMMAND_SYNC_START) {
+                    state = SYNC_START;
+                    memcpy(&buffer, &defaultBuf, sizeof(USB_JoystickReport_Input_t));
+                    send_byte(RESP_SYNC_START);
+                } else {
+                    send_byte(RESP_UPDATE_NACK);
+                }
             } else {
+                memcpy(&buffer, &usbInput.input, sizeof(USB_JoystickReport_Input_t));
                 state = NEW_PACKET;
+                send_byte(RESP_UPDATE_ACK);
             }
+            usbInput.received_bytes = 0;
+            usbInput.crc8_ccitt = 0;
+        } else {
+            ((uint8_t*)&usbInput.input)[usbInput.received_bytes++] = b;
+            usbInput.crc8_ccitt = _crc8_ccitt_update(usbInput.crc8_ccitt, b);
         }
-    } else if (state == OUT_OF_SYNC) {
-        if (recv_byte() == COMMAND_SYNC) {
+    }
+    if (state == OUT_OF_SYNC) {
+        if (b == COMMAND_SYNC_START) {
             state = SYNC_START;
-            send_byte(COMMAND_SYNC);
+            send_byte(RESP_SYNC_START);
         }
     }
 }
@@ -127,6 +136,8 @@ int main(void) {
     defaultBuf.RY = STICK_CENTER;
     defaultBuf.HAT = HAT_CENTER;
     memcpy(&buffer, &defaultBuf, sizeof(USB_JoystickReport_Input_t));
+
+    memset(&usbInput, 0, sizeof(USB_Input_Packet_t));
 
     // We'll start by performing hardware and peripheral setup.
     SetupHardware();
@@ -237,7 +248,7 @@ void HID_Task(void) {
         Endpoint_ClearIN();
 
         if (state == NEW_PACKET) {
-            send_byte(0x90);
+            send_byte(RESP_USB_ACK);
             state = REPLAY_PACKET;
         }
     }

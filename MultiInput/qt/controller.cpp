@@ -10,23 +10,17 @@ Controller::Controller(QString const &newPortName, QObject *parent) :
     QObject(parent), ls(STICK_CENTER, STICK_CENTER), rs(STICK_CENTER, STICK_CENTER), dpad(DPAD_NONE), buttons(BUTTON_NONE), vendorspec(0x00) {
     portName = newPortName;
 
-    port = new SerialPortWriter(portName);
-    port->moveToThread(&writerThread);
+    port = new SerialPortWriter(portName, getData());
     connect(port, SIGNAL(error(QString)), this, SIGNAL(error(QString)));
     connect(port, SIGNAL(timeout(QString)), this, SIGNAL(warning(QString)));
     connect(port, SIGNAL(message(QString)), this, SIGNAL(message(QString)));
     connect(port, SIGNAL(writeComplete()), this, SIGNAL(stateChanged()));
-    connect(this, SIGNAL(operate(QByteArray)), port, SLOT(doWork(QByteArray)));
-    writerThread.start();
-    writerThread.setPriority(QThread::TimeCriticalPriority);
-    emit operate(getData());
+    port->start();
 
     emit message("Controller initialized");
 }
 Controller::~Controller() {
     delete port;
-    writerThread.quit();
-    writerThread.wait();
 }
 quint8 Controller::quantizeDouble(double const val) {
     double scaled = (val + 1.0) * 128.0;
@@ -37,7 +31,7 @@ quint8 Controller::quantizeDouble(double const val) {
 void Controller::sendUpdate() {
     if (isStateDifferent(lastState)) {
         lastState = getData();
-        port->changeData(getData());
+        port->changeData(lastState);
     }
 }
 void Controller::changeState(quint8 const newLx, quint8 const newLy, quint8 const newRx, quint8 const newRy, Dpad_t const newDpad, Button_t const newButtons, uint8_t const newVendorspec, bool update) {

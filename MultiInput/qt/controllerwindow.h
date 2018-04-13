@@ -3,8 +3,11 @@
 
 #include <QDialog>
 #include <QImage>
+#include <QPixmap>
+#include <QBitmap>
 #include <QRect>
 #include <QtGamepad/QGamepad>
+#include <QTimer>
 #include "controllerconstants.h"
 #include "controller.h"
 #include "twitchircbotwindow.h"
@@ -63,8 +66,17 @@ private:
     std::unique_ptr<QImage> zl;
     std::unique_ptr<QImage> zr;
 
+    QPixmap image_scaled;
+    QPixmap zl_scaled;
+    QPixmap zr_scaled;
+    QBitmap zl_mask;
+    QBitmap zr_mask;
+    double scaleFactor;
+
     std::unique_ptr<QGamepad> gamepad;
     TwitchIrcBotWindow *bot;
+
+    QTimer redrawTimer;
 };
 
 #endif // CONTROLLERWINDOW_H

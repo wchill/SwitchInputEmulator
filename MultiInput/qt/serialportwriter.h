@@ -2,16 +2,20 @@
 #define SERIALPORTWRITER_H
 
 #include <QObject>
+#include <QThread>
+#include <QMutex>
 #include <QByteArray>
 #include <QWaitCondition>
 #include <QSerialPort>
 
-class SerialPortWriter : public QObject
+class SerialPortWriter : public QThread
 {
     Q_OBJECT
 public:
-    explicit SerialPortWriter(const QString &portName, QObject *parent = nullptr);
+    explicit SerialPortWriter(const QString &portName, const QByteArray &data, QObject *parent = nullptr);
     ~SerialPortWriter();
+
+    void changeData(const QByteArray &newData);
 
 signals:
     void error(const QString &s);
@@ -19,17 +23,17 @@ signals:
     void message(const QString &s);
     void writeComplete();
 
-public slots:
-    void doWork(const QByteArray &newData);
-    void changeData(const QByteArray &newData);
-
 private:
+    void run() override;
     bool writeAndExpectResponse(QSerialPort *serial, uint8_t send, uint8_t expect);
 
     QString m_portName;
     QByteArray m_request;
     int m_waitTimeout = 0;
     bool m_quit = false;
+
+    QMutex m_mutex;
+    QWaitCondition m_cond;
 
     QByteArray data;
 

@@ -1,27 +1,35 @@
 #include "serialportwriter.h"
 
 #include <QTime>
+#include <QThread>
 #include <QSerialPort>
 #include <QMutexLocker>
 #include <QCoreApplication>
 #include <iostream>
+#include "controllerwindow.h"
 
 using std::cout;
 using std::cerr;
 using std::endl;
 
-SerialPortWriter::SerialPortWriter(const QString &portName, QObject *parent) : QObject(parent) {
+SerialPortWriter::SerialPortWriter(const QString &portName, const QByteArray &data, QObject *parent) : QThread(parent) {
     m_portName = portName;
-    m_waitTimeout = 33;
+    m_waitTimeout = 40;
+    this->data = data;
 }
 
 SerialPortWriter::~SerialPortWriter() {
+    m_mutex.lock();
     m_quit = true;
+    m_cond.wakeOne();
+    m_mutex.unlock();
     wait();
 }
 
 void SerialPortWriter::changeData(const QByteArray &newData) {
+    const QMutexLocker locker(&m_mutex);
     data = newData;
+    m_cond.wakeOne();
 }
 
 bool SerialPortWriter::writeAndExpectResponse(QSerialPort *serial, uint8_t send, uint8_t expect) {
@@ -38,9 +46,7 @@ bool SerialPortWriter::writeAndExpectResponse(QSerialPort *serial, uint8_t send,
     return true;
 }
 
-void SerialPortWriter::doWork(const QByteArray &newData) {
-    data = newData;
-
+void SerialPortWriter::run() {
     QSerialPort serial;
 
     if (m_portName.isEmpty()) {
@@ -60,8 +66,6 @@ void SerialPortWriter::doWork(const QByteArray &newData) {
     bool synced = false;
 
     while(!m_quit && !synced) {
-        QCoreApplication::processEvents();
-
         if(writeAndExpectResponse(&serial, sync_bytes[0], sync_resp[0]))
             emit message(tr("Handshake stage 1 complete"));
         else continue;
@@ -85,14 +89,15 @@ void SerialPortWriter::doWork(const QByteArray &newData) {
     emit message(tr("Synced successfully"));
 
     while (!m_quit) {
+        m_mutex.lock();
         serial.write(data);
-        if(!serial.waitForReadyRead(m_waitTimeout)) {
+        m_mutex.unlock();
+        if(!serial.waitForReadyRead(40)) {
             emit timeout(tr("Wait read response timeout %1").arg(QTime::currentTime().toString()));
         } else {
             serial.readAll();
             emit writeComplete();
         }
-        QCoreApplication::processEvents();
     }
 
     serial.close();

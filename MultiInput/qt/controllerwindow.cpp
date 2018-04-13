@@ -27,11 +27,10 @@ ControllerWindow::ControllerWindow(std::shared_ptr<Controller> controller, QWidg
     zl = std::unique_ptr<QImage>(new QImage(":/images/btn_ZL.png"));
     zr = std::unique_ptr<QImage>(new QImage(":/images/btn_ZR.png"));
 
-    connect(controller.get(), SIGNAL(stateChanged()), this, SLOT(invalidateUi()));
-
     auto gamepads = QGamepadManager::instance()->connectedGamepads();
     if (gamepads.isEmpty()) {
-        emit message("Could not find a connected gamepad.");
+        std::cout << "Can't find gamepad" << std::endl;
+        emit warning("Could not find a connected gamepad.");
     } else {
         gamepad = std::unique_ptr<QGamepad>(new QGamepad(*gamepads.begin(), this));
         connect(gamepad.get(), SIGNAL(axisLeftXChanged(double)), controller.get(), SLOT(onLeftStickXDouble(double)));
@@ -66,8 +65,24 @@ ControllerWindow::ControllerWindow(std::shared_ptr<Controller> controller, QWidg
         connect(gamepad.get(), SIGNAL(buttonGuideChanged(bool)), controller.get(), SLOT(onButtonHomeChange(bool)));
         // connect(gamepad.get(), SIGNAL(buttonCenterChanged(bool)), this, SLOT(onButtonCaptureChange(bool)));
 
+        std::cout << "Found gamepad" << std::endl;
         emit message(tr("Gamepad %1 initialized").arg(gamepad.get()->deviceId()));
     }
+
+    connect(controller.get(), SIGNAL(stateChanged()), this, SLOT(invalidateUi()));
+
+    QImage scaledImage = image->scaled(this->width(), this->height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    scaleFactor = scaledImage.width() / (double) image->width();
+    QImage zlScaled = zl->scaled(zl->width() * scaleFactor, zl->height() * scaleFactor, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    QImage zrScaled = zr->scaled(zr->width() * scaleFactor, zr->height() * scaleFactor, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    image_scaled.convertFromImage(scaledImage);
+    zl_scaled.convertFromImage(zlScaled);
+    zr_scaled.convertFromImage(zrScaled);
+    zl_mask = zl_scaled.createMaskFromColor(QColor(85, 85, 85), Qt::MaskOutColor);
+    zr_mask = zr_scaled.createMaskFromColor(QColor(85, 85, 85), Qt::MaskOutColor);
+
+    connect(&redrawTimer, SIGNAL(timeout()), this, SLOT(invalidateUi()));
+    redrawTimer.start(16);
 }
 
 ControllerWindow::~ControllerWindow() {
@@ -122,7 +137,7 @@ void ControllerWindow::drawFilledRect(QPainter &painter, const QRectF &rect) {
     path.addRoundedRect(rect, 10, 10);
     QPen pen(Qt::white, 5);
     painter.setPen(pen);
-    painter.fillPath(path, Qt::red);
+    painter.fillPath(path, Qt::blue);
     painter.drawPath(path);
 
     painter.setPen(oldPen);
@@ -135,7 +150,7 @@ void ControllerWindow::drawFilledEllipse(QPainter &painter, const QPointF &cente
     path.addEllipse(center, rx, ry);
     QPen pen(Qt::white, 5);
     painter.setPen(pen);
-    painter.fillPath(path, Qt::red);
+    painter.fillPath(path, Qt::blue);
     painter.drawPath(path);
 
     painter.setPen(oldPen);
@@ -152,7 +167,7 @@ void ControllerWindow::drawFilledPath(QPainter &painter, const std::vector<QPoin
     }
     QPen pen(Qt::white, 5);
     painter.setPen(pen);
-    painter.fillPath(path, Qt::red);
+    painter.fillPath(path, Qt::blue);
     painter.drawPath(path);
 
     painter.setPen(oldPen);
@@ -273,10 +288,6 @@ void ControllerWindow::renderRightStick(QPainter &painter, const quint8 rx, cons
 }
 
 void ControllerWindow::paintEvent(QPaintEvent *) {
-    QImage scaledImage = image->scaled(this->width(), this->height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    double scaleFactor = scaledImage.width() / (double) image->width();
-    QImage zlScaled = zl->scaled(zl->width() * scaleFactor, zl->height() * scaleFactor, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    QImage zrScaled = zr->scaled(zr->width() * scaleFactor, zr->height() * scaleFactor, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
     QPainter painter;
     painter.begin(this);
@@ -285,11 +296,13 @@ void ControllerWindow::paintEvent(QPaintEvent *) {
     hints.setFlag(QPainter::TextAntialiasing);
     hints.setFlag(QPainter::SmoothPixmapTransform);
     painter.setRenderHints(hints);
-    painter.drawImage((this->width() - scaledImage.width()) / 2.0, (this->height() - scaledImage.height()) / 2.0, scaledImage, 0, 0, -1, -1, Qt::NoOpaqueDetection);
-    painter.drawImage((this->width() / 2.0) - (2 * zlScaled.width()), 0.5 * this->height() + 0.25 * scaledImage.height(), zlScaled, 0, 0, -1, -1, Qt::NoOpaqueDetection);
-    painter.drawImage((this->width() / 2.0) + zrScaled.width(), 0.5 * this->height() + 0.25 * scaledImage.height(), zrScaled, 0, 0, -1, -1, Qt::NoOpaqueDetection);
-    double translateX = ((this->width() - scaledImage.width()) / 2.0);
-    double translateY = ((this->height() - scaledImage.height()) / 2.0);
+    painter.fillRect(0, 0, this->width(), this->height(), Qt::green);
+    painter.drawPixmap((this->width() - image_scaled.width()) / 2.0, (this->height() - image_scaled.height()) / 2.0, image_scaled);
+    painter.setPen(Qt::white);
+    painter.drawPixmap((this->width() / 2.0) - (2 * zl_scaled.width()), 0.5 * this->height() + 0.25 * image_scaled.height(), zl_mask);
+    painter.drawPixmap((this->width() / 2.0) + zr_scaled.width(), 0.5 * this->height() + 0.25 * image_scaled.height(), zr_mask);
+    double translateX = ((this->width() - image_scaled.width()) / 2.0);
+    double translateY = ((this->height() - image_scaled.height()) / 2.0);
     painter.translate(translateX, translateY);
     painter.scale(scaleFactor, scaleFactor);
     painter.setPen(Qt::NoPen);
@@ -311,15 +324,18 @@ void ControllerWindow::paintEvent(QPaintEvent *) {
 }
 
 QSize ControllerWindow::minimumSizeHint() const {
-    return QSize(888, 620);
+    return QSize(886, 616);
+    //return QSize(888, 620);
 }
 
 QSize ControllerWindow::sizeHint() const {
-    return QSize(888, 620);
+    return QSize(886, 616);
+    //return QSize(888, 620);
 }
 
 QSize ControllerWindow::maximumSizeHint() const {
-    return QSize(1774, 1238);
+    return QSize(1772, 1232);
+    //return QSize(1774, 1238);
 }
 
 void ControllerWindow::closeEvent(QCloseEvent *event) {
