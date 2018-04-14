@@ -33,17 +33,16 @@ void SerialPortWriter::changeData(const QByteArray &newData) {
 }
 
 bool SerialPortWriter::writeAndExpectResponse(QSerialPort *serial, uint8_t send, uint8_t expect) {
-    uint8_t readBuf[128];
-    serial->clear();
+    uint8_t readBuf;
+    std::cout << "Writing and expecting: " << std::hex << static_cast<int>(send) << " " << std::hex << static_cast<int>(expect) << std::endl;
     serial->write((const char*) &send, 1);
     if (!serial->waitForReadyRead(100)) {
+        std::cout << "Timed out" << std::endl;
         return false;
     }
-    int numRead = serial->read((char*) readBuf, 128);
-    if (!(numRead > 0 && readBuf[numRead - 1] == expect)) {
-        return false;
-    }
-    return true;
+    int numRead = serial->read((char*) &readBuf, 1);
+    std::cout << "Got back " << std::hex << static_cast<int>(readBuf) << std::endl;
+    return (numRead > 0 && readBuf == expect);
 }
 
 void SerialPortWriter::run() {
@@ -66,6 +65,7 @@ void SerialPortWriter::run() {
     bool synced = false;
 
     while(!m_quit && !synced) {
+        serial.clear();
         if(writeAndExpectResponse(&serial, sync_bytes[0], sync_resp[0]))
             emit message(tr("Handshake stage 1 complete"));
         else continue;
@@ -88,16 +88,39 @@ void SerialPortWriter::run() {
     }
     emit message(tr("Synced successfully"));
 
+    QByteArray lastSent;
+    m_mutex.lock();
+    QByteArray pending = data;
+    m_mutex.unlock();
+
     while (!m_quit) {
-        m_mutex.lock();
-        serial.write(data);
-        m_mutex.unlock();
-        if(!serial.waitForReadyRead(40)) {
-            emit timeout(tr("Wait read response timeout %1").arg(QTime::currentTime().toString()));
-        } else {
-            serial.readAll();
-            emit writeComplete();
+        if (lastSent != pending) {
+            std::cout << "Writing: " << QString(pending.toHex()).toStdString() << std::endl;
+
+            serial.write(pending);
+            lastSent = pending;
+
+            if(!serial.waitForReadyRead(40)) {
+                emit timeout(tr("Wait read response timeout %1").arg(QTime::currentTime().toString()));
+            } else {
+                QByteArray result = serial.read(1);
+                if (result.length() > 0) {
+                    quint8 val = (quint8) result.at(0);
+                    if (val == 0x92)
+                        emit timeout(tr("Got a NACK %1").arg(QTime::currentTime().toString()));
+                    else if (val != 0x90)
+                        emit timeout(tr("Got unexpected value %1 %2").arg(val).arg(QTime::currentTime().toString()));
+                    else
+                        emit writeComplete();
+                } else {
+                    emit timeout(tr("Read returned no data %1").arg(QTime::currentTime().toString()));
+                }
+            }
         }
+        m_mutex.lock();
+        m_cond.wait(&m_mutex);
+        pending = data;
+        m_mutex.unlock();
     }
 
     serial.close();

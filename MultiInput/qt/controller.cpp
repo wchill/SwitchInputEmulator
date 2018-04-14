@@ -68,36 +68,28 @@ Controller *Controller::releaseDpad(bool update) {
     return this;
 }
 Controller *Controller::moveLeftStick(quint8 const newLx, quint8 const newLy, bool update) {
-    ls.first = newLx;
-    ls.second = newLy;
+    ls.first = checkDeadZone(newLx);
+    ls.second = checkDeadZone(newLy);
     if (update) sendUpdate();
     return this;
 }
 Controller *Controller::moveRightStick(quint8 const newRx, quint8 const newRy, bool update) {
-    rs.first = newRx;
-    rs.second = newRy;
+    rs.first = checkDeadZone(newRx);
+    rs.second = checkDeadZone(newRy);
     if (update) sendUpdate();
     return this;
 }
 Controller *Controller::moveLeftStickX(quint8 const newLx, bool update) {
-    ls.first = newLx;
-    if (update) sendUpdate();
-    return this;
+    return moveLeftStick(newLx, ls.second, update);
 }
 Controller *Controller::moveLeftStickY(quint8 const newLy, bool update) {
-    ls.second = newLy;
-    if (update) sendUpdate();
-    return this;
+    return moveLeftStick(ls.first, newLy, update);
 }
 Controller *Controller::moveRightStickX(quint8 const newRx, bool update) {
-    rs.first = newRx;
-    if (update) sendUpdate();
-    return this;
+    return moveRightStick(newRx, rs.second, update);
 }
 Controller *Controller::moveRightStickY(quint8 const newRy, bool update) {
-    rs.second = newRy;
-    if (update) sendUpdate();
-    return this;
+    return moveRightStick(rs.first, newRy, update);
 }
 Controller *Controller::pushButtons(Button_t const pushed, unsigned long const waitMsecs) {
     pressButtons(pushed, true);
@@ -234,7 +226,7 @@ void Controller::getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, quint8 *o
     if (outVendorspec != nullptr) *outVendorspec = vendorspec;
 }
 QByteArray Controller::getData() {
-    quint8 buf[8];
+    quint8 buf[9];
     qToBigEndian(buttons, &buf[0]);
     buf[2] = dpad;
     buf[3] = ls.first;
@@ -243,7 +235,30 @@ QByteArray Controller::getData() {
     buf[6] = rs.second;
     buf[7] = vendorspec;
 
-    return QByteArray((char*) buf, 8);
+    quint8 crc = 0;
+    for(int i = 0; i < 8; i++) {
+        crc = calculateCrc8Ccitt(crc, buf[i]);
+    }
+    buf[8] = crc;
+
+    return QByteArray((char*) buf, 9);
+}
+quint8 Controller::calculateCrc8Ccitt(quint8 inCrc, quint8 inData) {
+    quint8 data = inCrc ^ inData;
+
+    for (int i = 0; i < 8; i++ )
+    {
+        if (( data & 0x80 ) != 0 )
+        {
+            data <<= 1;
+            data ^= 0x07;
+        }
+        else
+        {
+            data <<= 1;
+        }
+    }
+    return data;
 }
 bool Controller::isStateDifferent(QByteArray const oldState) {
     QByteArray currentState = getData();

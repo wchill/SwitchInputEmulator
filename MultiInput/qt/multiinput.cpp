@@ -14,27 +14,33 @@ MultiInput::MultiInput(QWidget *parent) :
     for (const auto &portInfo : availableSerialPorts) {
         ui->serialPortSelect->addItem(portInfo.portName());
     }
+    ui->serialPortSelect->addItem("Emulator");
 
     if (this->availableSerialPorts.length() > 0) {
-        currentPort = availableSerialPorts.at(0);
-        ui->serialPortDescription->setText("Description: " + currentPort.description() + "\n" +
-                                           "Manufacturer: " + currentPort.manufacturer());
+        const auto &info = availableSerialPorts.at(0);
+        currentPort = info.portName();
+        ui->serialPortDescription->setText("Description: " + info.description() + "\n" +
+                                           "Manufacturer: " + info.manufacturer());
     }
 }
 
 void MultiInput::serialPortIndexChanged(int index) {
-    const auto &info = this->availableSerialPorts.at(index);
-    currentPort = info;
-    ui->serialPortDescription->setText("Description: " + info.description() + "\n" +
-                                       "Manufacturer: " + info.manufacturer());
+    if (index >= this->availableSerialPorts.length()) {
+        currentPort = "/dev/faketty0";
+        ui->serialPortDescription->setText("Use socat emulated serial port on /dev/faketty0");
+    } else {
+        const auto &info = this->availableSerialPorts.at(index);
+        currentPort = info.portName();
+        ui->serialPortDescription->setText("Description: " + info.description() + "\n" +
+                                           "Manufacturer: " + info.manufacturer());
+    }
 }
 
 MultiInput::~MultiInput()
 {
-    controllerThread.quit();
-    controllerThread.wait();
+    //controllerThread.quit();
+    //controllerThread.wait();
     delete controllerWindow;
-    delete botWindow;
     delete ui;
 }
 
@@ -43,14 +49,16 @@ void MultiInput::onStartButtonClicked()
     ui->startButton->setEnabled(false);
     ui->serialPortSelect->setEnabled(false);
 
-    controller = std::make_shared<Controller>(currentPort.portName());
+    /*
+    controller = std::make_shared<Controller>(currentPort);
     controller.get()->moveToThread(&controllerThread);
     connect(controller.get(), SIGNAL(error(QString)), this, SLOT(logError(QString)));
     connect(controller.get(), SIGNAL(warning(QString)), this, SLOT(logWarning(QString)));
     connect(controller.get(), SIGNAL(message(QString)), this, SLOT(logMessage(QString)));
     controllerThread.start();
+    */
 
-    controllerWindow = new ControllerWindow(controller, this);
+    controllerWindow = new ControllerWindow(currentPort, this);
     connect(controllerWindow, SIGNAL(controllerWindowClosing()), this, SLOT(onControllerWindowClosed()));
     connect(controllerWindow, SIGNAL(message(QString)), this, SLOT(logMessage(QString)));
     connect(controllerWindow, SIGNAL(warning(QString)), this, SLOT(logWarning(QString)));

@@ -14,10 +14,9 @@
 using std::cout;
 using std::endl;
 
-ControllerWindow::ControllerWindow(std::shared_ptr<Controller> controller, QWidget *parent) :
+ControllerWindow::ControllerWindow(QString &portName, QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::ControllerWindow),
-    controller(controller)
+    ui(new Ui::ControllerWindow)
 {
     ui->setupUi(this);
 
@@ -33,43 +32,34 @@ ControllerWindow::ControllerWindow(std::shared_ptr<Controller> controller, QWidg
         emit warning("Could not find a connected gamepad.");
     } else {
         gamepad = std::unique_ptr<QGamepad>(new QGamepad(*gamepads.begin(), this));
-        connect(gamepad.get(), SIGNAL(axisLeftXChanged(double)), controller.get(), SLOT(onLeftStickXDouble(double)));
-        connect(gamepad.get(), SIGNAL(axisLeftYChanged(double)), controller.get(), SLOT(onLeftStickYDouble(double)));
-        connect(gamepad.get(), SIGNAL(axisRightXChanged(double)), controller.get(), SLOT(onRightStickXDouble(double)));
-        connect(gamepad.get(), SIGNAL(axisRightYChanged(double)), controller.get(), SLOT(onRightStickYDouble(double)));
 
-        // Need to translate analog to clicks
-        connect(gamepad.get(), SIGNAL(buttonL2Changed(double)), this, SLOT(onButtonZLChange(double)));
-        connect(gamepad.get(), SIGNAL(buttonR2Changed(double)), this, SLOT(onButtonZRChange(double)));
-
-        // A and B are swapped on Nintendo controllers
-        connect(gamepad.get(), SIGNAL(buttonAChanged(bool)), controller.get(), SLOT(onButtonBChange(bool)));
-        connect(gamepad.get(), SIGNAL(buttonBChanged(bool)), controller.get(), SLOT(onButtonAChange(bool)));
-        connect(gamepad.get(), SIGNAL(buttonXChanged(bool)), controller.get(), SLOT(onButtonXChange(bool)));
-        connect(gamepad.get(), SIGNAL(buttonYChanged(bool)), controller.get(), SLOT(onButtonYChange(bool)));
-
-        // Handle hat presses with special code
-        connect(gamepad.get(), SIGNAL(buttonLeftChanged(bool)), this, SLOT(onHatChange(bool)));
-        connect(gamepad.get(), SIGNAL(buttonRightChanged(bool)), this, SLOT(onHatChange(bool)));
-        connect(gamepad.get(), SIGNAL(buttonUpChanged(bool)), this, SLOT(onHatChange(bool)));
-        connect(gamepad.get(), SIGNAL(buttonDownChanged(bool)), this, SLOT(onHatChange(bool)));
-
-        connect(gamepad.get(), SIGNAL(buttonL1Changed(bool)), controller.get(), SLOT(onButtonLChange(bool)));
-        connect(gamepad.get(), SIGNAL(buttonR1Changed(bool)), controller.get(), SLOT(onButtonRChange(bool)));
-
-        connect(gamepad.get(), SIGNAL(buttonL3Changed(bool)), controller.get(), SLOT(onButtonL3Change(bool)));
-        connect(gamepad.get(), SIGNAL(buttonR3Changed(bool)), controller.get(), SLOT(onButtonR3Change(bool)));
-
-        connect(gamepad.get(), SIGNAL(buttonSelectChanged(bool)), controller.get(), SLOT(onButtonMinusChange(bool)));
-        connect(gamepad.get(), SIGNAL(buttonStartChanged(bool)), controller.get(), SLOT(onButtonPlusChange(bool)));
-        connect(gamepad.get(), SIGNAL(buttonGuideChanged(bool)), controller.get(), SLOT(onButtonHomeChange(bool)));
-        // connect(gamepad.get(), SIGNAL(buttonCenterChanged(bool)), this, SLOT(onButtonCaptureChange(bool)));
+        connect(gamepad.get(), SIGNAL(axisLeftXChanged(double)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(axisLeftYChanged(double)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(axisRightXChanged(double)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(axisRightYChanged(double)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonL2Changed(double)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonR2Changed(double)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonL1Changed(bool)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonR1Changed(bool)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonL3Changed(bool)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonR3Changed(bool)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonAChanged(bool)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonBChanged(bool)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonXChanged(bool)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonYChanged(bool)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonUpChanged(bool)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonDownChanged(bool)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonLeftChanged(bool)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonRightChanged(bool)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonSelectChanged(bool)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonStartChanged(bool)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonGuideChanged(bool)), this, SLOT(onControllerChange()));
 
         std::cout << "Found gamepad" << std::endl;
         emit message(tr("Gamepad %1 initialized").arg(gamepad.get()->deviceId()));
     }
 
-    connect(controller.get(), SIGNAL(stateChanged()), this, SLOT(invalidateUi()));
+    //connect(controller.get(), SIGNAL(stateChanged()), this, SLOT(invalidateUi()));
 
     QImage scaledImage = image->scaled(this->width(), this->height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
     scaleFactor = scaledImage.width() / (double) image->width();
@@ -81,31 +71,67 @@ ControllerWindow::ControllerWindow(std::shared_ptr<Controller> controller, QWidg
     zl_mask = zl_scaled.createMaskFromColor(QColor(85, 85, 85), Qt::MaskOutColor);
     zr_mask = zr_scaled.createMaskFromColor(QColor(85, 85, 85), Qt::MaskOutColor);
 
+    writer = new SerialPortWriter(portName, getData());
+    connect(writer, SIGNAL(error(QString)), this, SIGNAL(error(QString)));
+    connect(writer, SIGNAL(timeout(QString)), this, SIGNAL(warning(QString)));
+    connect(writer, SIGNAL(message(QString)), this, SIGNAL(message(QString)));
+    //connect(writer, SIGNAL(writeComplete()), this, SIGNAL(stateChanged()));
+    writer->start();
+
     connect(&redrawTimer, SIGNAL(timeout()), this, SLOT(invalidateUi()));
     redrawTimer.start(16);
 }
 
 ControllerWindow::~ControllerWindow() {
+    delete writer;
     delete ui;
 }
 
-void ControllerWindow::onButtonZLChange(double const value) {
-    emit changeButtonZL(value > 0.6);
+quint8 ControllerWindow::quantizeDouble(double const val) {
+    double scaled = (val + 1.0) * 128.0;
+    if (scaled < 0) scaled = 0;
+    else if (scaled > 255) scaled = 255;
+    return (quint8) scaled;
 }
 
-void ControllerWindow::onButtonZRChange(double const value) {
-    emit changeButtonZR(value > 0.6);
+quint8 ControllerWindow::calculateCrc8Ccitt(quint8 inCrc, quint8 inData) {
+    quint8 data = inCrc ^ inData;
+
+    for (int i = 0; i < 8; i++ )
+    {
+        if (( data & 0x80 ) != 0 )
+        {
+            data <<= 1;
+            data ^= 0x07;
+        }
+        else
+        {
+            data <<= 1;
+        }
+    }
+    return data;
+}
+void ControllerWindow::onControllerChange() {
+    writer->changeData(getData());
 }
 
-void ControllerWindow::onHatChange(bool const pressed) {
-    Q_UNUSED(pressed);
+void ControllerWindow::getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, quint8 *outRy, Dpad_t *outDpad, Button_t *outButtons, uint8_t *outVendorspec) {
+    quint8 lx = STICK_CENTER;
+    quint8 ly = STICK_CENTER;
+    quint8 rx = STICK_CENTER;
+    quint8 ry = STICK_CENTER;
+    Dpad_t press = DPAD_NONE;
+    Button_t button = BUTTON_NONE;
 
-    bool up = gamepad.get()->buttonUp();
-    bool right = gamepad.get()->buttonRight();
-    bool down = gamepad.get()->buttonDown();
-    bool left = gamepad.get()->buttonLeft();
+    lx = quantizeDouble(gamepad->axisLeftX());
+    ly = quantizeDouble(gamepad->axisLeftY());
+    rx = quantizeDouble(gamepad->axisRightX());
+    ry = quantizeDouble(gamepad->axisRightY());
 
-    Dpad_t press;
+    bool up = gamepad->buttonUp();
+    bool right = gamepad->buttonRight();
+    bool down = gamepad->buttonDown();
+    bool left = gamepad->buttonLeft();
 
     if (up) {
         if (right) press = DPAD_UP_RIGHT;
@@ -123,7 +149,56 @@ void ControllerWindow::onHatChange(bool const pressed) {
         press = DPAD_NONE;
     }
 
-    emit changeHat(press);
+    if (gamepad->buttonA()) button |= BUTTON_B;
+    if (gamepad->buttonB()) button |= BUTTON_A;
+    if (gamepad->buttonX()) button |= BUTTON_X;
+    if (gamepad->buttonY()) button |= BUTTON_Y;
+    if (gamepad->buttonL1()) button |= BUTTON_L;
+    if (gamepad->buttonL2() > 0.6) button |= BUTTON_ZL;
+    if (gamepad->buttonL3()) button |= BUTTON_LCLICK;
+    if (gamepad->buttonR1()) button |= BUTTON_R;
+    if (gamepad->buttonR2() > 0.6) button |= BUTTON_ZR;
+    if (gamepad->buttonR3()) button |= BUTTON_RCLICK;
+    if (gamepad->buttonSelect()) button |= BUTTON_MINUS;
+    if (gamepad->buttonStart()) button |= BUTTON_PLUS;
+    if (gamepad->buttonGuide()) button |= BUTTON_HOME;
+
+    *outLx = lx;
+    *outLy = ly;
+    *outRx = rx;
+    *outRy = ry;
+    *outDpad = press;
+    *outButtons = button;
+    *outVendorspec = 0;
+}
+
+QByteArray ControllerWindow::getData() {
+    quint8 lx;
+    quint8 ly;
+    quint8 rx;
+    quint8 ry;
+    Dpad_t press;
+    Button_t button;
+    quint8 vendorSpec;
+
+    getState(&lx, &ly, &rx, &ry, &press, &button, &vendorSpec);
+
+    quint8 buf[9];
+    qToBigEndian(button, &buf[0]);
+    buf[2] = press;
+    buf[3] = lx;
+    buf[4] = ly;
+    buf[5] = rx;
+    buf[6] = ry;
+    buf[7] = 0;
+
+    quint8 crc = 0;
+    for(int i = 0; i < 8; i++) {
+        crc = calculateCrc8Ccitt(crc, buf[i]);
+    }
+    buf[8] = crc;
+
+    return QByteArray((char*) buf, 9);
 }
 
 void ControllerWindow::invalidateUi() {
@@ -313,7 +388,9 @@ void ControllerWindow::paintEvent(QPaintEvent *) {
     quint8 ry;
     Dpad_t dpad;
     Button_t button;
-    controller.get()->getState(&lx, &ly, &rx, &ry, &dpad, &button, nullptr);
+    quint8 vendorSpec;
+    getState(&lx, &ly, &rx, &ry, &dpad, &button, &vendorSpec);
+    //controller.get()->getState(&lx, &ly, &rx, &ry, &dpad, &button, nullptr);
 
     renderDpad(painter, dpad);
     renderButtons(painter, button);

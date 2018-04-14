@@ -37,8 +37,8 @@ private:
 
     QByteArray data;
 
-    const uint8_t sync_bytes[3] = {0xFF, 0x33, 0xCC};
-    const uint8_t sync_resp[3] = {0xFF, 0xCC, 0x33};
+    const quint8 sync_bytes[3] = {0xFF, 0x33, 0xCC};
+    const quint8 sync_resp[3] = {0xFF, 0xCC, 0x33};
 };
 
 #endif // SERIALPORTWRITER_H

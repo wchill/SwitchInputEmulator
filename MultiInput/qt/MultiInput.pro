@@ -17,19 +17,13 @@ SOURCES += main.cpp\
         multiinput.cpp \
     serialportwriter.cpp \
     controllerwindow.cpp \
-    controller.cpp \
-    ircresponse.cpp \
-    twitchircbotwindow.cpp \
-    twitchircbot.cpp
+    controller.cpp
 
 HEADERS  += multiinput.h \
     serialportwriter.h \
     controllerwindow.h \
     controller.h \
-    controllerconstants.h \
-    ircresponse.h \
-    twitchircbotwindow.h \
-    twitchircbot.h
+    controllerconstants.h
 
 FORMS    += multiinput.ui \
     controllerwindow.ui \

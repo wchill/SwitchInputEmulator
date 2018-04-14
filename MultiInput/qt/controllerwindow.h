@@ -10,7 +10,6 @@
 #include <QTimer>
 #include "controllerconstants.h"
 #include "controller.h"
-#include "twitchircbotwindow.h"
 
 using std::vector;
 
@@ -23,7 +22,7 @@ class ControllerWindow : public QDialog
     Q_OBJECT
 
 public:
-    explicit ControllerWindow(std::shared_ptr<Controller> controller, QWidget *parent = nullptr);
+    explicit ControllerWindow(QString &portName, QWidget *parent = nullptr);
     ~ControllerWindow();
     virtual QSize minimumSizeHint() const;
     virtual QSize maximumSizeHint() const;
@@ -35,10 +34,6 @@ signals:
     void warning(const QString &warning);
     void message(const QString &message);
 
-    void changeHat(const Dpad_t pressed);
-    void changeButtonZL(const bool pressed);
-    void changeButtonZR(const bool pressed);
-
 protected:
     virtual void paintEvent(QPaintEvent *event);
     virtual void closeEvent(QCloseEvent *event);
@@ -46,11 +41,14 @@ protected:
 private slots:
     void invalidateUi();
 
-    void onHatChange(bool const pressed);
-    void onButtonZLChange(double const value);
-    void onButtonZRChange(double const value);
+    void onControllerChange();
 
 private:
+    quint8 quantizeDouble(double const val);
+    quint8 calculateCrc8Ccitt(quint8 inCrc, quint8 inData);
+    QByteArray getData();
+    void getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, quint8 *outRy, Dpad_t *outDpad, Button_t *outButtons, uint8_t *outVendorspec);
+
     void drawFilledRect(QPainter &painter, const QRectF &rect);
     void drawFilledEllipse(QPainter &painter, const QPointF &center, const qreal rx, const qreal ry);
     void drawFilledPath(QPainter &painter, const std::vector<QPointF> &points);
@@ -61,7 +59,7 @@ private:
     void renderRightStick(QPainter &painter, const quint8 rx, const quint8 ry);
 
     Ui::ControllerWindow *ui;
-    std::shared_ptr<Controller> controller;
+    SerialPortWriter *writer;
     std::unique_ptr<QImage> image;
     std::unique_ptr<QImage> zl;
     std::unique_ptr<QImage> zr;
@@ -74,7 +72,6 @@ private:
     double scaleFactor;
 
     std::unique_ptr<QGamepad> gamepad;
-    TwitchIrcBotWindow *bot;
 
     QTimer redrawTimer;
 };

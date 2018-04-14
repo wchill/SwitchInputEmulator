@@ -34,7 +34,7 @@ typedef enum {
 } State_t;
 
 typedef struct {
-    USB_JoystickReport_Input_t input;
+    uint8_t input[8];
     uint8_t crc8_ccitt;
     uint8_t received_bytes;
 } USB_Input_Packet_t;
@@ -94,25 +94,38 @@ ISR(USART1_RX_vect) {
         }
         else state = OUT_OF_SYNC;
     } else if (state == NEW_PACKET || state == REPLAY_PACKET) {
-        if (usbInput.received_bytes == sizeof(USB_JoystickReport_Input_t)) {
+
+        if (usbInput.received_bytes < 8) {
+            // Still filling up the buffer
+            usbInput.input[usbInput.received_bytes++] = b;
+            usbInput.crc8_ccitt = _crc8_ccitt_update(usbInput.crc8_ccitt, b);
+
+        } else {
             if (usbInput.crc8_ccitt != b) {
-                if (usbInput.input.VendorSpec == COMMAND_SYNC_START && usbInput.crc8_ccitt == COMMAND_SYNC_START) {
+                if (b == COMMAND_SYNC_START) {
+                    // Start sync
                     state = SYNC_START;
                     memcpy(&buffer, &defaultBuf, sizeof(USB_JoystickReport_Input_t));
                     send_byte(RESP_SYNC_START);
                 } else {
+                    // Mismatched CRC
                     send_byte(RESP_UPDATE_NACK);
                 }
+                
             } else {
-                memcpy(&buffer, &usbInput.input, sizeof(USB_JoystickReport_Input_t));
+                // Everything is ok
+                buffer.Button = (usbInput.input[0] << 8) | usbInput.input[1];
+                buffer.HAT = usbInput.input[2];
+                buffer.LX = usbInput.input[3];
+                buffer.LY = usbInput.input[4];
+                buffer.RX = usbInput.input[5];
+                buffer.RY = usbInput.input[6];
+                buffer.VendorSpec = usbInput.input[7];
                 state = NEW_PACKET;
-                send_byte(RESP_UPDATE_ACK);
+                // send_byte(RESP_UPDATE_ACK);
             }
             usbInput.received_bytes = 0;
             usbInput.crc8_ccitt = 0;
-        } else {
-            ((uint8_t*)&usbInput.input)[usbInput.received_bytes++] = b;
-            usbInput.crc8_ccitt = _crc8_ccitt_update(usbInput.crc8_ccitt, b);
         }
     }
     if (state == OUT_OF_SYNC) {

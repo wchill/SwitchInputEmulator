@@ -63,6 +63,7 @@ private slots:
     void sendUpdate();
 private:
     quint8 quantizeDouble(double const val);
+    quint8 calculateCrc8Ccitt(quint8 inCrc, quint8 inData);
 
     Controller *reset(bool update=true);
     Controller *pressButtons(Button_t const pressed, bool update=true);
@@ -81,6 +82,11 @@ private:
     Controller *pushButtons(Button_t const pushed);
     Controller *pushDpad(Dpad_t const pushed);
     Controller *wait(unsigned long const waitMsecs = WAIT_TIME);
+
+    quint8 checkDeadZone(quint8 const stickVal) {
+        if (stickVal < STICK_CENTER + STICK_DEADZONE && stickVal > STICK_CENTER - STICK_DEADZONE) return STICK_CENTER;
+        return stickVal;
+    }
 
     QPair<quint8, quint8> ls;
     QPair<quint8, quint8> rs;

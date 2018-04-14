@@ -9,7 +9,6 @@
 #include "serialportwriter.h"
 #include "controllerwindow.h"
 #include "controller.h"
-#include "twitchircbotwindow.h"
 
 namespace Ui {
 class MultiInput;
@@ -38,10 +37,9 @@ private:
     Ui::MultiInput *ui;
 
     QList<QSerialPortInfo> availableSerialPorts;
-    QSerialPortInfo currentPort;
+    QString currentPort;
 
     ControllerWindow *controllerWindow = nullptr;
-    TwitchIrcBotWindow *botWindow = nullptr;
     std::shared_ptr<Controller> controller;
     QThread controllerThread;
 };
