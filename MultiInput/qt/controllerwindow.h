@@ -42,10 +42,15 @@ private slots:
     void invalidateUi();
 
     void onControllerChange();
+    void onUSBPacketSent();
 
 private:
     quint8 quantizeDouble(double const val);
     quint8 calculateCrc8Ccitt(quint8 inCrc, quint8 inData);
+    quint8 checkDeadZone(quint8 const stickVal) {
+        if (stickVal < STICK_CENTER + STICK_DEADZONE && stickVal > STICK_CENTER - STICK_DEADZONE) return STICK_CENTER;
+        return stickVal;
+    }
     QByteArray getData();
     void getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, quint8 *outRy, Dpad_t *outDpad, Button_t *outButtons, uint8_t *outVendorspec);
 
@@ -72,6 +77,7 @@ private:
     double scaleFactor;
 
     std::unique_ptr<QGamepad> gamepad;
+    QByteArray lastState;
 
     QTimer redrawTimer;
 };

@@ -25,7 +25,7 @@
 #define STICK_CENTER    128
 #define STICK_MAX       255
 
-#define STICK_DEADZONE  5
+#define STICK_DEADZONE  2
 
 #define BUTTON_NONE_NAME    "None"
 #define BUTTON_Y_NAME       "Y"

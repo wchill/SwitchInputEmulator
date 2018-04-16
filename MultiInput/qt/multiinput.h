@@ -3,16 +3,18 @@
 
 #include <QWidget>
 #include <QtGui>
+#include <QLabel>
+#include <QTextEdit>
+#include <QComboBox>
+#include <QPushButton>
+#include <QGridLayout>
+#include <QGroupBox>
 #include <QSerialPort>
 #include <QSerialPortInfo>
 #include <QThread>
 #include "serialportwriter.h"
 #include "controllerwindow.h"
 #include "controller.h"
-
-namespace Ui {
-class MultiInput;
-}
 
 class MultiInput : public QWidget
 {
@@ -34,7 +36,22 @@ private slots:
 private:
     void enumerateSerialPorts();
 
-    Ui::MultiInput *ui;
+    void setupUi();
+    void createInputGroupBox();
+    void createSerialPortGroupBox();
+
+    QLabel *inputDescription;
+    QComboBox *inputSelect;
+    QPushButton *refreshInputsButton;
+    QGroupBox *inputGroupBox;
+
+    QLabel *serialPortDescription;
+    QComboBox *serialPortSelect;
+    QPushButton *refreshSerialPortsButton;
+    QGroupBox *serialPortGroupBox;
+
+    QTextEdit *eventLog;
+    QPushButton *startButton;
 
     QList<QSerialPortInfo> availableSerialPorts;
     QString currentPort;

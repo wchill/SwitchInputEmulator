@@ -26,8 +26,7 @@ HEADERS  += multiinput.h \
     controllerconstants.h
 
 FORMS    += multiinput.ui \
-    controllerwindow.ui \
-    twitchircbotwindow.ui
+    controllerwindow.ui
 
 RESOURCES += \
     resources.qrc

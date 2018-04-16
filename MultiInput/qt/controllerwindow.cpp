@@ -54,12 +54,11 @@ ControllerWindow::ControllerWindow(QString &portName, QWidget *parent) :
         connect(gamepad.get(), SIGNAL(buttonSelectChanged(bool)), this, SLOT(onControllerChange()));
         connect(gamepad.get(), SIGNAL(buttonStartChanged(bool)), this, SLOT(onControllerChange()));
         connect(gamepad.get(), SIGNAL(buttonGuideChanged(bool)), this, SLOT(onControllerChange()));
+        connect(gamepad.get(), SIGNAL(buttonCenterChanged(bool)), this, SLOT(onControllerChange()));
 
         std::cout << "Found gamepad" << std::endl;
         emit message(tr("Gamepad %1 initialized").arg(gamepad.get()->deviceId()));
     }
-
-    //connect(controller.get(), SIGNAL(stateChanged()), this, SLOT(invalidateUi()));
 
     QImage scaledImage = image->scaled(this->width(), this->height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
     scaleFactor = scaledImage.width() / (double) image->width();
@@ -75,7 +74,7 @@ ControllerWindow::ControllerWindow(QString &portName, QWidget *parent) :
     connect(writer, SIGNAL(error(QString)), this, SIGNAL(error(QString)));
     connect(writer, SIGNAL(timeout(QString)), this, SIGNAL(warning(QString)));
     connect(writer, SIGNAL(message(QString)), this, SIGNAL(message(QString)));
-    //connect(writer, SIGNAL(writeComplete()), this, SIGNAL(stateChanged()));
+    connect(writer, SIGNAL(writeComplete()), this, SLOT(onUSBPacketSent()));
     writer->start();
 
     connect(&redrawTimer, SIGNAL(timeout()), this, SLOT(invalidateUi()));
@@ -112,7 +111,15 @@ quint8 ControllerWindow::calculateCrc8Ccitt(quint8 inCrc, quint8 inData) {
     return data;
 }
 void ControllerWindow::onControllerChange() {
-    writer->changeData(getData());
+    lastState = getData();
+    writer->changeData(lastState);
+}
+void ControllerWindow::onUSBPacketSent() {
+    QByteArray newState = getData();
+    if (newState != lastState) {
+        lastState = newState;
+        writer->changeData(lastState);
+    }
 }
 
 void ControllerWindow::getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, quint8 *outRy, Dpad_t *outDpad, Button_t *outButtons, uint8_t *outVendorspec) {
@@ -123,10 +130,10 @@ void ControllerWindow::getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, qui
     Dpad_t press = DPAD_NONE;
     Button_t button = BUTTON_NONE;
 
-    lx = quantizeDouble(gamepad->axisLeftX());
-    ly = quantizeDouble(gamepad->axisLeftY());
-    rx = quantizeDouble(gamepad->axisRightX());
-    ry = quantizeDouble(gamepad->axisRightY());
+    lx = checkDeadZone(quantizeDouble(gamepad->axisLeftX()));
+    ly = checkDeadZone(quantizeDouble(gamepad->axisLeftY()));
+    rx = checkDeadZone(quantizeDouble(gamepad->axisRightX()));
+    ry = checkDeadZone(quantizeDouble(gamepad->axisRightY()));
 
     bool up = gamepad->buttonUp();
     bool right = gamepad->buttonRight();
@@ -151,8 +158,8 @@ void ControllerWindow::getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, qui
 
     if (gamepad->buttonA()) button |= BUTTON_B;
     if (gamepad->buttonB()) button |= BUTTON_A;
-    if (gamepad->buttonX()) button |= BUTTON_X;
-    if (gamepad->buttonY()) button |= BUTTON_Y;
+    if (gamepad->buttonX()) button |= BUTTON_Y;
+    if (gamepad->buttonY()) button |= BUTTON_X;
     if (gamepad->buttonL1()) button |= BUTTON_L;
     if (gamepad->buttonL2() > 0.6) button |= BUTTON_ZL;
     if (gamepad->buttonL3()) button |= BUTTON_LCLICK;
@@ -161,7 +168,7 @@ void ControllerWindow::getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, qui
     if (gamepad->buttonR3()) button |= BUTTON_RCLICK;
     if (gamepad->buttonSelect()) button |= BUTTON_MINUS;
     if (gamepad->buttonStart()) button |= BUTTON_PLUS;
-    if (gamepad->buttonGuide()) button |= BUTTON_HOME;
+    if (gamepad->buttonGuide() || gamepad->buttonCenter()) button |= BUTTON_HOME;
 
     *outLx = lx;
     *outLy = ly;
@@ -341,6 +348,8 @@ void ControllerWindow::renderButtons(QPainter &painter, const Button_t buttons) 
 }
 
 void ControllerWindow::renderLeftStick(QPainter &painter, const quint8 lx, const quint8 ly) {
+    if (lx == STICK_CENTER && ly == STICK_CENTER) return;
+
     int cx = 395 - (128 - lx);
     int cy = 373 - (128 - ly);
     drawFilledEllipse(painter, QPointF(cx, cy), 20, 20);
@@ -352,6 +361,8 @@ void ControllerWindow::renderLeftStick(QPainter &painter, const quint8 lx, const
 }
 
 void ControllerWindow::renderRightStick(QPainter &painter, const quint8 rx, const quint8 ry) {
+    if (rx == STICK_CENTER && ry == STICK_CENTER) return;
+
     int cx = 1123 - (128 - rx);
     int cy = 620 - (128 - ry);
     drawFilledEllipse(painter, QPointF(cx, cy), 20, 20);

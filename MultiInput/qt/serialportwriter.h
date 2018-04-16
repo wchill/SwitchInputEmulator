@@ -5,7 +5,6 @@
 #include <QThread>
 #include <QMutex>
 #include <QByteArray>
-#include <QWaitCondition>
 #include <QSerialPort>
 
 class SerialPortWriter : public QThread
@@ -28,14 +27,9 @@ private:
     bool writeAndExpectResponse(QSerialPort *serial, uint8_t send, uint8_t expect);
 
     QString m_portName;
-    QByteArray m_request;
-    int m_waitTimeout = 0;
     bool m_quit = false;
-
-    QMutex m_mutex;
-    QWaitCondition m_cond;
-
     QByteArray data;
+    QMutex m_mutex;
 
     const quint8 sync_bytes[3] = {0xFF, 0x33, 0xCC};
     const quint8 sync_resp[3] = {0xFF, 0xCC, 0x33};
