@@ -18,12 +18,7 @@ exception of Home and Capture. Descriptor modification allows us to unlock
 these buttons for our use.
 */
 
-#include <util/crc16.h>
 #include "Joystick.h"
-#define SERIAL_UBBRVAL(Baud)    ((((F_CPU / 16) + (Baud / 2)) / (Baud)) - 1)
-
-RingBuffer_t USART_Buffer;
-uint8_t buf[128];
 
 typedef enum {
     NEW_PACKET,
@@ -43,41 +38,6 @@ USB_Input_Packet_t usbInput;
 USB_JoystickReport_Input_t buffer;
 USB_JoystickReport_Input_t defaultBuf;
 State_t state = OUT_OF_SYNC;
-
-// Initializes the USART, note that the RX/TX interrupts need to be enabled manually.
-void USART_Init(void) {
-    UCSR1A = 0;                         // disable double speed mode
-    UCSR1C = _BV(UCSZ11) | _BV(UCSZ10); // no parity, 8 data bits, 1 stop bit
-    UCSR1D = 0;                         // no cts, no rts
-    UBRR1  = SERIAL_UBBRVAL(19200);     // 19200 baud
-    UCSR1B = _BV(RXEN1) | _BV(TXEN1);   // enable RX and TX
-    DDRD  |= _BV(3);                    // set TX pin as output
-    PORTD |= _BV(2);                    // set RX pin as input
-}
-
-inline void disable_rx_isr(void) {
-    UCSR1B &= ~_BV(RXCIE1);
-}
-
-inline void enable_rx_isr(void) {
-    UCSR1B |= _BV(RXCIE1);
-}
-
-inline void send_byte(uint8_t c) {
-    while (!(UCSR1A & _BV(UDRE1)));
-    UDR1 = c;
-}
-
-inline void send_string(const char *str) {
-    while (*str) {
-        send_byte(*str++);
-    }
-}
-
-inline uint8_t recv_byte(void) {
-    while (!(UCSR1A & _BV(RXC1)));
-    return UDR1;
-}
 
 ISR(USART1_RX_vect) {
     uint8_t b = recv_byte();
@@ -138,9 +98,6 @@ ISR(USART1_RX_vect) {
 
 // Main entry point.
 int main(void) {
-    // Initialize the ring buffer for input packets.
-    RingBuffer_InitBuffer(&USART_Buffer, buf, sizeof(buf));
-
     // We also need to initialize the initial input reports.
     memset(&defaultBuf, 0, sizeof(USB_JoystickReport_Input_t));
     defaultBuf.LX = STICK_CENTER;
@@ -169,13 +126,12 @@ int main(void) {
 // Configures hardware and peripherals, such as the USB peripherals.
 void SetupHardware(void) {
     // We need to disable watchdog if enabled by bootloader/fuses.
-    MCUSR &= ~(1 << WDRF);
-    wdt_disable();
+    disable_watchdog();
 
     // We need to disable clock division before initializing the USB hardware.
     clock_prescale_set(clock_div_1);
     // We can then initialize our hardware and peripherals, including the USB stack.
-    USART_Init();
+    USART_Init(19200);
 
     // The USB stack should be initialized last.
     USB_Init();

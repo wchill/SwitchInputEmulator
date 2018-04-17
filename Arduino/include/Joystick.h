@@ -36,22 +36,12 @@
 #ifndef _JOYSTICK_H_
 #define _JOYSTICK_H_
 
-/* Includes: */
-#include <avr/io.h>
-#include <avr/wdt.h>
-#include <avr/power.h>
-#include <avr/interrupt.h>
-#include <avr/pgmspace.h>
-#include <string.h>
-
-#include <LUFA/Drivers/USB/USB.h>
-#include <LUFA/Drivers/Board/Joystick.h>
-#include <LUFA/Drivers/Board/LEDs.h>
-#include <LUFA/Drivers/Board/Buttons.h>
-#include <LUFA/Drivers/Misc/RingBuffer.h>
-#include <LUFA/Platform/Platform.h>
-
+#ifdef MOCK_AVR
+#include "avr_mock.h"
+#else
+#include "avr.h"
 #include "Descriptors.h"
+#endif
 
 // Type Defines
 // Enumeration for joystick buttons.
@@ -125,12 +115,13 @@ typedef struct {
 } USB_JoystickReport_Output_t;
 
 // Function Prototypes
-void USART_Init(void);
-inline void disable_rx_isr(void);
-inline void enable_rx_isr(void);
-inline void send_byte(uint8_t c);
-inline uint8_t recv_byte(void);
-inline void send_string(const char *str);
+void USART_Init(int baud);
+void disable_watchdog(void);
+void disable_rx_isr(void);
+void enable_rx_isr(void);
+void send_byte(uint8_t c);
+uint8_t recv_byte(void);
+void send_string(const char *str);
 
 // Setup all necessary hardware, including USB initialization.
 void SetupHardware(void);

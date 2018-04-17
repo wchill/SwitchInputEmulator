@@ -12,8 +12,8 @@ MultiInput::MultiInput(QWidget *parent) :
 
 void MultiInput::serialPortIndexChanged(int index) {
     if (index >= availableSerialPorts.length()) {
-        currentPort = "/dev/faketty0";
-        serialPortDescription->setText(tr("Use socat emulated serial port on /dev/faketty0"));
+        currentPort = "/tmp/faketty0";
+        serialPortDescription->setText(tr("Use socat emulated serial port on /tmp/faketty0"));
     } else {
         const auto &info = availableSerialPorts.at(index);
         currentPort = info.portName();
