@@ -22,11 +22,14 @@ class ControllerWindow : public QDialog
     Q_OBJECT
 
 public:
-    explicit ControllerWindow(QString &portName, QWidget *parent = nullptr);
+    explicit ControllerWindow(std::shared_ptr<QGamepad> gamepad, QWidget *parent = nullptr);
     ~ControllerWindow();
     virtual QSize minimumSizeHint() const;
     virtual QSize maximumSizeHint() const;
     virtual QSize sizeHint() const;
+
+    void setSerialPortWriter(std::shared_ptr<SerialPortWriter> writer);
+    QByteArray getData();
 
 signals:
     void controllerWindowClosing();
@@ -51,7 +54,6 @@ private:
         if (stickVal < STICK_CENTER + STICK_DEADZONE && stickVal > STICK_CENTER - STICK_DEADZONE) return STICK_CENTER;
         return stickVal;
     }
-    QByteArray getData();
     void getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, quint8 *outRy, Dpad_t *outDpad, Button_t *outButtons, uint8_t *outVendorspec);
 
     void drawFilledRect(QPainter &painter, const QRectF &rect);
@@ -64,7 +66,7 @@ private:
     void renderRightStick(QPainter &painter, const quint8 rx, const quint8 ry);
 
     Ui::ControllerWindow *ui;
-    SerialPortWriter *writer;
+    std::shared_ptr<SerialPortWriter> writer;
     std::unique_ptr<QImage> image;
     std::unique_ptr<QImage> zl;
     std::unique_ptr<QImage> zr;
@@ -76,7 +78,7 @@ private:
     QBitmap zr_mask;
     double scaleFactor;
 
-    std::unique_ptr<QGamepad> gamepad;
+    std::shared_ptr<QGamepad> gamepad;
     QByteArray lastState;
 
     QTimer redrawTimer;

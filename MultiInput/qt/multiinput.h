@@ -32,6 +32,11 @@ private slots:
     void serialPortIndexChanged(int index);
     void onStartButtonClicked();
     void onControllerWindowClosed();
+    void onGamepadDisconnected(int deviceId);
+    void onGamepadConnected(int deviceId);
+
+    void onSerialPortError(const QString &message);
+    void onSerialPortSync();
 
 private:
     void enumerateSerialPorts();
@@ -57,7 +62,10 @@ private:
     QString currentPort;
 
     ControllerWindow *controllerWindow = nullptr;
-    std::shared_ptr<Controller> controller;
+    std::shared_ptr<QGamepad> gamepad;
+    int gamepadId;
+    QString gamepadName;
+    std::shared_ptr<SerialPortWriter> writer;
     QThread controllerThread;
 };
 

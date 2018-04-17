@@ -21,6 +21,7 @@ signals:
     void timeout(const QString &s);
     void message(const QString &s);
     void writeComplete();
+    void synced();
 
 private:
     void run() override;

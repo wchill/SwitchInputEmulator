@@ -15,7 +15,6 @@ using std::endl;
 SerialPortWriter::SerialPortWriter(const QString &portName, const QByteArray &data, QObject *parent) : QThread(parent) {
     m_portName = portName;
     this->data = data;
-    this->setPriority(QThread::TimeCriticalPriority);
 }
 
 SerialPortWriter::~SerialPortWriter() {
@@ -58,9 +57,10 @@ void SerialPortWriter::run() {
     emit message(tr("Serial port opened"));
     emit message(tr("Synchronizing hardware"));
 
-    bool synced = false;
+    this->setPriority(QThread::TimeCriticalPriority);
+    bool isSynced = false;
 
-    while(!m_quit && !synced) {
+    while(!m_quit && !isSynced) {
         serial.clear();
         if(writeAndExpectResponse(&serial, sync_bytes[0], sync_resp[0]))
             emit message(tr("Handshake stage 1 complete"));
@@ -80,13 +80,14 @@ void SerialPortWriter::run() {
             continue;
         }
 
-        synced = true;
+        isSynced = true;
     }
 
     if(m_quit) {
         serial.close();
         return;
     }
+    emit synced();
     emit message(tr("Synced successfully"));
 
     m_mutex.lock();

@@ -25,7 +25,7 @@ HEADERS  += multiinput.h \
     controller.h \
     controllerconstants.h
 
-FORMS    += multiinput.ui \
+FORMS    += \
     controllerwindow.ui
 
 RESOURCES += \

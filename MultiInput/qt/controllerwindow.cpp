@@ -14,8 +14,9 @@
 using std::cout;
 using std::endl;
 
-ControllerWindow::ControllerWindow(QString &portName, QWidget *parent) :
+ControllerWindow::ControllerWindow(std::shared_ptr<QGamepad> gamepad, QWidget *parent) :
     QDialog(parent),
+    gamepad(gamepad),
     ui(new Ui::ControllerWindow)
 {
     ui->setupUi(this);
@@ -26,12 +27,11 @@ ControllerWindow::ControllerWindow(QString &portName, QWidget *parent) :
     zl = std::unique_ptr<QImage>(new QImage(":/images/btn_ZL.png"));
     zr = std::unique_ptr<QImage>(new QImage(":/images/btn_ZR.png"));
 
-    auto gamepads = QGamepadManager::instance()->connectedGamepads();
-    if (gamepads.isEmpty()) {
+    if (gamepad) {
         std::cout << "Can't find gamepad" << std::endl;
-        emit warning("Could not find a connected gamepad.");
+        emit warning("Gamepad not provided.");
     } else {
-        gamepad = std::unique_ptr<QGamepad>(new QGamepad(*gamepads.begin(), this));
+        //gamepad = std::unique_ptr<QGamepad>(new QGamepad(*gamepads.begin(), this));
 
         connect(gamepad.get(), SIGNAL(axisLeftXChanged(double)), this, SLOT(onControllerChange()));
         connect(gamepad.get(), SIGNAL(axisLeftYChanged(double)), this, SLOT(onControllerChange()));
@@ -70,20 +70,19 @@ ControllerWindow::ControllerWindow(QString &portName, QWidget *parent) :
     zl_mask = zl_scaled.createMaskFromColor(QColor(85, 85, 85), Qt::MaskOutColor);
     zr_mask = zr_scaled.createMaskFromColor(QColor(85, 85, 85), Qt::MaskOutColor);
 
-    writer = new SerialPortWriter(portName, getData());
-    connect(writer, SIGNAL(error(QString)), this, SIGNAL(error(QString)));
-    connect(writer, SIGNAL(timeout(QString)), this, SIGNAL(warning(QString)));
-    connect(writer, SIGNAL(message(QString)), this, SIGNAL(message(QString)));
-    connect(writer, SIGNAL(writeComplete()), this, SLOT(onUSBPacketSent()));
-    writer->start();
-
     connect(&redrawTimer, SIGNAL(timeout()), this, SLOT(invalidateUi()));
     redrawTimer.start(16);
 }
 
 ControllerWindow::~ControllerWindow() {
-    delete writer;
     delete ui;
+}
+
+void ControllerWindow::setSerialPortWriter(std::shared_ptr<SerialPortWriter> newWriter) {
+    if (writer) {
+        disconnect(writer.get(), SIGNAL(writeComplete()), this, SLOT(onUSBPacketSent()));
+    }
+    writer = newWriter;
 }
 
 quint8 ControllerWindow::quantizeDouble(double const val) {
@@ -112,13 +111,13 @@ quint8 ControllerWindow::calculateCrc8Ccitt(quint8 inCrc, quint8 inData) {
 }
 void ControllerWindow::onControllerChange() {
     lastState = getData();
-    writer->changeData(lastState);
+    writer.get()->changeData(lastState);
 }
 void ControllerWindow::onUSBPacketSent() {
     QByteArray newState = getData();
     if (newState != lastState) {
         lastState = newState;
-        writer->changeData(lastState);
+        writer.get()->changeData(lastState);
     }
 }
 
