@@ -21,8 +21,7 @@ these buttons for our use.
 #include "Joystick.h"
 
 typedef enum {
-    NEW_PACKET,
-    REPLAY_PACKET,
+    SYNCED,
     SYNC_START,
     SYNC_1,
     OUT_OF_SYNC
@@ -49,11 +48,11 @@ ISR(USART1_RX_vect) {
         else state = OUT_OF_SYNC;
     } else if (state == SYNC_1) {
         if (b == COMMAND_SYNC_2) {
-            state = NEW_PACKET;
+            state = SYNCED;
             send_byte(RESP_SYNC_OK);
         }
         else state = OUT_OF_SYNC;
-    } else if (state == NEW_PACKET || state == REPLAY_PACKET) {
+    } else if (state == SYNCED) {
 
         if (usbInput.received_bytes < 8) {
             // Still filling up the buffer
@@ -65,7 +64,6 @@ ISR(USART1_RX_vect) {
                 if (b == COMMAND_SYNC_START) {
                     // Start sync
                     state = SYNC_START;
-                    memcpy(&buffer, &defaultBuf, sizeof(USB_JoystickReport_Input_t));
                     send_byte(RESP_SYNC_START);
                 } else {
                     // Mismatched CRC
@@ -81,7 +79,6 @@ ISR(USART1_RX_vect) {
                 buffer.RX = usbInput.input[5];
                 buffer.RY = usbInput.input[6];
                 buffer.VendorSpec = usbInput.input[7];
-                state = NEW_PACKET;
                 // send_byte(RESP_UPDATE_ACK);
             }
             usbInput.received_bytes = 0;
@@ -203,8 +200,9 @@ void HID_Task(void) {
 
         // We'll then populate this report with what we want to send to the host.
         disable_rx_isr();
-        if (state == NEW_PACKET || state == REPLAY_PACKET) {                
+        if (state == SYNCED) {                
             memcpy(&JoystickInputData, &buffer, sizeof(USB_JoystickReport_Input_t));
+            send_byte(RESP_USB_ACK);
         } else {
             memcpy(&JoystickInputData, &defaultBuf, sizeof(USB_JoystickReport_Input_t));
         }
@@ -215,10 +213,5 @@ void HID_Task(void) {
         
         // We then send an IN packet on this endpoint.
         Endpoint_ClearIN();
-
-        if (state == NEW_PACKET) {
-            send_byte(RESP_USB_ACK);
-            state = REPLAY_PACKET;
-        }
     }
 }
