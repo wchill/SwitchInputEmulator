@@ -8,8 +8,8 @@
 #include <QRect>
 #include <QtGamepad/QGamepad>
 #include <QTimer>
+#include "controllerinput.h"
 #include "controllerconstants.h"
-#include "controller.h"
 
 using std::vector;
 
@@ -22,14 +22,11 @@ class ControllerWindow : public QDialog
     Q_OBJECT
 
 public:
-    explicit ControllerWindow(std::shared_ptr<QGamepad> gamepad, QWidget *parent = nullptr);
+    explicit ControllerWindow(std::shared_ptr<ControllerInput> controller, QWidget *parent = nullptr);
     ~ControllerWindow();
     virtual QSize minimumSizeHint() const;
     virtual QSize maximumSizeHint() const;
     virtual QSize sizeHint() const;
-
-    void setSerialPortWriter(std::shared_ptr<SerialPortWriter> writer);
-    QByteArray getData();
 
 signals:
     void controllerWindowClosing();
@@ -44,18 +41,7 @@ protected:
 private slots:
     void invalidateUi();
 
-    void onControllerChange();
-    void onUSBPacketSent();
-
 private:
-    quint8 quantizeDouble(double const val);
-    quint8 calculateCrc8Ccitt(quint8 inCrc, quint8 inData);
-    quint8 checkDeadZone(quint8 const stickVal) {
-        if (stickVal < STICK_CENTER + STICK_DEADZONE && stickVal > STICK_CENTER - STICK_DEADZONE) return STICK_CENTER;
-        return stickVal;
-    }
-    void getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, quint8 *outRy, Dpad_t *outDpad, Button_t *outButtons, uint8_t *outVendorspec);
-
     void drawFilledRect(QPainter &painter, const QRectF &rect);
     void drawFilledEllipse(QPainter &painter, const QPointF &center, const qreal rx, const qreal ry);
     void drawFilledPath(QPainter &painter, const std::vector<QPointF> &points);
@@ -66,7 +52,6 @@ private:
     void renderRightStick(QPainter &painter, const quint8 rx, const quint8 ry);
 
     Ui::ControllerWindow *ui;
-    std::shared_ptr<SerialPortWriter> writer;
     std::unique_ptr<QImage> image;
     std::unique_ptr<QImage> zl;
     std::unique_ptr<QImage> zr;
@@ -78,7 +63,7 @@ private:
     QBitmap zr_mask;
     double scaleFactor;
 
-    std::shared_ptr<QGamepad> gamepad;
+    std::shared_ptr<ControllerInput> controller;
     QByteArray lastState;
 
     QTimer redrawTimer;

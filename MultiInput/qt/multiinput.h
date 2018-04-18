@@ -12,9 +12,9 @@
 #include <QSerialPort>
 #include <QSerialPortInfo>
 #include <QThread>
+#include "controllerinput.h"
 #include "serialportwriter.h"
 #include "controllerwindow.h"
-#include "controller.h"
 
 class MultiInput : public QWidget
 {
@@ -63,8 +63,6 @@ private:
     QString currentPort;
 
     ControllerWindow *controllerWindow = nullptr;
-    std::shared_ptr<QGamepad> gamepad;
-    std::shared_ptr<SerialPortWriter> writer;
     QThread controllerThread;
 };
 

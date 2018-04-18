@@ -1,5 +1,6 @@
 #include <QtWidgets>
 #include <QGamepadManager>
+#include "xboxcontrollerinput.h"
 #include "multiinput.h"
 
 MultiInput::MultiInput(QWidget *parent) :
@@ -123,8 +124,14 @@ void MultiInput::onStartButtonClicked()
         serialPortSelect->setEnabled(false);
         inputSelect->setEnabled(false);
 
-        gamepad = std::shared_ptr<QGamepad>(new QGamepad(inputIndex));
-        connect(gamepad.get(), &QGamepad::connectedChanged, [=](bool connected) { if (!connected) controllerWindow->close(); });
+        std::shared_ptr<SerialPortWriter> writer(new SerialPortWriter(currentPort, ControllerInput::getInitialData()));
+        connect(writer.get(), SIGNAL(error(QString)), this, SLOT(onSerialPortError(QString)));
+        connect(writer.get(), SIGNAL(timeout(QString)), this, SLOT(logWarning(QString)));
+        connect(writer.get(), SIGNAL(message(QString)), this, SLOT(logMessage(QString)));
+        connect(writer.get(), SIGNAL(synced()), this, SLOT(onSerialPortSync()));
+
+        std::shared_ptr<ControllerInput> gamepad(new XboxControllerInput(inputIndex, writer));
+        connect(gamepad.get(), &ControllerInput::controllerConnectionStateChanged, [=](bool connected) { if (!connected) controllerWindow->close(); });
 
         controllerWindow = new ControllerWindow(gamepad, this);
         controllerWindow->setAttribute(Qt::WA_DeleteOnClose);
@@ -133,14 +140,7 @@ void MultiInput::onStartButtonClicked()
         connect(controllerWindow, SIGNAL(warning(QString)), this, SLOT(logWarning(QString)));
         connect(controllerWindow, SIGNAL(error(QString)), this, SLOT(logError(QString)));
 
-        writer = std::shared_ptr<SerialPortWriter>(new SerialPortWriter(currentPort, controllerWindow->getData()));
-        connect(writer.get(), SIGNAL(error(QString)), this, SLOT(onSerialPortError(QString)));
-        connect(writer.get(), SIGNAL(timeout(QString)), this, SLOT(logWarning(QString)));
-        connect(writer.get(), SIGNAL(message(QString)), this, SLOT(logMessage(QString)));
-        connect(writer.get(), SIGNAL(synced()), this, SLOT(onSerialPortSync()));
-        controllerWindow->setSerialPortWriter(writer);
         writer->start();
-        controllerWindow->show();
     } else {
         logMessage(tr("TCP server not supported yet."));
     }
@@ -166,9 +166,6 @@ void MultiInput::onGamepadConnected(int deviceId) {
 }
 
 void MultiInput::onControllerWindowClosed() {
-    gamepad = nullptr;
-    writer = nullptr;
-
     startButton->setEnabled(true);
     serialPortSelect->setEnabled(true);
     inputSelect->setEnabled(true);
