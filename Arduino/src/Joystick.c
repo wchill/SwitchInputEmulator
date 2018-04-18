@@ -19,6 +19,7 @@ these buttons for our use.
 */
 
 #include "Joystick.h"
+#include <stdio.h>
 
 typedef enum {
     SYNCED,
@@ -68,6 +69,8 @@ ISR(USART1_RX_vect) {
                 } else {
                     // Mismatched CRC
                     send_byte(RESP_UPDATE_NACK);
+                    PRINT_DEBUG("Packet specified CRC 0x%02x but calculated CRC was 0x%02x\n", b, usbInput.crc8_ccitt);
+                    PRINT_DEBUG("Packet data: %02x %02x %02x %02x %02x %02x %02x %02x %02x\n", usbInput.input[0], usbInput.input[1], usbInput.input[2], usbInput.input[3], usbInput.input[4], usbInput.input[5], usbInput.input[6], usbInput.input[7], b);
                 }
                 
             } else {

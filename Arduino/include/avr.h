@@ -18,6 +18,7 @@
 #include <LUFA/Platform/Platform.h>
 
 #define SERIAL_UBBRVAL(Baud)    ((((F_CPU / 16) + (Baud / 2)) / (Baud)) - 1)
+#define PRINT_DEBUG(...)
 
 // Initializes the USART, note that the RX/TX interrupts need to be enabled manually.
 void USART_Init(int baud) {

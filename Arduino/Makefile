@@ -65,4 +65,4 @@ clean-emu:
 	rm -rf $(EMULATOR_OBJ_DIR) $(EMULATOR_TARGET)
 
 run-emu:
-	socat -d PTY,link=/tmp/faketty0,raw,echo=0 EXEC:./$(EMULATOR_TARGET)
+	socat -d -d PTY,link=/tmp/faketty0,raw,echo=0 EXEC:./$(EMULATOR_TARGET)

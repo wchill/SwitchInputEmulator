@@ -21,6 +21,8 @@
 #define MAKE_FN_NAME(x) void  _ISR_ ## x (void)
 #define ISR(vector_num) MAKE_FN_NAME(vector_num)
 
+#define PRINT_DEBUG(fmt_str, args...) fprintf(stderr, fmt_str, args)
+
 // https://stackoverflow.com/a/1594514
 int is_ready(int fd) {
     fd_set fdset;
@@ -54,6 +56,9 @@ void send_string(const char *str) {
 uint8_t recv_byte(void) {
     uint8_t val;
     read(fileno(stdin), &val, sizeof(val));
+    #ifdef DEBUG_VERBOSE
+    fprintf(stderr, "%02x ", val);
+    #endif
     return val;
 }
 
