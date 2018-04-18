@@ -17,13 +17,15 @@ SOURCES += main.cpp\
         multiinput.cpp \
     serialportwriter.cpp \
     controllerwindow.cpp \
-    controller.cpp
+    controller.cpp \
+    tcpinputserver.cpp
 
 HEADERS  += multiinput.h \
     serialportwriter.h \
     controllerwindow.h \
     controller.h \
-    controllerconstants.h
+    controllerconstants.h \
+    tcpinputserver.h
 
 FORMS    += \
     controllerwindow.ui

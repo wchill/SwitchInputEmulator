@@ -17,7 +17,7 @@ void MultiInput::serialPortIndexChanged(int index) {
     } else {
         const auto &info = availableSerialPorts.at(index);
         currentPort = info.portName();
-        serialPortDescription->setText(info.description() + "\n" + info.manufacturer());
+        serialPortDescription->setText(info.description());
     }
 }
 
@@ -35,7 +35,8 @@ void MultiInput::setupUi()
     mainLayout->addWidget(inputGroupBox);
 
     eventLog = new QTextEdit();
-    eventLog->setEnabled(false);
+    eventLog->setReadOnly(true);
+    eventLog->setUpdatesEnabled(true);
     mainLayout->addWidget(eventLog);
 
     startButton = new QPushButton();
@@ -71,22 +72,22 @@ void MultiInput::createInputGroupBox() {
     inputGroupBox->setLayout(layout);
 }
 
+void MultiInput::enumerateInputDevices() {
+    const QList<int> gamepads = QGamepadManager::instance()->connectedGamepads();
+    inputSelect->clear();
+    for (const int gamepad : gamepads) {
+        inputSelect->addItem(tr("Gamepad ") + QString::number(gamepad));
+    }
+    inputSelect->addItem(tr("Use TCP server"));
+    inputSelect->setCurrentIndex(0);
+    this->layout()->update();
+}
+
 void MultiInput::createSerialPortGroupBox() {
     serialPortDescription = new QLabel(tr("No serial port selected"));
 
     serialPortSelect = new QComboBox();
-    connect(serialPortSelect, SIGNAL(currentIndexChanged(int)), this, SLOT(serialPortIndexChanged(int)));
-    availableSerialPorts = QSerialPortInfo::availablePorts();
-    for (const auto &portInfo : availableSerialPorts) {
-        serialPortSelect->addItem(portInfo.portName());
-    }
-    serialPortSelect->addItem(tr("Emulator"));
-
-    if (availableSerialPorts.length() > 0) {
-        const auto &info = availableSerialPorts.at(0);
-        currentPort = info.portName();
-        serialPortDescription->setText(info.description() + "\n" + info.manufacturer());
-    }
+    enumerateSerialPorts();
 
     QGridLayout *layout = new QGridLayout();
     layout->addWidget(new QLabel(tr("Serial port")), 0, 0, 1, 1);
@@ -100,35 +101,49 @@ void MultiInput::createSerialPortGroupBox() {
     serialPortGroupBox->setLayout(layout);
 }
 
+void MultiInput::enumerateSerialPorts() {
+    availableSerialPorts = QSerialPortInfo::availablePorts();
+    disconnect(serialPortSelect, SIGNAL(currentIndexChanged(int)), this, SLOT(serialPortIndexChanged(int)));
+    serialPortSelect->clear();
+    for (const auto &portInfo : availableSerialPorts) {
+        serialPortSelect->addItem(portInfo.portName());
+    }
+    serialPortSelect->addItem(tr("Emulator"));
+    connect(serialPortSelect, SIGNAL(currentIndexChanged(int)), this, SLOT(serialPortIndexChanged(int)));
+    serialPortSelect->setCurrentIndex(0);
+    this->layout()->update();
+}
+
 void MultiInput::onStartButtonClicked()
 {
-    startButton->setEnabled(false);
-    serialPortSelect->setEnabled(false);
-    inputSelect->setEnabled(false);
-
+    const QList<int> gamepads = QGamepadManager::instance()->connectedGamepads();
     int inputIndex = inputSelect->currentIndex();
-    gamepad = std::shared_ptr<QGamepad>(new QGamepad(inputIndex));
-    gamepadId = gamepad.get()->deviceId();
-    gamepadName = gamepad.get()->name();
-    connect(gamepad.get(), &QGamepad::deviceIdChanged, [=]() { gamepadId = gamepad.get()->deviceId(); });
-    connect(gamepad.get(), &QGamepad::nameChanged, [=]() { gamepadName = gamepad.get()->name(); });
-    connect(gamepad.get(), &QGamepad::connectedChanged, [=](bool connected) { if (!connected) controllerWindow->close(); });
+    if (inputIndex < gamepads.length()) {
+        startButton->setEnabled(false);
+        serialPortSelect->setEnabled(false);
+        inputSelect->setEnabled(false);
 
-    controllerWindow = new ControllerWindow(gamepad, this);
-    controllerWindow->setAttribute(Qt::WA_DeleteOnClose);
-    connect(controllerWindow, SIGNAL(controllerWindowClosing()), this, SLOT(onControllerWindowClosed()));
-    connect(controllerWindow, SIGNAL(message(QString)), this, SLOT(logMessage(QString)));
-    connect(controllerWindow, SIGNAL(warning(QString)), this, SLOT(logWarning(QString)));
-    connect(controllerWindow, SIGNAL(error(QString)), this, SLOT(logError(QString)));
+        gamepad = std::shared_ptr<QGamepad>(new QGamepad(inputIndex));
+        connect(gamepad.get(), &QGamepad::connectedChanged, [=](bool connected) { if (!connected) controllerWindow->close(); });
 
-    writer = std::shared_ptr<SerialPortWriter>(new SerialPortWriter(currentPort, controllerWindow->getData()));
-    connect(writer.get(), SIGNAL(error(QString)), this, SLOT(onSerialPortError(QString)));
-    connect(writer.get(), SIGNAL(timeout(QString)), this, SLOT(logWarning(QString)));
-    connect(writer.get(), SIGNAL(message(QString)), this, SLOT(logMessage(QString)));
-    connect(writer.get(), SIGNAL(synced()), this, SLOT(onSerialPortSync()));
-    controllerWindow->setSerialPortWriter(writer);
-    writer->start();
-    controllerWindow->show();
+        controllerWindow = new ControllerWindow(gamepad, this);
+        controllerWindow->setAttribute(Qt::WA_DeleteOnClose);
+        connect(controllerWindow, SIGNAL(controllerWindowClosing()), this, SLOT(onControllerWindowClosed()));
+        connect(controllerWindow, SIGNAL(message(QString)), this, SLOT(logMessage(QString)));
+        connect(controllerWindow, SIGNAL(warning(QString)), this, SLOT(logWarning(QString)));
+        connect(controllerWindow, SIGNAL(error(QString)), this, SLOT(logError(QString)));
+
+        writer = std::shared_ptr<SerialPortWriter>(new SerialPortWriter(currentPort, controllerWindow->getData()));
+        connect(writer.get(), SIGNAL(error(QString)), this, SLOT(onSerialPortError(QString)));
+        connect(writer.get(), SIGNAL(timeout(QString)), this, SLOT(logWarning(QString)));
+        connect(writer.get(), SIGNAL(message(QString)), this, SLOT(logMessage(QString)));
+        connect(writer.get(), SIGNAL(synced()), this, SLOT(onSerialPortSync()));
+        controllerWindow->setSerialPortWriter(writer);
+        writer->start();
+        controllerWindow->show();
+    } else {
+        logMessage(tr("TCP server not supported yet."));
+    }
 }
 
 void MultiInput::onSerialPortError(const QString &message) {
@@ -142,10 +157,12 @@ void MultiInput::onSerialPortSync() {
 
 void MultiInput::onGamepadDisconnected(int deviceId) {
     logMessage(tr("Gamepad %1 disconnected").arg(deviceId));
+    enumerateInputDevices();
 }
 
 void MultiInput::onGamepadConnected(int deviceId) {
     logMessage(tr("Gamepad %1 connected").arg(deviceId));
+    enumerateInputDevices();
 }
 
 void MultiInput::onControllerWindowClosed() {
@@ -161,16 +178,19 @@ void MultiInput::logMessage(const QString &message) {
     eventLog->setTextBackgroundColor(Qt::transparent);
     eventLog->setTextColor(Qt::black);
     eventLog->append(message);
+    eventLog->repaint();
 }
 
 void MultiInput::logWarning(const QString &message) {
     eventLog->setTextBackgroundColor(Qt::yellow);
     eventLog->setTextColor(Qt::black);
     eventLog->append(message);
+    eventLog->repaint();
 }
 
 void MultiInput::logError(const QString &message) {
     eventLog->setTextBackgroundColor(Qt::red);
     eventLog->setTextColor(Qt::white);
     eventLog->append(message);
+    eventLog->repaint();
 }

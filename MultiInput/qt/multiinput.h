@@ -40,6 +40,7 @@ private slots:
 
 private:
     void enumerateSerialPorts();
+    void enumerateInputDevices();
 
     void setupUi();
     void createInputGroupBox();
@@ -63,8 +64,6 @@ private:
 
     ControllerWindow *controllerWindow = nullptr;
     std::shared_ptr<QGamepad> gamepad;
-    int gamepadId;
-    QString gamepadName;
     std::shared_ptr<SerialPortWriter> writer;
     QThread controllerThread;
 };
