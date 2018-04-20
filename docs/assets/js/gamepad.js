@@ -487,7 +487,7 @@
     let gamepadSpriteSheet = assetLoader.addImage("assets/images/gamepadSprite.png");
     assetLoader.addCompletionListener(function () {
         window.requestAnimationFrame(draw);
-        if (!localStorage || ~localStorage.getItem('username')) {
+        if (!localStorage || !localStorage.getItem('username')) {
             username = prompt('Please enter a username');
             localStorage.setItem('username', username);
         } else {

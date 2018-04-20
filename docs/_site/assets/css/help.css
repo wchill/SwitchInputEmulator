@@ -1,0 +1,9 @@
+.help-container {
+    font-family: Open Sans;
+}
+.help-container > h1, h2 {
+    font-family: Open Sans, monospace; color: #b5e853;
+}
+.help-container > h3, h4, h5, h6 {
+    font-family: Open Sans, monospace; color: #eaeaea;
+}

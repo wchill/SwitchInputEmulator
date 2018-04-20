@@ -152,7 +152,16 @@ QList<ControllerState> TextCommandParser::parseLine(QString line) {
     QList<ControllerState> queuedStates;
     line = line.toLower().simplified().remove("command ");
     QVector<QStringRef> commands = line.splitRef(",", QString::SkipEmptyParts);
-    for (auto it = commands.begin(); it != commands.end(); ++it) {
+
+    if (commands.length() == 0)
+        return QList<ControllerState>();
+
+    queuedStates << parseSimultaneousCommands(commands.at(0).toString());
+
+    if (queuedStates.length() == 0)
+        return QList<ControllerState>();
+
+    for (auto it = std::next(commands.begin()); it != commands.end(); ++it) {
         queuedStates << parseSimultaneousCommands(it->toString());
     }
     return queuedStates;
