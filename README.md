@@ -1,14 +1,16 @@
-## Switch-InputEmulator
+## SwitchInputEmulator
 USB Controller Emulator for the Nintendo Switch
 
-Uses the LUFA library and reverse-engineering of the HORIPAD for Nintendo Switch for accurate controller emulation.
+Uses the LUFA library and reverse-engineering of the HORIPAD for Nintendo Switch for accurate controller emulation. Can be controlled either directly via serial port or via the cross-platform Qt application.
+
+For more details, read the [project site](https://switch.chilly.codes)
 
 ### Wait, what?
 On June 20, 2017, Nintendo released System Update v3.0.0 for the Nintendo Switch. Along with a number of additional features that were advertised or noted in the changelog, additional hidden features were added. One of those features allows for the use of compatible USB controllers on the Nintendo Switch, such as the Pokken Tournament Pro Pad.
 
 Unlike the Wii U, which handles these controllers on a 'per-game' basis, the Switch treats the Pokken controller as if it was a Switch Pro Controller. Along with having the icon for the Pro Controller, it functions just like it in terms of using it in other games, apart from the lack of physical controls such as analog sticks, the buttons for the stick clicks, or other system buttons such as Home or Capture.
 
-The original version of the code that this repo is based off of emulated the Pokken Tournament Pro Pad, but changes have been made to support the HORIPAD wired controller for Nintendo Switch instead.
+The original version of the code that this repo is based off of emulated the Pokken Tournament Pro Pad, but changes have been made to support the HORIPAD wired controller for Nintendo Switch instead. In addition, many additional features/improvements have been added.
 
 ### Setup
 
