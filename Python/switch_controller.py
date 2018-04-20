@@ -228,7 +228,7 @@ class Controller:
 
     def __enter__(self):
         print('Opening port {}'.format(self.serial_port))
-        self.ser = serial.Serial(self.serial_port, 9600, timeout=0)
+        self.ser = serial.Serial(self.serial_port, 19200, timeout=0)
         self._write_packet(self.state)
         self._write_thread = threading.Thread(target=self._write_handler, name='Controller Write Thread', daemon=True)
         self._write_thread.start()

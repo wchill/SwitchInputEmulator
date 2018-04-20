@@ -8,6 +8,5 @@
 *.map
 *.sym
 *.eep
-LUFA/
 __pycache__/
 *.pyc

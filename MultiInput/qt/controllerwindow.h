@@ -3,11 +3,13 @@
 
 #include <QDialog>
 #include <QImage>
+#include <QPixmap>
+#include <QBitmap>
 #include <QRect>
 #include <QtGamepad/QGamepad>
+#include <QTimer>
+#include "controllerinput.h"
 #include "controllerconstants.h"
-#include "controller.h"
-#include "twitchircbotwindow.h"
 
 using std::vector;
 
@@ -20,7 +22,7 @@ class ControllerWindow : public QDialog
     Q_OBJECT
 
 public:
-    explicit ControllerWindow(std::shared_ptr<Controller> controller, QWidget *parent = nullptr);
+    explicit ControllerWindow(std::shared_ptr<ControllerInput> controller, QWidget *parent = nullptr);
     ~ControllerWindow();
     virtual QSize minimumSizeHint() const;
     virtual QSize maximumSizeHint() const;
@@ -32,20 +34,12 @@ signals:
     void warning(const QString &warning);
     void message(const QString &message);
 
-    void changeHat(const Dpad_t pressed);
-    void changeButtonZL(const bool pressed);
-    void changeButtonZR(const bool pressed);
-
 protected:
     virtual void paintEvent(QPaintEvent *event);
     virtual void closeEvent(QCloseEvent *event);
 
 private slots:
     void invalidateUi();
-
-    void onHatChange(bool const pressed);
-    void onButtonZLChange(double const value);
-    void onButtonZRChange(double const value);
 
 private:
     void drawFilledRect(QPainter &painter, const QRectF &rect);
@@ -54,17 +48,27 @@ private:
 
     void renderDpad(QPainter &painter, const Dpad_t dpad);
     void renderButtons(QPainter &painter, const Button_t buttons);
-    void renderLeftStick(QPainter &painter, const quint8 lx, const quint8 ly);
-    void renderRightStick(QPainter &painter, const quint8 rx, const quint8 ry);
+    void renderLeftStick(QPainter &painter, const quint8 lx, const quint8 ly, const Button_t buttons);
+    void renderRightStick(QPainter &painter, const quint8 rx, const quint8 ry, const Button_t buttons);
 
     Ui::ControllerWindow *ui;
-    std::shared_ptr<Controller> controller;
     std::unique_ptr<QImage> image;
     std::unique_ptr<QImage> zl;
     std::unique_ptr<QImage> zr;
+    std::unique_ptr<QImage> stick;
 
-    std::unique_ptr<QGamepad> gamepad;
-    TwitchIrcBotWindow *bot;
+    QPixmap image_scaled;
+    QPixmap zl_scaled;
+    QPixmap zr_scaled;
+    QPixmap stick_pixmap;
+    QBitmap zl_mask;
+    QBitmap zr_mask;
+    double scaleFactor;
+
+    std::shared_ptr<ControllerInput> controller;
+    QByteArray lastState;
+
+    QTimer redrawTimer;
 };
 
 #endif // CONTROLLERWINDOW_H

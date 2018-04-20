@@ -17,23 +17,24 @@ SOURCES += main.cpp\
         multiinput.cpp \
     serialportwriter.cpp \
     controllerwindow.cpp \
-    controller.cpp \
-    ircresponse.cpp \
-    twitchircbotwindow.cpp \
-    twitchircbot.cpp
+    controllerinput.cpp \
+    xboxcontrollerinput.cpp \
+    tcpinputserver.cpp \
+    textcommandparser.cpp
 
 HEADERS  += multiinput.h \
     serialportwriter.h \
     controllerwindow.h \
-    controller.h \
     controllerconstants.h \
-    ircresponse.h \
-    twitchircbotwindow.h \
-    twitchircbot.h
+    controllerinput.h \
+    xboxcontrollerinput.h \
+    tcpinputserver.h \
+    textcommandparser.h \
+    controllerstate.h \
+    optional.h
 
-FORMS    += multiinput.ui \
-    controllerwindow.ui \
-    twitchircbotwindow.ui
+FORMS    += \
+    controllerwindow.ui
 
 RESOURCES += \
     resources.qrc

@@ -25,6 +25,8 @@
 #define STICK_CENTER    128
 #define STICK_MAX       255
 
+#define STICK_DEADZONE  2
+
 #define BUTTON_NONE_NAME    "None"
 #define BUTTON_Y_NAME       "Y"
 #define BUTTON_B_NAME       "B"
@@ -52,7 +54,7 @@
 #define DPAD_NONE_NAME          "None"
 
 typedef enum {
-    DPAD_UP,
+    DPAD_UP = 0,
     DPAD_UP_RIGHT,
     DPAD_RIGHT,
     DPAD_DOWN_RIGHT,

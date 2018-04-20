@@ -3,17 +3,18 @@
 
 #include <QWidget>
 #include <QtGui>
+#include <QLabel>
+#include <QTextEdit>
+#include <QComboBox>
+#include <QPushButton>
+#include <QGridLayout>
+#include <QGroupBox>
 #include <QSerialPort>
 #include <QSerialPortInfo>
 #include <QThread>
+#include "controllerinput.h"
 #include "serialportwriter.h"
 #include "controllerwindow.h"
-#include "controller.h"
-#include "twitchircbotwindow.h"
-
-namespace Ui {
-class MultiInput;
-}
 
 class MultiInput : public QWidget
 {
@@ -31,18 +32,36 @@ private slots:
     void serialPortIndexChanged(int index);
     void onStartButtonClicked();
     void onControllerWindowClosed();
+    void onGamepadDisconnected(int deviceId);
+    void onGamepadConnected(int deviceId);
+
+    void onControllerError(const QString &message);
+    void onControllerReady();
 
 private:
     void enumerateSerialPorts();
+    void enumerateInputDevices();
 
-    Ui::MultiInput *ui;
+    void setupUi();
+    void createInputGroupBox();
+    void createSerialPortGroupBox();
+
+    QComboBox *inputSelect;
+    QPushButton *refreshInputsButton;
+    QGroupBox *inputGroupBox;
+
+    QLabel *serialPortDescription;
+    QComboBox *serialPortSelect;
+    QPushButton *refreshSerialPortsButton;
+    QGroupBox *serialPortGroupBox;
+
+    QTextEdit *eventLog;
+    QPushButton *startButton;
 
     QList<QSerialPortInfo> availableSerialPorts;
-    QSerialPortInfo currentPort;
+    QString currentPort;
 
     ControllerWindow *controllerWindow = nullptr;
-    TwitchIrcBotWindow *botWindow = nullptr;
-    std::shared_ptr<Controller> controller;
     QThread controllerThread;
 };
 
