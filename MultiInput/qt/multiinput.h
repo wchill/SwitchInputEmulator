@@ -35,8 +35,8 @@ private slots:
     void onGamepadDisconnected(int deviceId);
     void onGamepadConnected(int deviceId);
 
-    void onSerialPortError(const QString &message);
-    void onSerialPortSync();
+    void onControllerError(const QString &message);
+    void onControllerReady();
 
 private:
     void enumerateSerialPorts();
@@ -46,7 +46,6 @@ private:
     void createInputGroupBox();
     void createSerialPortGroupBox();
 
-    QLabel *inputDescription;
     QComboBox *inputSelect;
     QPushButton *refreshInputsButton;
     QGroupBox *inputGroupBox;

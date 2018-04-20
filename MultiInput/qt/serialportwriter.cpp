@@ -28,10 +28,11 @@ void SerialPortWriter::changeData(const QByteArray &newData) {
 }
 
 bool SerialPortWriter::writeAndExpectResponse(QSerialPort *serial, uint8_t send, uint8_t expect) {
+    serial->clear();
     uint8_t readBuf;
     std::cout << "Writing and expecting: " << std::hex << static_cast<int>(send) << " " << std::hex << static_cast<int>(expect) << std::endl;
     serial->write((const char*) &send, 1);
-    if (!serial->waitForReadyRead(100)) {
+    if (!serial->waitForBytesWritten(100) || !serial->waitForReadyRead(100)) {
         std::cout << "Timed out" << std::endl;
         return false;
     }
@@ -61,7 +62,6 @@ void SerialPortWriter::run() {
     bool isSynced = false;
 
     while(!m_quit && !isSynced) {
-        serial.clear();
         if(writeAndExpectResponse(&serial, sync_bytes[0], sync_resp[0]))
             emit message(tr("Handshake stage 1 complete"));
         else continue;
@@ -88,7 +88,6 @@ void SerialPortWriter::run() {
         return;
     }
     emit synced();
-    emit message(tr("Synced successfully"));
 
     m_mutex.lock();
     QByteArray pending = data;

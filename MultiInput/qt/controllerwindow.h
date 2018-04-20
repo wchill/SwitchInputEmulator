@@ -48,17 +48,19 @@ private:
 
     void renderDpad(QPainter &painter, const Dpad_t dpad);
     void renderButtons(QPainter &painter, const Button_t buttons);
-    void renderLeftStick(QPainter &painter, const quint8 lx, const quint8 ly);
-    void renderRightStick(QPainter &painter, const quint8 rx, const quint8 ry);
+    void renderLeftStick(QPainter &painter, const quint8 lx, const quint8 ly, const Button_t buttons);
+    void renderRightStick(QPainter &painter, const quint8 rx, const quint8 ry, const Button_t buttons);
 
     Ui::ControllerWindow *ui;
     std::unique_ptr<QImage> image;
     std::unique_ptr<QImage> zl;
     std::unique_ptr<QImage> zr;
+    std::unique_ptr<QImage> stick;
 
     QPixmap image_scaled;
     QPixmap zl_scaled;
     QPixmap zr_scaled;
+    QPixmap stick_pixmap;
     QBitmap zl_mask;
     QBitmap zr_mask;
     double scaleFactor;

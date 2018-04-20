@@ -23,9 +23,10 @@ ControllerWindow::ControllerWindow(std::shared_ptr<ControllerInput> controller, 
 
     this->setSizeGripEnabled(false);
 
-    image = std::unique_ptr<QImage>(new QImage(":/images/switch.png"));
+    image = std::unique_ptr<QImage>(new QImage(":/images/switch_nostick.png"));
     zl = std::unique_ptr<QImage>(new QImage(":/images/btn_ZL.png"));
     zr = std::unique_ptr<QImage>(new QImage(":/images/btn_ZR.png"));
+    stick = std::unique_ptr<QImage>(new QImage(":/images/stick.png"));
 
     QImage scaledImage = image->scaled(this->width(), this->height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
     scaleFactor = scaledImage.width() / (double) image->width();
@@ -34,6 +35,7 @@ ControllerWindow::ControllerWindow(std::shared_ptr<ControllerInput> controller, 
     image_scaled.convertFromImage(scaledImage);
     zl_scaled.convertFromImage(zlScaled);
     zr_scaled.convertFromImage(zrScaled);
+    stick_pixmap.convertFromImage(*stick.get());
     zl_mask = zl_scaled.createMaskFromColor(QColor(85, 85, 85), Qt::MaskOutColor);
     zr_mask = zr_scaled.createMaskFromColor(QColor(85, 85, 85), Qt::MaskOutColor);
 
@@ -44,15 +46,6 @@ ControllerWindow::ControllerWindow(std::shared_ptr<ControllerInput> controller, 
 ControllerWindow::~ControllerWindow() {
     delete ui;
 }
-
-/*
-void ControllerWindow::setSerialPortWriter(std::shared_ptr<SerialPortWriter> newWriter) {
-    if (writer) {
-        disconnect(writer.get(), SIGNAL(writeComplete()), this, SLOT(onUSBPacketSent()));
-    }
-    writer = newWriter;
-}
-*/
 
 void ControllerWindow::invalidateUi() {
     this->update();
@@ -102,10 +95,10 @@ void ControllerWindow::drawFilledPath(QPainter &painter, const std::vector<QPoin
 }
 
 void ControllerWindow::renderDpad(QPainter &painter, Dpad_t dpad) {
-    QRectF left(475, 575, 90, 90);
-    QRectF right(659, 575, 90, 90);
-    QRectF up(567, 483, 90, 90);
-    QRectF down(567, 667, 90, 90);
+    QRectF left(477, 570, 90, 90);
+    QRectF right(660, 570, 90, 90);
+    QRectF up(568, 482, 90, 90);
+    QRectF down(568, 661, 90, 90);
 
     switch (dpad) {
     case DPAD_UP:
@@ -140,23 +133,23 @@ void ControllerWindow::renderDpad(QPainter &painter, Dpad_t dpad) {
 
 void ControllerWindow::renderButtons(QPainter &painter, const Button_t buttons) {
     if (buttons & BUTTON_Y)
-        drawFilledEllipse(painter, QPointF(1220, 373), 60, 60);
+        drawFilledEllipse(painter, QPointF(1217, 370), 60, 60);
     if (buttons & BUTTON_A)
-        drawFilledEllipse(painter, QPointF(1500, 373), 60, 60);
+        drawFilledEllipse(painter, QPointF(1496, 370), 60, 60);
     if (buttons & BUTTON_X)
-        drawFilledEllipse(painter, QPointF(1360, 252), 60, 60);
+        drawFilledEllipse(painter, QPointF(1356, 249), 60, 60);
     if (buttons & BUTTON_B)
-        drawFilledEllipse(painter, QPointF(1360, 496), 60, 60);
+        drawFilledEllipse(painter, QPointF(1356, 492), 60, 60);
 
     if (buttons & BUTTON_HOME)
-        drawFilledEllipse(painter, QPointF(1014, 373), 40, 40);
+        drawFilledEllipse(painter, QPointF(1013, 370), 40, 40);
     if (buttons & BUTTON_CAPTURE)
-        drawFilledRect(painter, QRectF(728, 341, 64, 64));
+        drawFilledRect(painter, QRectF(729, 338, 64, 64));
 
     if (buttons & BUTTON_PLUS)
-        drawFilledEllipse(painter, QPointF(1106, 240), 36, 36);
+        drawFilledEllipse(painter, QPointF(1107, 237), 36, 36);
     if (buttons & BUTTON_MINUS)
-        drawFilledEllipse(painter, QPointF(666, 240), 36, 36);
+        drawFilledEllipse(painter, QPointF(667, 237), 36, 36);
 
     if (buttons & BUTTON_L) {
         std::vector<QPointF> pointsL;
@@ -186,40 +179,53 @@ void ControllerWindow::renderButtons(QPainter &painter, const Button_t buttons) 
         drawFilledRect(painter, QRectF(602, 943, 120, 120));
     if (buttons & BUTTON_ZR)
         drawFilledRect(painter, QRectF(1055, 943, 120, 120));
+}
+
+void ControllerWindow::renderLeftStick(QPainter &painter, const quint8 lx, const quint8 ly, const Button_t buttons) {
+    QPen oldPen = painter.pen();
+    int cx = 397;
+    int cy = 371;
+
+    int offx = (lx - 128) / 2;
+    int offy = (ly - 128) / 2;
+
+    int sx = cx + offx - stick_pixmap.width() / 2;
+    int sy = cy + offy - stick_pixmap.height() / 2;
+    painter.drawPixmap(sx, sy, stick_pixmap);
 
     if (buttons & BUTTON_LCLICK)
-        drawFilledEllipse(painter, QPointF(395, 373), 80, 80);
+        drawFilledEllipse(painter, QPointF(cx + offx, cy + offy + 2), stick_pixmap.width() / 3, stick_pixmap.height() / 3);
+
+    painter.setPen(oldPen);
+}
+
+void ControllerWindow::renderRightStick(QPainter &painter, const quint8 rx, const quint8 ry, const Button_t buttons) {
+    QPen oldPen = painter.pen();
+    int cx = 1121;
+    int cy = 619;
+
+    int offx = (rx - 128) / 2;
+    int offy = (ry - 128) / 2;
+
+    int sx = cx + offx - stick_pixmap.width() / 2;
+    int sy = cy + offy - stick_pixmap.height() / 2;
+    painter.drawPixmap(sx, sy, stick_pixmap);
+
     if (buttons & BUTTON_RCLICK)
-        drawFilledEllipse(painter, QPointF(1123, 620), 80, 80);
-}
+        drawFilledEllipse(painter, QPointF(cx + offx, cy + offy + 2), stick_pixmap.width() / 3, stick_pixmap.height() / 3);
 
-void ControllerWindow::renderLeftStick(QPainter &painter, const quint8 lx, const quint8 ly) {
-    if (lx == STICK_CENTER && ly == STICK_CENTER) return;
-
-    int cx = 395 - (128 - lx);
-    int cy = 373 - (128 - ly);
-    drawFilledEllipse(painter, QPointF(cx, cy), 20, 20);
-    QPen oldPen = painter.pen();
-    QPen pen(Qt::white, 5);
-    painter.setPen(pen);
-    painter.drawLine(QPointF(395, 373), QPointF(cx, cy));
     painter.setPen(oldPen);
 }
 
-void ControllerWindow::renderRightStick(QPainter &painter, const quint8 rx, const quint8 ry) {
-    if (rx == STICK_CENTER && ry == STICK_CENTER) return;
-
-    int cx = 1123 - (128 - rx);
-    int cy = 620 - (128 - ry);
-    drawFilledEllipse(painter, QPointF(cx, cy), 20, 20);
-    QPen oldPen = painter.pen();
-    QPen pen(Qt::white, 5);
-    painter.setPen(pen);
-    painter.drawLine(QPointF(1123, 620), QPointF(cx, cy));
-    painter.setPen(oldPen);
-}
-
-void ControllerWindow::paintEvent(QPaintEvent *) {
+void ControllerWindow::paintEvent(QPaintEvent *) { 
+    quint8 lx;
+    quint8 ly;
+    quint8 rx;
+    quint8 ry;
+    Dpad_t dpad;
+    Button_t button;
+    quint8 vendorSpec;
+    controller.get()->getState(&lx, &ly, &rx, &ry, &dpad, &button, &vendorSpec);
 
     QPainter painter;
     painter.begin(this);
@@ -239,19 +245,10 @@ void ControllerWindow::paintEvent(QPaintEvent *) {
     painter.scale(scaleFactor, scaleFactor);
     painter.setPen(Qt::NoPen);
 
-    quint8 lx;
-    quint8 ly;
-    quint8 rx;
-    quint8 ry;
-    Dpad_t dpad;
-    Button_t button;
-    quint8 vendorSpec;
-    controller.get()->getState(&lx, &ly, &rx, &ry, &dpad, &button, &vendorSpec);
-
     renderDpad(painter, dpad);
     renderButtons(painter, button);
-    renderLeftStick(painter, lx, ly);
-    renderRightStick(painter, rx, ry);
+    renderLeftStick(painter, lx, ly, button);
+    renderRightStick(painter, rx, ry, button);
 
     painter.end();
 }

@@ -30,6 +30,8 @@ XboxControllerInput::XboxControllerInput(int deviceId, std::shared_ptr<SerialPor
     connect(gamepad.get(), &QGamepad::connectedChanged, [=](bool connected) { emit controllerConnectionStateChanged(connected); });
 }
 
+void XboxControllerInput::begin() {}
+
 void XboxControllerInput::getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, quint8 *outRy, Dpad_t *outDpad, Button_t *outButtons, uint8_t *outVendorspec) {
     quint8 lx = STICK_CENTER;
     quint8 ly = STICK_CENTER;

@@ -54,7 +54,7 @@
 #define DPAD_NONE_NAME          "None"
 
 typedef enum {
-    DPAD_UP,
+    DPAD_UP = 0,
     DPAD_UP_RIGHT,
     DPAD_RIGHT,
     DPAD_DOWN_RIGHT,

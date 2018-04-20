@@ -18,14 +18,20 @@ SOURCES += main.cpp\
     serialportwriter.cpp \
     controllerwindow.cpp \
     controllerinput.cpp \
-    xboxcontrollerinput.cpp
+    xboxcontrollerinput.cpp \
+    tcpinputserver.cpp \
+    textcommandparser.cpp
 
 HEADERS  += multiinput.h \
     serialportwriter.h \
     controllerwindow.h \
     controllerconstants.h \
     controllerinput.h \
-    xboxcontrollerinput.h
+    xboxcontrollerinput.h \
+    tcpinputserver.h \
+    textcommandparser.h \
+    controllerstate.h \
+    optional.h
 
 FORMS    += \
     controllerwindow.ui

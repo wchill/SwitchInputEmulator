@@ -3,6 +3,15 @@
 
 ControllerInput::ControllerInput(std::shared_ptr<SerialPortWriter> writer, QObject *parent) : QObject(parent), writer(writer)
 {
+    connect(writer.get(), SIGNAL(error(QString)), this, SIGNAL(error(QString)));
+    connect(writer.get(), SIGNAL(timeout(QString)), this, SIGNAL(warning(QString)));
+    connect(writer.get(), SIGNAL(message(QString)), this, SIGNAL(message(QString)));
+    connect(writer.get(), SIGNAL(synced()), this, SLOT(onSerialReady()));
+    connect(writer.get(), SIGNAL(writeComplete()), this, SLOT(onPacketSent()));
+}
+
+void ControllerInput::onSerialReady() {
+    emit controllerReady();
 }
 
 const QByteArray ControllerInput::getData() {
@@ -15,6 +24,8 @@ const QByteArray ControllerInput::getData() {
     quint8 vendorSpec;
 
     getState(&lx, &ly, &rx, &ry, &press, &button, &vendorSpec);
+
+    button &= BUTTON_ALL;
 
     quint8 buf[9];
     qToBigEndian(button, &buf[0]);
@@ -50,7 +61,7 @@ void ControllerInput::onControllerChange() {
 }
 
 const QByteArray ControllerInput::getInitialData() {
-    const uint8_t state[] = {0x00, 0x00, 0x00, 0x80, 0x80, 0x80, 0x80, 0x00};
+    const uint8_t state[] = {0x00, 0x00, 0x08, 0x80, 0x80, 0x80, 0x80, 0x00};
     QByteArray data = QByteArray((const char*) state, sizeof(state));
     quint8 crc = 0;
     for (auto it = data.begin(); it != data.end(); ++it) {
