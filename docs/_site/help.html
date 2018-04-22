@@ -72,57 +72,7 @@
 <h3 id="a-type-in-your-commands-into-chat-a-bot-will-relay-them-to-my-server-and-my-desktop-software-will-parse-the-commands-and-queue-up-the-inputs-your-message-must-start-with-a-command-for-it-to-be-recognized">A: Type in your commands into chat. A bot will relay them to my server and my desktop software will parse the commands and queue up the inputs. Your message must start with a command for it to be recognized.</h3>
 
 <h2 id="q-what-are-the-chat-commands">Q: What are the chat commands?</h2>
-<h3 id="a-in-general-the-commands-look-like-this-not-case-sensitive">A: In general, the commands look like this (not case sensitive):</h3>
-<ul>
-  <li><code class="highlighter-rouge">press &lt;button&gt;</code> (press button for 0.25 seconds. <code class="highlighter-rouge">press</code> can be omitted, so just the button name is fine)</li>
-  <li><code class="highlighter-rouge">hold &lt;button&gt;</code> (hold button until overridden by another input)</li>
-  <li><code class="highlighter-rouge">release &lt;button&gt;</code> (release button if pressed. can also say <code class="highlighter-rouge">release</code>/<code class="highlighter-rouge">release all</code> to release all buttons)</li>
-  <li><code class="highlighter-rouge">move &lt;direction&gt;</code> (move left analog stick for 0.25 seconds)</li>
-  <li><code class="highlighter-rouge">adjust &lt;direction&gt;</code> (move left analog stick for 0.125 seconds)</li>
-  <li><code class="highlighter-rouge">look &lt;direction&gt;</code> (move right analog stick for 0.25 seconds)</li>
-  <li><code class="highlighter-rouge">&lt;special command&gt;</code> (depends on game)</li>
-</ul>
-
-<h3 id="the-list-of-valid-buttons-not-case-sensitive">The list of valid buttons (not case sensitive):</h3>
-<ul>
-  <li>A</li>
-  <li>B</li>
-  <li>X</li>
-  <li>Y</li>
-  <li>L/LB/L1</li>
-  <li>R/RB/R1</li>
-  <li>ZL/LT/L2</li>
-  <li>ZR/RT/R2</li>
-  <li>L3 (analog stick click)</li>
-  <li>R3 (analog stick click)</li>
-  <li>Up</li>
-  <li>Up Right/UpRight</li>
-  <li>Right</li>
-  <li>Down Right/DownRight</li>
-  <li>Down</li>
-  <li>Down Left/DownLeft</li>
-  <li>Left</li>
-  <li>Up Left/UpLeft</li>
-  <li>Minus</li>
-  <li>Plus</li>
-</ul>
-
-<h3 id="the-list-of-valid-directions-not-case-sensitive">The list of valid directions (not case sensitive):</h3>
-<ul>
-  <li>Up/Forward (look only accepts up)</li>
-  <li>Down/Backward/Back (look only accepts down)</li>
-  <li>Left</li>
-  <li>Right</li>
-</ul>
-
-<h2 id="in-addition-to-the-above-commands-can-be-joined-together">In addition to the above, commands can be joined together.</h2>
-<ul>
-  <li><code class="highlighter-rouge">command1 &amp; command2</code> executes the commands at the same time (so you can press both A and B simultaneously using <code class="highlighter-rouge">a &amp; b</code>).</li>
-  <li><code class="highlighter-rouge">command1, command2</code> executes the commands in series (so <code class="highlighter-rouge">a &amp; b</code> presses A first, then B).</li>
-  <li>These can be combined, for example: <code class="highlighter-rouge">move left, zl &amp; a</code> moves the left analog stick left, then presses ZL and A simultaneously.</li>
-  <li>If two inputs conflict, the latter command has priority. For example, <code class="highlighter-rouge">up &amp; down</code> will result in only <code class="highlighter-rouge">down</code> being pressed. <code class="highlighter-rouge">up, down</code> would work just fine, however.</li>
-  <li>Spaces are ignored when combining commands, so <code class="highlighter-rouge">a&amp;b</code> is fine, for example.</li>
-</ul>
+<h3 id="a-see-the-chat-help-page">A: <a href="chat_help.md">See the chat help page</a></h3>
 
 <h2 id="q-how-do-the-controllers-work">Q: How do the controllers work?</h2>
 <h3 id="a-plug-in-a-controller-into-your-computer-go-to-the-gamepad-control-page-press-a-button-to-activate-it-and-youre-set-you-can-request-a-turn-by-clicking-on-the-controller-image-each-turn-lasts-20-seconds-unless-you-are-the-only-person-waiting-for-a-turn-in-which-case-you-will-keep-your-turn-after-20-seconds-until-someone-else-requests-one-note-that-chat-can-and-will-mess-with-your-inputs">A: Plug in a controller into your computer, go to the <a href="/gamepad.html">gamepad control page</a>, press a button to activate it, and you’re set! You can request a turn by clicking on the controller image. Each turn lasts 20 seconds unless you are the only person waiting for a turn, in which case you will keep your turn after 20 seconds until someone else requests one. Note that chat can and will mess with your inputs!</h3>

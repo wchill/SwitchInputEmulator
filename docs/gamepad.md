@@ -2,4 +2,4 @@
 layout: play
 ---
 
-[Need help?](gamepadhelp.md)
+[Need help?](gamepad_help.md)

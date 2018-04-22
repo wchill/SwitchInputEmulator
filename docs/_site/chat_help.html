@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/style.css?v=291cf4da5ee238ee277a409283d63748d9f57d5a">
+    <link rel="stylesheet" href="assets/css/general.css">
+
+    <!-- Begin Jekyll SEO tag v2.4.0 -->
+<title>Notes | SwitchInputEmulator</title>
+<meta name="generator" content="Jekyll v3.7.3" />
+<meta property="og:title" content="Notes" />
+<meta property="og:locale" content="en_US" />
+<link rel="canonical" href="http://0.0.0.0:4000/chat_help.html" />
+<meta property="og:url" content="http://0.0.0.0:4000/chat_help.html" />
+<meta property="og:site_name" content="SwitchInputEmulator" />
+<script type="application/ld+json">
+{"url":"http://0.0.0.0:4000/chat_help.html","headline":"Notes","@type":"WebPage","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+</head>
+
+<body>
+
+<header>
+    <div class="container">
+        <h1><a href="index.html" class="no-link">SwitchInputEmulator</a></h1>
+        <h2></h2>
+
+        <section id="downloads">
+            
+            <a href="http://github.com/wchill/SwitchInputEmulator" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+    </div>
+</header>
+
+<div class="container">
+    <section id="main_content">
+        <link href='https://fonts.googleapis.com/css?family=Open Sans' rel='stylesheet'>
+<link rel="stylesheet" type="text/css" href="assets/css/help.css">
+
+<div class="help-container"><h1 id="notes">Notes</h1>
+<ul>
+  <li><code class="highlighter-rouge">command1 &amp; command2</code> executes the commands at the same time (so you can press both A and B simultaneously using <code class="highlighter-rouge">a &amp; b</code>).</li>
+  <li><code class="highlighter-rouge">command1, command2</code> executes the commands in series (so <code class="highlighter-rouge">a &amp; b</code> presses A first, then B).</li>
+  <li>These can be combined, for example: <code class="highlighter-rouge">move left, zl &amp; a</code> moves the left analog stick left, then presses ZL and A simultaneously.</li>
+  <li>If two inputs conflict, the latter command has priority. For example, <code class="highlighter-rouge">up &amp; down</code> will result in only <code class="highlighter-rouge">down</code> being pressed. <code class="highlighter-rouge">up, down</code> would work just fine, however.</li>
+  <li>Spaces are ignored when combining commands, so <code class="highlighter-rouge">a&amp;b</code> is fine, for example.</li>
+</ul>
+
+<h3 id="button-commands">Button commands</h3>
+<ul>
+  <li>press <parameter>
+</parameter>    <ul>
+      <li>Presses the specified button for 500ms. Just the button name can also be used</li>
+      <li>Allowed parameters: <code class="highlighter-rouge">a, b, x, y, l, lb, l1, r, rb, r1, zl, lt, l2, zr, rt, r2, minus, -, plus, +, l3, r3</code></li>
+    </ul>
+  </li>
+  <li>hold <parameter>
+</parameter>    <ul>
+      <li>Holds the specified button</li>
+      <li>Allowed parameters: <code class="highlighter-rouge">a, b, x, y, l, lb, l1, r, rb, r1, zl, lt, l2, zr, rt, r2, minus, -, plus, +, l3, r3</code></li>
+    </ul>
+  </li>
+  <li>release <parameter>
+</parameter>    <ul>
+      <li>Aliases: <em>rel</em></li>
+      <li>Releases the specified button</li>
+      <li>Allowed parameters: <code class="highlighter-rouge">a, b, x, y, l, lb, l1, r, rb, r1, zl, lt, l2, zr, rt, r2, minus, -, plus, +, l3, r3</code></li>
+    </ul>
+  </li>
+  <li>release all
+    <ul>
+      <li>Releases all inputs (buttons, dpad, analog sticks)</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="dpad-commands">DPad commands</h3>
+<ul>
+  <li>press <parameter>
+</parameter>    <ul>
+      <li>Presses the DPad in the specified direction for 500ms. Just the button name can also be used</li>
+      <li>Allowed parameters: <code class="highlighter-rouge">up, down, left, right, upleft, up left, upright, up right, downleft, down left, downright, down right</code></li>
+    </ul>
+  </li>
+  <li>hold <parameter>
+</parameter>    <ul>
+      <li>Holds the DPad in the specified direction</li>
+      <li>Allowed parameters: <code class="highlighter-rouge">up, down, left, right, upleft, up left, upright, up right, downleft, down left, downright, down right</code></li>
+    </ul>
+  </li>
+  <li>release dpad
+    <ul>
+      <li>Releases the DPad completely</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="move-commands">Move commands</h3>
+<ul>
+  <li>move <parameter>
+</parameter>    <ul>
+      <li>Moves the left analog stick in the specified direction for 500ms</li>
+      <li>Allowed parameters: <code class="highlighter-rouge">up, forward, down, backward, back, left, right, upright, up right, upleft, up left, downright, down right, downleft, down left</code></li>
+    </ul>
+  </li>
+  <li>move hold <parameter>
+</parameter>    <ul>
+      <li>Holds the left analog stick in the specified direction</li>
+      <li>Allowed parameters: <code class="highlighter-rouge">up, forward, down, backward, back, left, right, upright, up right, upleft, up left, downright, down right, downleft, down left</code></li>
+    </ul>
+  </li>
+  <li>move release <parameter>
+</parameter>    <ul>
+      <li>Aliases: <em>move rel, adjust release, adjust rel, adj rel</em></li>
+      <li>Releases the left analog stick. If direction is specified, releases that direction only, otherwise releases completely</li>
+      <li>Allowed parameters: <code class="highlighter-rouge">up, forward, down, backward, back, left, right, upright, up right, upleft, up left, downright, down right, downleft, down left</code></li>
+    </ul>
+  </li>
+  <li>move adjust <parameter>
+</parameter>    <ul>
+      <li>Aliases: <em>move adj</em></li>
+      <li>Moves the left analog stick for 500ms</li>
+      <li>Allowed parameters: <code class="highlighter-rouge">up, forward, down, backward, back, left, right, upright, up right, upleft, up left, downright, down right, downleft, down left</code></li>
+    </ul>
+  </li>
+  <li>move adjust hold <parameter>
+</parameter>    <ul>
+      <li>Holds the left analog stick halfway in the specified direction</li>
+      <li>Allowed parameters: <code class="highlighter-rouge">up, forward, down, backward, back, left, right, upright, up right, upleft, up left, downright, down right, downleft, down left</code></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="look-commands">Look commands</h3>
+<ul>
+  <li>look <parameter>
+</parameter>    <ul>
+      <li>Moves the right analog stick in the specified direction for 500ms</li>
+      <li>Allowed parameters: <code class="highlighter-rouge">up, forward, down, backward, back, left, right, upright, up right, upleft, up left, downright, down right, downleft, down left</code></li>
+    </ul>
+  </li>
+  <li>look hold <parameter>
+</parameter>    <ul>
+      <li>Holds the right analog stick in the specified direction</li>
+      <li>Allowed parameters: <code class="highlighter-rouge">up, forward, down, backward, back, left, right, upright, up right, upleft, up left, downright, down right, downleft, down left</code></li>
+    </ul>
+  </li>
+  <li>look release <parameter>
+</parameter>    <ul>
+      <li>Aliases: <em>look rel, look adjust release, look adj rel</em></li>
+      <li>Releases the right analog stick. If direction is specified, releases that direction only, otherwise releases completely</li>
+      <li>Allowed parameters: <code class="highlighter-rouge">up, forward, down, backward, back, left, right, upright, up right, upleft, up left, downright, down right, downleft, down left</code></li>
+    </ul>
+  </li>
+  <li>look adjust <parameter>
+</parameter>    <ul>
+      <li>Aliases: <em>look adj</em></li>
+      <li>Moves the right analog stick for 500ms</li>
+      <li>Allowed parameters: <code class="highlighter-rouge">up, forward, down, backward, back, left, right, upright, up right, upleft, up left, downright, down right, downleft, down left</code></li>
+    </ul>
+  </li>
+  <li>look adjust hold <parameter>
+</parameter>    <ul>
+      <li>Aliases: <em>look adj hold</em></li>
+      <li>Holds the right analog stick halfway in the specified direction</li>
+      <li>Allowed parameters: <code class="highlighter-rouge">up, forward, down, backward, back, left, right, upright, up right, upleft, up left, downright, down right, downleft, down left</code></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="other-commands">Other commands</h3>
+<ul>
+  <li>wait
+    <ul>
+      <li>Does nothing for 1000ms</li>
+    </ul>
+  </li>
+  <li>longwait
+    <ul>
+      <li>Does nothing for 2000ms</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="game-specific-commands">Game-specific commands</h3>
+<ul>
+  <li>sphere bomb
+    <ul>
+      <li>Switches to the sphere bomb rune</li>
+    </ul>
+  </li>
+  <li>cube bomb
+    <ul>
+      <li>Switches to the cube bomb rune</li>
+    </ul>
+  </li>
+  <li>magnesis
+    <ul>
+      <li>Switches to the magnesis rune</li>
+    </ul>
+  </li>
+  <li>stasis
+    <ul>
+      <li>Switches to the stasis rune</li>
+    </ul>
+  </li>
+  <li>cryonis
+    <ul>
+      <li>Switches to the cryonis rune</li>
+    </ul>
+  </li>
+  <li>camera
+    <ul>
+      <li>Switches to the camera rune</li>
+    </ul>
+  </li>
+  <li>turn 180
+    <ul>
+      <li>Turns around 180 degrees</li>
+    </ul>
+  </li>
+  <li>next weapon
+    <ul>
+      <li>Aliases: <em>next wep</em></li>
+      <li>Switches to the next weapon</li>
+    </ul>
+  </li>
+  <li>previous weapon
+    <ul>
+      <li>Aliases: <em>previous wep, prev weapon, prev wep</em></li>
+      <li>Switches to the previous weapon</li>
+    </ul>
+  </li>
+  <li>next shield
+    <ul>
+      <li>Aliases: <em>next arrow</em></li>
+      <li>Switches to the next shield. If a bow is equipped, switches to the next arrow instead.</li>
+    </ul>
+  </li>
+  <li>previous shield
+    <ul>
+      <li>Aliases: <em>prev shield, previous arrow, prev arrow</em></li>
+      <li>Switches to the previous shield. If a bow is equipped, switches to the previous arrow instead.</li>
+    </ul>
+  </li>
+  <li>save
+    <ul>
+      <li>Saves the game.</li>
+    </ul>
+  </li>
+</ul>
+
+</div>
+    </section>
+</div>
+
+
+</body>
+</html>

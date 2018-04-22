@@ -32,49 +32,7 @@ layout: help
 ### A: Type in your commands into chat. A bot will relay them to my server and my desktop software will parse the commands and queue up the inputs. Your message must start with a command for it to be recognized.
 
 ## Q: What are the chat commands?
-### A: In general, the commands look like this (not case sensitive):
-* `press <button>` (press button for 0.25 seconds. `press` can be omitted, so just the button name is fine)
-* `hold <button>` (hold button until overridden by another input)
-* `release <button>` (release button if pressed. can also say `release`/`release all` to release all buttons)
-* `move <direction>` (move left analog stick for 0.25 seconds)
-* `adjust <direction>` (move left analog stick for 0.125 seconds)
-* `look <direction>` (move right analog stick for 0.25 seconds)
-* `<special command>` (depends on game)
-
-### The list of valid buttons (not case sensitive):
-* A
-* B
-* X
-* Y
-* L/LB/L1
-* R/RB/R1
-* ZL/LT/L2
-* ZR/RT/R2
-* L3 (analog stick click)
-* R3 (analog stick click)
-* Up
-* Up Right/UpRight
-* Right
-* Down Right/DownRight
-* Down
-* Down Left/DownLeft
-* Left
-* Up Left/UpLeft
-* Minus
-* Plus
-
-### The list of valid directions (not case sensitive):
-* Up/Forward (look only accepts up)
-* Down/Backward/Back (look only accepts down)
-* Left
-* Right
-
-## In addition to the above, commands can be joined together.
-* `command1 & command2` executes the commands at the same time (so you can press both A and B simultaneously using `a & b`).
-* `command1, command2` executes the commands in series (so `a & b` presses A first, then B).
-* These can be combined, for example: `move left, zl & a` moves the left analog stick left, then presses ZL and A simultaneously.
-* If two inputs conflict, the latter command has priority. For example, `up & down` will result in only `down` being pressed. `up, down` would work just fine, however.
-* Spaces are ignored when combining commands, so `a&b` is fine, for example.
+### A: [See the chat help page](chat_help.md)
 
 ## Q: How do the controllers work?
 ### A: Plug in a controller into your computer, go to the [gamepad control page](gamepad.md), press a button to activate it, and you're set! You can request a turn by clicking on the controller image. Each turn lasts 20 seconds unless you are the only person waiting for a turn, in which case you will keep your turn after 20 seconds until someone else requests one. Note that chat can and will mess with your inputs!

@@ -1,5 +1,5 @@
 const NS_PER_SEC = 1e9;
-const TURN_TIME = 20;
+const TURN_TIME = 30;
 var net = require('net');
 
 var client = new net.Socket();
@@ -70,12 +70,14 @@ function nextTurn() {
 			}
 		}
 		return;
-	} else if (waitingTurns.size === 0 && connectedClients.has(activeClient)) {
+	}
+	else if (waitingTurns.size === 0 && connectedClients.has(activeClient)) {
 		connectedClientsMap[activeClient].send('TIME_LEFT');
 	}
 
 
 	if (waitingTurns.size > 0 && connectedClients.has(activeClient)) {
+		client.write('UPDATE 128 128 128 128 0 16383 8\r\n');
 		connectedClientsMap[activeClient].send('CLIENT_INACTIVE');
 	}
 	let before = -1;

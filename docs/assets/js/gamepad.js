@@ -66,7 +66,7 @@
             'rightStick': 128
         };
 
-        let deadzone = 0.01;
+        let deadzone = 0.10;
 
         gamepadSticks.forEach(function(stick) {
             let stickAxes = gamepad[stick];
