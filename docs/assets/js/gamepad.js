@@ -79,8 +79,8 @@
                 stickY[stick] = 128;
             } else {
                 if (inputMagnitude == 0) inputMagnitude = 1;
-                let normalX = stickAxes.x / inputMagnitude;
-                let normalY = stickAxes.y / inputMagnitude;
+                let normalX = Math.abs(stickAxes.x / inputMagnitude);
+                let normalY = Math.abs(stickAxes.y / inputMagnitude);
                 let outputX = normalX * ((stickAxes.x - deadzone) / (1 - deadzone));
                 let outputY = normalY * ((stickAxes.y - deadzone) / (1 - deadzone));
                 
