@@ -66,26 +66,34 @@
             'rightStick': 128
         };
 
-        let deadzone = 0.10;
+        let deadzone = 0.15;
 
         gamepadSticks.forEach(function(stick) {
             let stickAxes = gamepad[stick];
+            
+            // http://www.third-helix.com/2013/04/12/doing-thumbstick-dead-zones-right.html
+            
+            let inputMagnitude = Math.sqrt((stickAxes.x * stickAxes.x) + (stickAxes.y * stickAxes.y));
+            if (inputMagnitude < deadzone) {
+                stickX[stick] = 128;
+                stickY[stick] = 128;
+            } else {
+                if (inputMagnitude == 0) inputMagnitude = 1;
+                let normalX = Math.abs(stickAxes.x / inputMagnitude);
+                let normalY = Math.abs(stickAxes.y / inputMagnitude);
+                let outputX = normalX * ((stickAxes.x - deadzone) / (1 - deadzone));
+                let outputY = normalY * ((stickAxes.y - deadzone) / (1 - deadzone));
+                
+                stickX[stick] += outputX * 128;
+                if (stickX[stick] < 0) stickX[stick] = 0;
+                else if (stickX[stick] > 255) stickX[stick] = 255;
+                stickX[stick] |= 0;
 
-            if (Math.abs(stickAxes.x) - deadzone > 0) {
-                stickX[stick] += stickAxes.x * 128;
+                stickY[stick] += outputY * 128;
+                if (stickY[stick] < 0) stickY[stick] = 0;
+                else if (stickY[stick] > 255) stickY[stick] = 255;
+                stickY[stick] |= 0;
             }
-
-            if (stickX[stick] < 0) stickX[stick] = 0;
-            else if (stickX[stick] > 255) stickX[stick] = 255;
-            stickX[stick] |= 0;
-
-            if (Math.abs(stickAxes.y) - deadzone > 0) {
-                stickY[stick] += stickAxes.y * 128;
-            }
-
-            if (stickY[stick] < 0) stickY[stick] = 0;
-            else if (stickY[stick] > 255) stickY[stick] = 255;
-            stickY[stick] |= 0;
         });
 
         return `${buttonState} ${dpadState} ${stickX['leftStick']} ${stickY['leftStick']} ${stickX['rightStick']} ${stickY['rightStick']}`;
