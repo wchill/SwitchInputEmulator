@@ -1,6 +1,7 @@
 #ifndef CONTROLLERSTATE_H
 #define CONTROLLERSTATE_H
 
+#include <QObject>
 #include "controllerconstants.h"
 #include "optional.h"
 
@@ -20,6 +21,8 @@ public:
         else if (buttonsReleased && other.buttonsReleased) buttonsReleased = buttonsReleased.value() | other.buttonsReleased.value();
 
         if (other.dpad) dpad = other.dpad;
+
+        if (other.originalCommand != "") originalCommand = QObject::tr("%1 & %2").arg(originalCommand).arg(other.originalCommand);
     }
 
     QList<ControllerState> split(int numPackets) {

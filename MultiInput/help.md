@@ -2,13 +2,6 @@
 layout: help
 ---
 
-# Notes
-* `command1 & command2` executes the commands at the same time (so you can press both A and B simultaneously using `a & b`).
-* `command1, command2` executes the commands in series (so `a & b` presses A first, then B).
-* These can be combined, for example: `move left, zl & a` moves the left analog stick left, then presses ZL and A simultaneously.
-* If two inputs conflict, the latter command has priority. For example, `up & down` will result in only `down` being pressed. `up, down` would work just fine, however.
-* Spaces are ignored when combining commands, so `a&b` is fine, for example.
-
 ### Button commands
 * press <parameter>
     * Presses the specified button for 500ms. Just the button name can also be used
@@ -112,8 +105,17 @@ layout: help
 * camera
     * Switches to the camera rune
 
+* snowball
+    * Cheeses the snowball game
+
 * turn 180
     * Turns around 180 degrees
+
+* turn 180
+    * Turns around 180 degrees
+
+* turn left 90
+    * Turns left 90 degrees
 
 * next weapon
     * Aliases: *next wep*
@@ -133,4 +135,7 @@ layout: help
 
 * save
     * Saves the game.
+
+* load
+    * Loads the game.
 

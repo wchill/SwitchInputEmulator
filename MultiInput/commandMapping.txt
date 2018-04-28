@@ -1,0 +1,621 @@
+press a : a : 2
+ :  :  :  : 4 :  :  : 32
+ :  :  :  :  : 4 :  : 8
+hold a : 1
+ :  :  :  : 4 :  :  : 1
+release a : rel a : 1
+ :  :  :  :  : 4 :  : 1
+press b : b : 2
+ :  :  :  : 2 :  :  : 32
+ :  :  :  :  : 2 :  : 8
+hold b : 1
+ :  :  :  : 2 :  :  : 1
+release b : rel b : 1
+ :  :  :  :  : 2 :  : 1
+press x : x : 2
+ :  :  :  : 8 :  :  : 32
+ :  :  :  :  : 8 :  : 8
+hold x : 1
+ :  :  :  : 8 :  :  : 1
+release x : rel x : 1
+ :  :  :  :  : 8 :  : 1
+press y : y : 2
+ :  :  :  : 1 :  :  : 32
+ :  :  :  :  : 1 :  : 8
+hold y : 1
+ :  :  :  : 1 :  :  : 1
+release y : rel y : 1
+ :  :  :  :  : 1 :  : 1
+press l : press lb : press l1 : l : lb : l1 : 2
+ :  :  :  : 16 :  :  : 32
+ :  :  :  :  : 16 :  : 8
+hold l : hold lb : hold l1 : 1
+ :  :  :  : 16 :  :  : 1
+release l : release lb : release l1 : rel l : rel lb : rel l1 : 1
+ :  :  :  :  : 16 :  : 1
+press r : press rb : press r1 : r : rb : r1 : 2
+ :  :  :  : 32 :  :  : 32
+ :  :  :  :  : 32 :  : 8
+hold r : hold rb : hold r1 : 1
+ :  :  :  : 32 :  :  : 1
+release r : release rb : release r1 : rel r : rel rb : rel r1 : 1
+ :  :  :  :  : 32 :  : 1
+press zl : press lt : press l2 : zl : lt : l2 : 2
+ :  :  :  : 64 :  :  : 32
+ :  :  :  :  : 64 :  : 8
+hold zl : hold lt : hold l2 : 1
+ :  :  :  : 64 :  :  : 1
+release zl : release lt : release l2 : rel zl : rel lt : rel l2 : 1
+ :  :  :  :  : 64 :  : 1
+press zr : press rt : press r2 : zr : rt : r2 : 2
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+hold zr : hold rt : hold r2 : 1
+ :  :  :  : 128 :  :  : 1
+release zr : release rt : release r2 : rel zr : rel rt : rel r2 : 1
+ :  :  :  :  : 128 :  : 1
+press minus : press - : minus : - : 2
+ :  :  :  : 256 :  :  : 32
+ :  :  :  :  : 256 :  : 8
+hold minus : hold - : 1
+ :  :  :  : 256 :  :  : 1
+release minus : release - : rel minus : rel - : 1
+ :  :  :  :  : 256 :  : 1
+press plus : press + : plus : + : 2
+ :  :  :  : 512 :  :  : 32
+ :  :  :  :  : 512 :  : 8
+hold plus : hold + : 1
+ :  :  :  : 512 :  :  : 1
+release plus : release + : rel plus : rel + : 1
+ :  :  :  :  : 512 :  : 1
+press l3 : l3 : 2
+ :  :  :  : 1024 :  :  : 32
+ :  :  :  :  : 1024 :  : 8
+hold l3 : 1
+ :  :  :  : 1024 :  :  : 1
+release l3 : rel l3 : 1
+ :  :  :  :  : 1024 :  : 1
+press r3 : r3 : 2
+ :  :  :  : 2048 :  :  : 32
+ :  :  :  :  : 2048 :  : 8
+hold r3 : 1
+ :  :  :  : 2048 :  :  : 1
+release r3 : rel r3 : 1
+ :  :  :  :  : 2048 :  : 1
+release : rel : release all : rel all : 1
+128 : 128 : 128 : 128 : 0 : 16383 : 8 : 1
+press up : up : 2
+ :  :  :  :  :  : 0 : 32
+ :  :  :  :  :  : 8 : 8
+hold up : 1
+ :  :  :  :  :  : 0 : 1
+press down : down : 2
+ :  :  :  :  :  : 4 : 32
+ :  :  :  :  :  : 8 : 8
+hold down : 1
+ :  :  :  :  :  : 4 : 1
+press left : left : 2
+ :  :  :  :  :  : 6 : 32
+ :  :  :  :  :  : 8 : 8
+hold left : 1
+ :  :  :  :  :  : 6 : 1
+press right : right : 2
+ :  :  :  :  :  : 2 : 32
+ :  :  :  :  :  : 8 : 8
+hold right : 1
+ :  :  :  :  :  : 2 : 1
+press upleft : press up left : upleft : up left : 2
+ :  :  :  :  :  : 7 : 32
+ :  :  :  :  :  : 8 : 8
+hold upleft : hold up left : 1
+ :  :  :  :  :  : 7 : 1
+press upright : press up right : upright : up right : 2
+ :  :  :  :  :  : 1 : 32
+ :  :  :  :  :  : 8 : 8
+hold upright : hold up right : 1
+ :  :  :  :  :  : 1 : 1
+press downleft : press down left : downleft : down left : 2
+ :  :  :  :  :  : 5 : 32
+ :  :  :  :  :  : 8 : 8
+hold downleft : hold down left : 1
+ :  :  :  :  :  : 5 : 1
+press downright : press down right : downright : down right : 2
+ :  :  :  :  :  : 3 : 32
+ :  :  :  :  :  : 8 : 8
+hold downright : hold down right : 1
+ :  :  :  :  :  : 3 : 1
+release dpad : rel dpad : 1
+ :  :  :  :  :  : 8 : 1
+move up : move forward : 2
+ : 0 :  :  :  :  :  : 128
+ : 128 :  :  :  :  :  : 8
+move hold up : move hold forward : 1
+ : 0 :  :  :  :  :  : 1
+move release up : move release forward : move rel up : move rel forward : adjust release up : adjust release forward : adjust rel up : adjust rel forward : adj rel up : adj rel forward : 1
+ : 128 :  :  :  :  :  : 1
+adjust up : adjust forward : adj up : adj forward : 2
+ : 0 :  :  :  :  :  : 16
+ : 128 :  :  :  :  :  : 8
+adjust hold up : adjust hold forward : adj hold up : adj hold forward : 1
+ : 64 :  :  :  :  :  : 1
+move release  : move rel  : adjust release  : adjust rel  : adj rel  : 1
+128 : 128 :  :  :  :  :  : 1
+move down : move backward : move back : 2
+ : 255 :  :  :  :  :  : 128
+ : 128 :  :  :  :  :  : 8
+move hold down : move hold backward : move hold back : 1
+ : 255 :  :  :  :  :  : 1
+move release down : move release backward : move release back : move rel down : move rel backward : move rel back : adjust release down : adjust release backward : adjust release back : adjust rel down : adjust rel backward : adjust rel back : adj rel down : adj rel backward : adj rel back : 1
+ : 128 :  :  :  :  :  : 1
+adjust down : adjust backward : adjust back : adj down : adj backward : adj back : 2
+ : 255 :  :  :  :  :  : 16
+ : 128 :  :  :  :  :  : 8
+adjust hold down : adjust hold backward : adjust hold back : adj hold down : adj hold backward : adj hold back : 1
+ : 192 :  :  :  :  :  : 1
+move release  : move rel  : adjust release  : adjust rel  : adj rel  : 1
+128 : 128 :  :  :  :  :  : 1
+move left : 2
+0 :  :  :  :  :  :  : 128
+128 :  :  :  :  :  :  : 8
+move hold left : 1
+0 :  :  :  :  :  :  : 1
+move release left : move rel left : adjust release left : adjust rel left : adj rel left : 1
+128 :  :  :  :  :  :  : 1
+adjust left : adj left : 2
+0 :  :  :  :  :  :  : 16
+128 :  :  :  :  :  :  : 8
+adjust hold left : adj hold left : 1
+64 :  :  :  :  :  :  : 1
+move release  : move rel  : adjust release  : adjust rel  : adj rel  : 1
+128 : 128 :  :  :  :  :  : 1
+move right : 2
+255 :  :  :  :  :  :  : 128
+128 :  :  :  :  :  :  : 8
+move hold right : 1
+255 :  :  :  :  :  :  : 1
+move release right : move rel right : adjust release right : adjust rel right : adj rel right : 1
+128 :  :  :  :  :  :  : 1
+adjust right : adj right : 2
+255 :  :  :  :  :  :  : 16
+128 :  :  :  :  :  :  : 8
+adjust hold right : adj hold right : 1
+192 :  :  :  :  :  :  : 1
+move release  : move rel  : adjust release  : adjust rel  : adj rel  : 1
+128 : 128 :  :  :  :  :  : 1
+move upright : move up right : 2
+255 : 0 :  :  :  :  :  : 128
+128 : 128 :  :  :  :  :  : 8
+move hold upright : move hold up right : 1
+255 : 0 :  :  :  :  :  : 1
+move release upright : move release up right : move rel upright : move rel up right : adjust release upright : adjust release up right : adjust rel upright : adjust rel up right : adj rel upright : adj rel up right : 1
+128 : 128 :  :  :  :  :  : 1
+adjust upright : adjust up right : adj upright : adj up right : 2
+255 : 0 :  :  :  :  :  : 16
+128 : 128 :  :  :  :  :  : 8
+adjust hold upright : adjust hold up right : adj hold upright : adj hold up right : 1
+192 : 64 :  :  :  :  :  : 1
+move release  : move rel  : adjust release  : adjust rel  : adj rel  : 1
+128 : 128 :  :  :  :  :  : 1
+move upleft : move up left : 2
+0 : 0 :  :  :  :  :  : 128
+128 : 128 :  :  :  :  :  : 8
+move hold upleft : move hold up left : 1
+0 : 0 :  :  :  :  :  : 1
+move release upleft : move release up left : move rel upleft : move rel up left : adjust release upleft : adjust release up left : adjust rel upleft : adjust rel up left : adj rel upleft : adj rel up left : 1
+128 : 128 :  :  :  :  :  : 1
+adjust upleft : adjust up left : adj upleft : adj up left : 2
+0 : 0 :  :  :  :  :  : 16
+128 : 128 :  :  :  :  :  : 8
+adjust hold upleft : adjust hold up left : adj hold upleft : adj hold up left : 1
+64 : 64 :  :  :  :  :  : 1
+move release  : move rel  : adjust release  : adjust rel  : adj rel  : 1
+128 : 128 :  :  :  :  :  : 1
+move downright : move down right : 2
+255 : 255 :  :  :  :  :  : 128
+128 : 128 :  :  :  :  :  : 8
+move hold downright : move hold down right : 1
+255 : 255 :  :  :  :  :  : 1
+move release downright : move release down right : move rel downright : move rel down right : adjust release downright : adjust release down right : adjust rel downright : adjust rel down right : adj rel downright : adj rel down right : 1
+128 : 128 :  :  :  :  :  : 1
+adjust downright : adjust down right : adj downright : adj down right : 2
+255 : 255 :  :  :  :  :  : 16
+128 : 128 :  :  :  :  :  : 8
+adjust hold downright : adjust hold down right : adj hold downright : adj hold down right : 1
+192 : 192 :  :  :  :  :  : 1
+move release  : move rel  : adjust release  : adjust rel  : adj rel  : 1
+128 : 128 :  :  :  :  :  : 1
+move downleft : move down left : 2
+0 : 255 :  :  :  :  :  : 128
+128 : 128 :  :  :  :  :  : 8
+move hold downleft : move hold down left : 1
+0 : 255 :  :  :  :  :  : 1
+move release downleft : move release down left : move rel downleft : move rel down left : adjust release downleft : adjust release down left : adjust rel downleft : adjust rel down left : adj rel downleft : adj rel down left : 1
+128 : 128 :  :  :  :  :  : 1
+adjust downleft : adjust down left : adj downleft : adj down left : 2
+0 : 255 :  :  :  :  :  : 16
+128 : 128 :  :  :  :  :  : 8
+adjust hold downleft : adjust hold down left : adj hold downleft : adj hold down left : 1
+64 : 192 :  :  :  :  :  : 1
+move release  : move rel  : adjust release  : adjust rel  : adj rel  : 1
+128 : 128 :  :  :  :  :  : 1
+look up : look forward : 2
+ :  :  : 0 :  :  :  : 64
+ :  :  : 128 :  :  :  : 8
+look hold up : look hold forward : 1
+ :  :  : 0 :  :  :  : 1
+look release up : look release forward : look rel up : look rel forward : look adjust release up : look adjust release forward : look adj rel up : look adj rel forward : 1
+ :  :  : 128 :  :  :  : 1
+look adjust up : look adjust forward : look adj up : look adj forward : 2
+ :  :  : 0 :  :  :  : 16
+ :  :  : 128 :  :  :  : 8
+look adjust hold up : look adjust hold forward : look adj hold up : look adj hold forward : 1
+ :  :  : 64 :  :  :  : 1
+look release  : look rel  : look adjust release  : look adj rel  : 1
+ :  : 128 : 128 :  :  :  : 1
+look down : look backward : look back : 2
+ :  :  : 255 :  :  :  : 64
+ :  :  : 128 :  :  :  : 8
+look hold down : look hold backward : look hold back : 1
+ :  :  : 255 :  :  :  : 1
+look release down : look release backward : look release back : look rel down : look rel backward : look rel back : look adjust release down : look adjust release backward : look adjust release back : look adj rel down : look adj rel backward : look adj rel back : 1
+ :  :  : 128 :  :  :  : 1
+look adjust down : look adjust backward : look adjust back : look adj down : look adj backward : look adj back : 2
+ :  :  : 255 :  :  :  : 16
+ :  :  : 128 :  :  :  : 8
+look adjust hold down : look adjust hold backward : look adjust hold back : look adj hold down : look adj hold backward : look adj hold back : 1
+ :  :  : 192 :  :  :  : 1
+look release  : look rel  : look adjust release  : look adj rel  : 1
+ :  : 128 : 128 :  :  :  : 1
+look left : 2
+ :  : 0 :  :  :  :  : 64
+ :  : 128 :  :  :  :  : 8
+look hold left : 1
+ :  : 0 :  :  :  :  : 1
+look release left : look rel left : look adjust release left : look adj rel left : 1
+ :  : 128 :  :  :  :  : 1
+look adjust left : look adj left : 2
+ :  : 0 :  :  :  :  : 16
+ :  : 128 :  :  :  :  : 8
+look adjust hold left : look adj hold left : 1
+ :  : 64 :  :  :  :  : 1
+look release  : look rel  : look adjust release  : look adj rel  : 1
+ :  : 128 : 128 :  :  :  : 1
+look right : 2
+ :  : 255 :  :  :  :  : 64
+ :  : 128 :  :  :  :  : 8
+look hold right : 1
+ :  : 255 :  :  :  :  : 1
+look release right : look rel right : look adjust release right : look adj rel right : 1
+ :  : 128 :  :  :  :  : 1
+look adjust right : look adj right : 2
+ :  : 255 :  :  :  :  : 16
+ :  : 128 :  :  :  :  : 8
+look adjust hold right : look adj hold right : 1
+ :  : 192 :  :  :  :  : 1
+look release  : look rel  : look adjust release  : look adj rel  : 1
+ :  : 128 : 128 :  :  :  : 1
+look upright : look up right : 2
+ :  : 255 : 0 :  :  :  : 64
+ :  : 128 : 128 :  :  :  : 8
+look hold upright : look hold up right : 1
+ :  : 255 : 0 :  :  :  : 1
+look release upright : look release up right : look rel upright : look rel up right : look adjust release upright : look adjust release up right : look adj rel upright : look adj rel up right : 1
+ :  : 128 : 128 :  :  :  : 1
+look adjust upright : look adjust up right : look adj upright : look adj up right : 2
+ :  : 255 : 0 :  :  :  : 16
+ :  : 128 : 128 :  :  :  : 8
+look adjust hold upright : look adjust hold up right : look adj hold upright : look adj hold up right : 1
+ :  : 192 : 64 :  :  :  : 1
+look release  : look rel  : look adjust release  : look adj rel  : 1
+ :  : 128 : 128 :  :  :  : 1
+look upleft : look up left : 2
+ :  : 0 : 0 :  :  :  : 64
+ :  : 128 : 128 :  :  :  : 8
+look hold upleft : look hold up left : 1
+ :  : 0 : 0 :  :  :  : 1
+look release upleft : look release up left : look rel upleft : look rel up left : look adjust release upleft : look adjust release up left : look adj rel upleft : look adj rel up left : 1
+ :  : 128 : 128 :  :  :  : 1
+look adjust upleft : look adjust up left : look adj upleft : look adj up left : 2
+ :  : 0 : 0 :  :  :  : 16
+ :  : 128 : 128 :  :  :  : 8
+look adjust hold upleft : look adjust hold up left : look adj hold upleft : look adj hold up left : 1
+ :  : 64 : 64 :  :  :  : 1
+look release  : look rel  : look adjust release  : look adj rel  : 1
+ :  : 128 : 128 :  :  :  : 1
+look downright : look down right : 2
+ :  : 255 : 255 :  :  :  : 64
+ :  : 128 : 128 :  :  :  : 8
+look hold downright : look hold down right : 1
+ :  : 255 : 255 :  :  :  : 1
+look release downright : look release down right : look rel downright : look rel down right : look adjust release downright : look adjust release down right : look adj rel downright : look adj rel down right : 1
+ :  : 128 : 128 :  :  :  : 1
+look adjust downright : look adjust down right : look adj downright : look adj down right : 2
+ :  : 255 : 255 :  :  :  : 16
+ :  : 128 : 128 :  :  :  : 8
+look adjust hold downright : look adjust hold down right : look adj hold downright : look adj hold down right : 1
+ :  : 192 : 192 :  :  :  : 1
+look release  : look rel  : look adjust release  : look adj rel  : 1
+ :  : 128 : 128 :  :  :  : 1
+look downleft : look down left : 2
+ :  : 0 : 255 :  :  :  : 64
+ :  : 128 : 128 :  :  :  : 8
+look hold downleft : look hold down left : 1
+ :  : 0 : 255 :  :  :  : 1
+look release downleft : look release down left : look rel downleft : look rel down left : look adjust release downleft : look adjust release down left : look adj rel downleft : look adj rel down left : 1
+ :  : 128 : 128 :  :  :  : 1
+look adjust downleft : look adjust down left : look adj downleft : look adj down left : 2
+ :  : 0 : 255 :  :  :  : 16
+ :  : 128 : 128 :  :  :  : 8
+look adjust hold downleft : look adjust hold down left : look adj hold downleft : look adj hold down left : 1
+ :  : 64 : 192 :  :  :  : 1
+look release  : look rel  : look adjust release  : look adj rel  : 1
+ :  : 128 : 128 :  :  :  : 1
+wait : 2
+ :  :  :  :  :  :  : 128
+ :  :  :  :  :  :  : 1
+longwait : 2
+ :  :  :  :  :  :  : 256
+ :  :  :  :  :  :  : 1
+sphere bomb : 4
+ :  :  :  :  :  : 0 : 32
+ :  : 0 : 128 :  :  :  : 128
+ :  : 128 : 128 :  :  :  : 8
+ :  :  :  :  :  : 8 : 1
+cube bomb : 6
+ :  :  :  :  :  : 0 : 32
+ :  : 0 : 128 :  :  :  : 128
+ :  : 128 : 128 :  :  :  : 8
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  :  :  : 8 : 1
+magnesis : 8
+ :  :  :  :  :  : 0 : 32
+ :  : 0 : 128 :  :  :  : 128
+ :  : 128 : 128 :  :  :  : 8
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  :  :  : 8 : 1
+stasis : 10
+ :  :  :  :  :  : 0 : 32
+ :  : 0 : 128 :  :  :  : 128
+ :  : 128 : 128 :  :  :  : 8
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  :  :  : 8 : 1
+cryonis : 12
+ :  :  :  :  :  : 0 : 32
+ :  : 0 : 128 :  :  :  : 128
+ :  : 128 : 128 :  :  :  : 8
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  :  :  : 8 : 1
+camera : 14
+ :  :  :  :  :  : 0 : 32
+ :  : 0 : 128 :  :  :  : 128
+ :  : 128 : 128 :  :  :  : 8
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  :  :  : 8 : 1
+snowball : 125
+ :  :  :  : 4 :  :  : 18
+ :  :  :  :  : 4 :  : 93
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 4 :  :  : 18
+ :  :  :  :  : 4 :  : 48
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 4 :  :  : 18
+ :  :  :  :  : 4 :  : 48
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 4 :  :  : 18
+ :  :  :  :  : 4 :  : 978
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 4 :  :  : 18
+ :  :  :  :  : 4 :  : 153
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 4 :  :  : 18
+ :  :  :  :  : 4 :  : 48
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 4 :  :  : 18
+ :  :  :  :  : 4 :  : 303
+ :  :  :  : 4 :  :  : 18
+ :  :  :  :  : 4 :  : 453
+ :  :  :  : 4 :  :  : 18
+ :  :  :  :  : 4 :  : 153
+0 : 128 :  :  :  :  :  : 129
+128 : 0 :  :  :  :  :  : 243
+ : 0 :  :  : 32 :  :  : 78
+ : 128 :  :  :  : 32 :  : 93
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 48
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 1353
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+128 : 255 :  :  :  :  :  : 33
+128 : 128 :  :  :  :  :  : 63
+ :  :  :  : 4 :  :  : 18
+ :  :  :  :  : 4 :  : 153
+128 : 0 :  :  :  :  :  : 33
+ : 0 :  :  : 32 :  :  : 78
+ : 128 :  :  :  : 32 :  : 528
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+ :  :  :  : 2 :  :  : 18
+ :  :  :  :  : 2 :  : 63
+turn 180 : 2
+ :  : 255 :  :  :  :  : 208
+ :  : 128 :  :  :  :  : 8
+next weapon : next wep : 4
+ :  :  :  :  :  : 2 : 32
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  :  :  : 8 : 1
+previous weapon : previous wep : prev weapon : prev wep : 4
+ :  :  :  :  :  : 2 : 32
+ :  :  :  : 64 :  :  : 32
+ :  :  :  :  : 64 :  : 8
+ :  :  :  :  :  : 8 : 1
+next shield : next arrow : 4
+ :  :  :  :  :  : 6 : 32
+ :  :  :  : 128 :  :  : 32
+ :  :  :  :  : 128 :  : 8
+ :  :  :  :  :  : 8 : 1
+previous shield : prev shield : previous arrow : prev arrow : 4
+ :  :  :  :  :  : 6 : 32
+ :  :  :  : 64 :  :  : 32
+ :  :  :  :  : 64 :  : 8
+ :  :  :  :  :  : 8 : 1
+save : 24
+ :  :  :  : 2 :  :  : 32
+ :  :  :  :  : 2 :  : 8
+ :  :  :  : 512 :  :  : 32
+ :  :  :  :  : 512 :  : 8
+ :  :  :  : 32 :  :  : 32
+ :  :  :  :  : 32 :  : 8
+ :  :  :  : 32 :  :  : 32
+ :  :  :  :  : 32 :  : 8
+ :  :  :  :  :  : 0 : 32
+ :  :  :  :  :  : 8 : 8
+ :  :  :  :  :  : 0 : 32
+ :  :  :  :  :  : 8 : 8
+ :  :  :  :  :  : 0 : 32
+ :  :  :  :  :  : 8 : 8
+ :  :  :  :  :  : 0 : 32
+ :  :  :  :  :  : 8 : 8
+ :  :  :  :  :  : 0 : 32
+ :  :  :  :  :  : 8 : 8
+ :  :  :  : 4 :  :  : 32
+ :  :  :  :  : 4 :  : 8
+ :  :  :  :  :  : 0 : 32
+ :  :  :  :  :  : 8 : 8
+ :  :  :  : 4 :  :  : 32
+ :  :  :  :  : 4 :  : 8
+load : 28
+ :  :  :  : 2 :  :  : 32
+ :  :  :  :  : 2 :  : 8
+ :  :  :  : 512 :  :  : 32
+ :  :  :  :  : 512 :  : 8
+ :  :  :  : 32 :  :  : 32
+ :  :  :  :  : 32 :  : 8
+ :  :  :  : 32 :  :  : 32
+ :  :  :  :  : 32 :  : 8
+ :  :  :  :  :  : 0 : 32
+ :  :  :  :  :  : 8 : 8
+ :  :  :  :  :  : 0 : 32
+ :  :  :  :  :  : 8 : 8
+ :  :  :  :  :  : 0 : 32
+ :  :  :  :  :  : 8 : 8
+ :  :  :  :  :  : 0 : 32
+ :  :  :  :  :  : 8 : 8
+ :  :  :  :  :  : 0 : 32
+ :  :  :  :  :  : 8 : 8
+ :  :  :  :  :  : 4 : 32
+ :  :  :  :  :  : 8 : 8
+ :  :  :  : 4 :  :  : 32
+ :  :  :  :  : 4 :  : 8
+ :  :  :  :  :  : 0 : 32
+ :  :  :  :  :  : 8 : 8
+ :  :  :  :  :  : 0 : 32
+ :  :  :  :  :  : 8 : 8
+ :  :  :  : 4 :  :  : 32
+ :  :  :  :  : 4 :  : 8

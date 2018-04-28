@@ -134,7 +134,7 @@ wss.on('connection', function connection(ws) {
 		else {
 			if (activeClient == ws.clientId && commandRegex.exec(data)) client.write(data + "\r\n");
 			else if (data == "REQUEST_TURN" && connectedClients.has(ws.clientId)) waitForTurn(ws.clientId);
-			console.log(`Websocket received data: ${data}`);
+			//console.log(`Websocket received data: ${data}`);
 		}
 
 	});

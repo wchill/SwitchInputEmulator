@@ -100,16 +100,33 @@ ControllerState TextCommandParser::parseUpdateFrame(QString line) {
     return state;
 }
 
-QList<ControllerState> TextCommandParser::parseSimultaneousCommands(QString line) {
+std::unique_ptr<AbstractControllerCommand> TextCommandParser::parseSimultaneousCommands(QString line) {
+    int repeat = 1;
+    bool isRepeat = false;
+
+    QRegExp repeatRegex("repeat (\\d+): (.*)");
+    if (repeatRegex.exactMatch(line)) {
+        isRepeat = true;
+        repeat = repeatRegex.cap(1).toInt();
+        line = repeatRegex.cap(2);
+    }
+
+    line = line.simplified();
+
     QVector<QStringRef> subcommands = line.splitRef("&", QString::SkipEmptyParts);
     QList<QList<ControllerState>> allPackets;
 
+    QStringList canonicalNames;
+
     for (auto it = subcommands.begin(); it != subcommands.end(); ++it) {
         QList<ControllerState> packets = parseIndividualCommand(it->toString());
-        if (packets.length() > 0) allPackets << packets;
+        if (packets.length() > 0) {
+            allPackets << packets;
+            canonicalNames << it->toString();
+        }
     }
 
-    if (allPackets.length() == 0) return QList<ControllerState>();
+    if (allPackets.length() == 0) return std::unique_ptr<AbstractControllerCommand>();
 
     QList<ControllerState> firstPackets = allPackets.at(0);
 
@@ -137,32 +154,87 @@ QList<ControllerState> TextCommandParser::parseSimultaneousCommands(QString line
         }
     }
 
-    return firstPackets;
+    QString canonicalName = canonicalNames.join(" & ");
+
+    if (isRepeat) {
+        CompositeControllerCommand *result = new CompositeControllerCommand(QString("repeat %1: %2").arg(repeat).arg(canonicalName));
+        for (int i = 0; i < repeat; i++) {
+            result->addCommand(std::unique_ptr<AbstractControllerCommand>(new ControllerCommand(canonicalName, firstPackets)));
+        }
+        return std::unique_ptr<AbstractControllerCommand>(result);
+    } else {
+        return std::unique_ptr<AbstractControllerCommand>(new ControllerCommand(canonicalName, firstPackets));
+    }
 }
 
 QList<ControllerState> TextCommandParser::parseIndividualCommand(QString line) {
     line = line.simplified();
     if (commandMapping.contains(line)) {
-        return commandMapping[line];
+        QList<ControllerState> mapping = commandMapping[line];
+        for (auto it = mapping.begin(); it != mapping.end(); it++) {
+            it->originalCommand = line;
+        }
+        return mapping;
     }
     return QList<ControllerState>();
 }
 
-QList<ControllerState> TextCommandParser::parseLine(QString line) {
-    QList<ControllerState> queuedStates;
+std::unique_ptr<AbstractControllerCommand> TextCommandParser::parseLine(QString line) {
+    std::vector<std::unique_ptr<AbstractControllerCommand>> queuedStates;
     line = line.toLower().simplified().remove("command ");
+
+    int repeatAll = 1;
+    bool isRepeat = false;
+
+    QRegExp repeatRegex("repeat all (\\d+): (.*)");
+    if (repeatRegex.exactMatch(line)) {
+        isRepeat = true;
+        repeatAll = repeatRegex.cap(1).toInt();
+        line = repeatRegex.cap(2);
+    }
+
     QVector<QStringRef> commands = line.splitRef(",", QString::SkipEmptyParts);
 
     if (commands.length() == 0)
-        return QList<ControllerState>();
+        return std::unique_ptr<AbstractControllerCommand>();
 
-    queuedStates << parseSimultaneousCommands(commands.at(0).toString());
+    QStringList canonicalNames;
 
-    if (queuedStates.length() == 0)
-        return QList<ControllerState>();
+    auto state = parseSimultaneousCommands(commands.at(0).toString());
+    if (!state)
+        return std::unique_ptr<AbstractControllerCommand>();
+    canonicalNames << state.get()->getName();
+    queuedStates.push_back(std::move(state));
+
+    if (queuedStates.size() == 0)
+        return std::unique_ptr<AbstractControllerCommand>();
 
     for (auto it = std::next(commands.begin()); it != commands.end(); ++it) {
-        queuedStates << parseSimultaneousCommands(it->toString());
+        state = parseSimultaneousCommands(it->toString());
+        if (!state)
+            return std::unique_ptr<AbstractControllerCommand>();
+        canonicalNames << state.get()->getName();
+        queuedStates.push_back(std::move(state));
     }
-    return queuedStates;
+
+    QString canonicalName = canonicalNames.join(", ");
+
+    if (isRepeat) {
+        CompositeControllerCommand *temp = new CompositeControllerCommand(line);
+        for (auto it = queuedStates.begin(); it != queuedStates.end(); ++it) {
+            temp->addCommand(it->get()->clone());
+        }
+        std::unique_ptr<AbstractControllerCommand> tempPtr(temp);
+        CompositeControllerCommand *result = new CompositeControllerCommand(QString("repeat all %1: %2").arg(repeatAll).arg(canonicalName));
+        for (int i = 0; i < repeatAll; i++) {
+            result->addCommand(tempPtr.get()->clone());
+        }
+        return std::unique_ptr<AbstractControllerCommand>(result);
+    } else {
+        CompositeControllerCommand *result = new CompositeControllerCommand(canonicalName);
+        for (auto it = queuedStates.begin(); it != queuedStates.end(); ++it) {
+            result->addCommand(it->get()->clone());
+        }
+        return std::unique_ptr<AbstractControllerCommand>(result);
+    }
 }

@@ -4,8 +4,8 @@
 #include <QtNetwork>
 #include <QMap>
 #include <QFileSystemWatcher>
-#include <QQueue>
 #include <QSet>
+#include <queue>
 #include "textcommandparser.h"
 #include "controllerconstants.h"
 #include "controllerinput.h"
@@ -30,15 +30,20 @@ private slots:
 private:
     void cleanupConnection(QTcpSocket *client);
     void onIncomingData(QTcpSocket *client);
+    void broadcastToListeners(QString data);
 
     ControllerState currentState;
-    ControllerState currentCommand;
-    QQueue<ControllerState> commandQueue;
+    ControllerState currentCommandState;
+    std::unique_ptr<AbstractControllerCommand> currentCommand;
+    //ControllerState currentCommand;
+    std::queue<std::unique_ptr<AbstractControllerCommand>> commandQueue;
     bool isSerialReady = false;
 
     QTcpServer *tcpServer = nullptr;
     QNetworkSession *networkSession = nullptr;
     QSet<QTcpSocket*> clients;
+
+    QSet<QTcpSocket*> notifyClients;
 
     QFileSystemWatcher commandMapWatcher;
     TextCommandParser commandParser;

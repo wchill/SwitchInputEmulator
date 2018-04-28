@@ -10,8 +10,18 @@ TcpInputServer::TcpInputServer(std::shared_ptr<SerialPortWriter> writer, QObject
     currentState.dpad = DPAD_NONE;
     currentState.buttonsPressed = BUTTON_NONE;
     currentState.buttonsReleased = BUTTON_NONE;
+    currentState.waitPackets = 0;
 
-    currentCommand.waitPackets = 0;
+    currentCommandState.lx = STICK_CENTER;
+    currentCommandState.ly = STICK_CENTER;
+    currentCommandState.rx = STICK_CENTER;
+    currentCommandState.ry = STICK_CENTER;
+    currentCommandState.dpad = DPAD_NONE;
+    currentCommandState.buttonsPressed = BUTTON_NONE;
+    currentCommandState.buttonsReleased = BUTTON_NONE;
+    currentCommandState.waitPackets = 0;
+
+    currentCommand = std::unique_ptr<AbstractControllerCommand>();
 
     connect(&commandMapWatcher, &QFileSystemWatcher::fileChanged, this, &TcpInputServer::onMappingFileChange);
     commandMapWatcher.addPath("commandMapping.txt");
@@ -132,10 +142,10 @@ void TcpInputServer::createConnection() {
         emit controllerReady();
     }
 }
-
 void TcpInputServer::cleanupConnection(QTcpSocket *client) {
     client->deleteLater();
     clients.remove(client);
+    notifyClients.remove(client);
     client = nullptr;
 
     if (clients.size() == 0)
@@ -148,10 +158,18 @@ void TcpInputServer::onIncomingData(QTcpSocket *client) {
 
         if (line.startsWith("update ")) {
             //emit message("Update frame: " + line);
-            commandQueue << commandParser.parseUpdateFrame(line);
+            commandQueue.push(std::move(std::unique_ptr<AbstractControllerCommand>(new ControllerCommand("Controller update", commandParser.parseUpdateFrame(line)))));
+        } else if (line == "command cancel") {
+            commandQueue = std::queue<std::unique_ptr<AbstractControllerCommand>>();
+            currentCommand.reset();
         } else if (line.startsWith("command ")) {
             //emit message("Command frame: " + line);
-            commandQueue << commandParser.parseLine(line);
+            auto state = commandParser.parseLine(line);
+            if (state)
+                commandQueue.push(std::move(state));
+        } else if (line == "subscribe") {
+            client->write("SUBSCRIBE: You are now subscribed\n");
+            notifyClients.insert(client);
         }
     }
 }
@@ -166,23 +184,37 @@ void TcpInputServer::getState(quint8 *outLx, quint8 *outLy, quint8 *outRx, quint
     if (outVendorspec) *outVendorspec = 0;
 }
 
-void TcpInputServer::onPacketSent() {
-    if (currentCommand.waitPackets == 0 && !commandQueue.isEmpty()) {
-        currentCommand = commandQueue.dequeue();
+void TcpInputServer::broadcastToListeners(QString data) {
+    for (auto it = notifyClients.begin(); it != notifyClients.end(); it++) {
+        (*it)->write((data + "\n").toUtf8());
+    }
+}
 
-        if (currentCommand.lx) currentState.lx = currentCommand.lx;
-        if (currentCommand.ly) currentState.ly = currentCommand.ly;
-        if (currentCommand.rx) currentState.rx = currentCommand.rx;
-        if (currentCommand.ry) currentState.ry = currentCommand.ry;
-        if (currentCommand.dpad) currentState.dpad = currentCommand.dpad;
-        if (currentCommand.buttonsPressed) currentState.buttonsPressed = currentState.buttonsPressed.value() | currentCommand.buttonsPressed.value();
-        if (currentCommand.buttonsReleased) currentState.buttonsPressed = currentState.buttonsPressed.value() & ~(currentCommand.buttonsReleased.value());
+void TcpInputServer::onPacketSent() {
+    if (currentCommandState.waitPackets <= 0) {
+        while (!currentCommand || !currentCommand.get()->hasPackets()) {
+            if (commandQueue.empty()) return;
+            currentCommand = std::move(commandQueue.front());
+            int frameLen = currentCommand.get()->getRemainingPackets();
+            broadcastToListeners(tr("COMMAND: command(%1) time(%2)").arg(currentCommand.get()->getName()).arg(frameLen * 78125));
+            commandQueue.pop();
+        }
+        currentCommandState = currentCommand.get()->getNextState();
+        broadcastToListeners(tr("STATE: command(%1) time(%2)").arg(currentCommandState.originalCommand).arg(currentCommandState.waitPackets * 78125));
+
+        if (currentCommandState.lx) currentState.lx = currentCommandState.lx;
+        if (currentCommandState.ly) currentState.ly = currentCommandState.ly;
+        if (currentCommandState.rx) currentState.rx = currentCommandState.rx;
+        if (currentCommandState.ry) currentState.ry = currentCommandState.ry;
+        if (currentCommandState.dpad) currentState.dpad = currentCommandState.dpad;
+        if (currentCommandState.buttonsPressed) currentState.buttonsPressed = currentState.buttonsPressed.value() | currentCommandState.buttonsPressed.value();
+        if (currentCommandState.buttonsReleased) currentState.buttonsPressed = currentState.buttonsPressed.value() & ~(currentCommandState.buttonsReleased.value());
 
         QByteArray newData = getData();
         writer.get()->changeData(newData);
         emit controllerStateChanged(newData);
     }
-    if (currentCommand.waitPackets > 0) {
-        currentCommand.waitPackets--;
+    if (currentCommandState.waitPackets > 0) {
+        currentCommandState.waitPackets--;
     }
 }

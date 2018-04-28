@@ -20,7 +20,10 @@ SOURCES += main.cpp\
     controllerinput.cpp \
     xboxcontrollerinput.cpp \
     tcpinputserver.cpp \
-    textcommandparser.cpp
+    textcommandparser.cpp \
+    compositecontrollercommand.cpp \
+    controllercommand.cpp \
+    controlleropenglwidget.cpp
 
 HEADERS  += multiinput.h \
     serialportwriter.h \
@@ -31,10 +34,13 @@ HEADERS  += multiinput.h \
     tcpinputserver.h \
     textcommandparser.h \
     controllerstate.h \
-    optional.h
+    optional.h \
+    compositecontrollercommand.h \
+    abstractcontrollercommand.h \
+    controllercommand.h \
+    controlleropenglwidget.h
 
-FORMS    += \
-    controllerwindow.ui
+FORMS    +=
 
 RESOURCES += \
     resources.qrc

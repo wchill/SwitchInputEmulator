@@ -1,6 +1,8 @@
 #include "multiinput.h"
 #include "controllerconstants.h"
 #include <QApplication>
+#include <QSurfaceFormat>
+#include <QGamepadManager>
 
 int main(int argc, char *argv[])
 {
@@ -10,6 +12,13 @@ int main(int argc, char *argv[])
 
     qRegisterMetaType<Dpad_t>();
     qRegisterMetaType<Button_t>("Button_t");
+
+    QSurfaceFormat format;
+    format.setDepthBufferSize(24);
+    format.setStencilBufferSize(8);
+    format.setVersion(3, 2);
+    format.setProfile(QSurfaceFormat::CoreProfile);
+    QSurfaceFormat::setDefaultFormat(format);
 
     QGamepadManager::instance();
     QWindow* window = new QWindow();
