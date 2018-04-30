@@ -49,9 +49,7 @@
         this.listeners = {
             'gamepadconnected': jQuery.proxy(function(e) {
                 var gamepad = e.originalEvent.gamepad;
-                if (gamepad.mapping === 'standard') {
-                    this.connectedGamepad = gamepad;
-                }
+                this.connectedGamepad = gamepad;
             }),
             'gamepaddisconnected': jQuery.proxy(function(e) {
                 var gamepad = e.originalEvent.gamepad;
@@ -143,6 +141,28 @@
         }
 
         return null;
+    };
+
+    PxGamepad.prototype.getAllGamepads = function() {
+        // fetch all available gamepads
+        let gamepads;
+        if (navigator.getGamepads) {
+            gamepads = navigator.getGamepads();
+        } else if (navigator.webkitGetGamepads) {
+            gamepads = navigator.webkitGetGamepads();
+        }
+
+        if (gamepads) {
+            return gamepads;
+        }
+
+        return null;
+    };
+
+    PxGamepad.prototype.selectGamepad = function(index) {
+        let allGp = this.getAllGamepads();
+        this.connectedGamepad = allGp[index];
+        console.log(this.connectedGamepad);
     };
 
     // should be called during each frame update

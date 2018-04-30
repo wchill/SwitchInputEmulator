@@ -116,6 +116,8 @@ GEM
       jekyll (~> 3.3)
     jekyll-gist (1.5.0)
       octokit (~> 4.2)
+    jekyll-git_metadata (0.2.0)
+      jekyll (~> 3.0)
     jekyll-github-metadata (2.9.4)
       jekyll (~> 3.1)
       octokit (~> 4.0, != 4.4.0)
@@ -246,6 +248,7 @@ PLATFORMS
 
 DEPENDENCIES
   github-pages
+  jekyll-git_metadata
   jekyll-relative-links
   wdm (>= 0.1.0)
 

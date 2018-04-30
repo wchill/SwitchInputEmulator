@@ -1,10 +1,13 @@
-#gamepadCanvas {
+.gamepadCanvas {
     display: block;
     margin-left: auto;
     margin-right: auto;
 }
-#gamepadStatusContainer {
+#gamepadStatusContainer, .center-text {
     text-align: center;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 #gamepadStatusContainer > h3, h4 {
     margin-bottom: 0;
@@ -28,4 +31,11 @@
 }
 #help {
     text-align: center;
+}
+#version {
+    text-align: center;
+    font-size: 0.8em;
+}
+[v-cloak] {
+    display: none;
 }

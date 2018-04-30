@@ -4,19 +4,22 @@ layout: default
 
 <link rel="stylesheet" type="text/css" href="assets/css/gamepad.css">
 
-
-
-<div id="app">
+<div id="app" v-cloak>
     <div id="gamepadStatusContainer">
         <h3>Status:</h3>
         <h4 id="gamepadStatus" class="inactive" v-text="connectionState"></h4>
         <h4 id="gamepadActive" class="inactive" v-text="turnState"></h4>
     </div>
+
+    <component v-bind:is="currentControllerComponent" v-bind:gamepadindex="currentController" v-bind:gamepadname="gamepadName" v-bind:axes="axes" v-bind:buttons="buttons"></component>
+
+    <div id="help">{{content}}</div>
+    <div id="footer">
+        <div id="version"><span>(( commitHash ))</span></div>
+    </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
 <script src="https://vuejs.org/js/vue.js"></script>
+<script src="assets/js/websocket.js"></script>
 <script src="assets/js/stats.js"></script>
 <script src="assets/js/VueGamepad.js"></script>
-
-<div id="help">{{content}}</div>

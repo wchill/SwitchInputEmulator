@@ -6,6 +6,7 @@ moc_*.cpp
 moc_*.h
 .qmake.stash
 *.pro.user.*
+*.pro.user
 qt/Makefile
 qt/qrc_resources.cpp
 qt/ui_*.h
