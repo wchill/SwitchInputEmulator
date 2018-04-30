@@ -136,7 +136,7 @@
         if (gamepads) {
             for (let i = 0, len = gamepads.length; i < len; i++) {
                 gp = gamepads[i];
-                if (gp && gp.mapping === 'standard') {
+                if (gp && gp.id.indexOf('vJoy') < 0) {
                     return gp;
                 }
             }
