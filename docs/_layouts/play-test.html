@@ -11,7 +11,7 @@ layout: default
         <h4 id="gamepadActive" class="inactive" v-text="turnState"></h4>
     </div>
 
-    <component v-bind:is="currentControllerComponent" v-bind:gamepadindex="currentController" v-bind:gamepadname="gamepadName" v-bind:axes="axes" v-bind:buttons="buttons"></component>
+    <component v-bind:is="currentControllerComponent" v-bind:gamepadindex="currentController" v-bind:gamepadname="gamepadName" v-bind:axes="axes" v-bind:buttons="buttons" v-on:update="onChildUpdate"></component>
 
     <div id="help">{{content}}</div>
     <div id="footer">
