@@ -10,7 +10,9 @@ layout: default
         <h4 id="gamepadStatus" class="inactive" v-text="connectionState"></h4>
         <h4 id="gamepadActive" class="inactive" v-text="turnState"></h4>
     </div>
+    <server-status></server-status>
 
+    <controller-select class="center-text" v-model="currentController" v-bind:gamepads="allControllers"></controller-select>
     <component v-bind:is="currentControllerComponent" v-bind:gamepadindex="currentController" v-bind:gamepadname="gamepadName" v-bind:axes="axes" v-bind:buttons="buttons" v-on:update="onChildUpdate"></component>
 
     <div id="help">{{content}}</div>

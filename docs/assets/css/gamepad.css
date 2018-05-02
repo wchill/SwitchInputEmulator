@@ -39,3 +39,6 @@
 [v-cloak] {
     display: none;
 }
+.stats {
+    float: right;
+}
