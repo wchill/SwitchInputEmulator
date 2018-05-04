@@ -1,3 +1,16 @@
+const stateEnum = Object.freeze({
+    NOT_CONNECTED: 1,
+    CONNECTED_NO_CONTROLLER: 2,
+    CONNECTED_UNSUPPORTED_CONTROLLER: 3,
+    CONNECTED_INACTIVE: 4,
+    CONNECTED_WAITING: 5,
+    CONNECTED_ACTIVE: 6,
+    ERROR: 7,
+    CONNECTING: 8
+});
+
+const statusBus = new Vue();
+
 Vue.mixin({
     delimiters: ['((', '))']
 });
@@ -75,7 +88,8 @@ let baseController = {
                 rx: 0.0,
                 ry: 0.0
             },
-            deadzone: 0.15
+            deadzone: 0.15,
+            experimental: false
         };
     },
     watch: {
@@ -189,6 +203,7 @@ let baseController = {
         renderImage: function() {
             if (!this.spriteSheetReady) return;
 
+            statusBus.$emit('startRender');
             this.calculateState();
 
             let that = this;
@@ -217,6 +232,7 @@ let baseController = {
                 if (mapping.invisible) return;
                 that.renderStick(context, spriteSheet, stick, mapping);
             });
+            statusBus.$emit('finishRender');
         },
         renderButton: function(context, spriteSheet, name, mapping) {
             let sprite = this.buttonSprites[name];
@@ -264,6 +280,9 @@ let baseController = {
             this.spriteSheetReady = true;
             this.renderImage();
         },
+        requestTurn: function() {
+            this.$emit('request');
+        }
     },
     created: function() {
         // bit of a hack - I could use optionMergeStrategies but this works
@@ -271,6 +290,15 @@ let baseController = {
             let that = this;
             Object.keys(this.overrides).map(function(key) {
                 that[key] = that.overrides[key];
+            });
+        }
+    },
+    mounted: function() {
+        if (this.experimental) {
+            this.$notify({
+                title: 'Experimental controller support',
+                text: `Please note that support for this controller (${this.canonicalName}) is experimental and may have issues or limitations. Please check the help documentation for details.`,
+                duration: 10000
             });
         }
     },
@@ -322,7 +350,8 @@ Vue.component('dualshock-controller', {
                     leftStick: {axisX: 0, axisY: 1, index: 10},
                     rightStick: {axisX: 2, axisY: 5, index: 11}
                 },
-                canonicalName: 'DualShock 3/4'
+                canonicalName: 'DualShock 3/4',
+                experimental: true
             }
         };
     }
@@ -368,7 +397,8 @@ Vue.component('switch-pro-controller', {
                     leftStick: {axisX: 0, axisY: 1, index: 10},
                     rightStick: {axisX: 2, axisY: 3, index: 11}
                 },
-                canonicalName: 'Switch Pro Controller'
+                canonicalName: 'Switch Pro Controller',
+                experimental: true
             }
         };
     }
@@ -396,6 +426,7 @@ Vue.component('controller-select', {
 });
 
 Vue.component('server-status', {
+    props: ['state'],
     data: function() {
         // TODO: Have this handle all server status things.
         let stats = new Stats();
@@ -411,25 +442,61 @@ Vue.component('server-status', {
         };
     },
     mounted: function() {
+        let that = this;
         this.$nextTick(function() {
             this.$refs.statsContainer.appendChild(this.stats.dom);
+            statusBus.$on('pong', this.updatePingGraph);
+            statusBus.$on('startRender', function() {that.stats.begin();});
+            statusBus.$on('finishRender', function() {that.stats.end();});
         });
     },
-    template: '<div ref="statsContainer" class="stats"></div>'
+    methods: {
+        requestTurn: function() {
+            this.$emit('request');
+        },
+        updatePingGraph: function(time) {
+            this.pingPanel.update(time, 1000);
+        }
+    },
+    computed: {
+        turnState: function() {
+            if (this.state === stateEnum.CONNECTED_NO_CONTROLLER) {
+                return 'No controller connected';
+            } else if (this.state === stateEnum.CONNECTED_UNSUPPORTED_CONTROLLER) {
+                return 'Unsupported controller';
+            } else if (this.state === stateEnum.CONNECTED_ACTIVE) {
+                return 'Currently your turn';
+            } else if (this.state === stateEnum.CONNECTED_WAITING) {
+                return 'Waiting for turn';
+            } else if (this.state === stateEnum.CONNECTED_INACTIVE) {
+                return 'Request turn';
+            } else if (this.state === stateEnum.NOT_CONNECTED) {
+                return 'Not connected';
+            } else if (this.state === stateEnum.ERROR) {
+                return 'Connection error';
+            } else if (this.state === stateEnum.CONNECTING) {
+                return 'Connecting to server';
+            }
+        },
+        canRequestTurn: function() {
+            return this.state === stateEnum.CONNECTED_INACTIVE;
+        }
+    },
+    template: '<div class="center-text"><button type="button" class="center-text min-padding" @click="requestTurn" v-text="turnState" v-bind:disabled="!canRequestTurn"></button><div ref="statsContainer" class="stats"></div></div>'
 });
 
 new Vue({
     el: '#app',
-    data: {
-        connectionState: 'Not connected',
-        turnState: 'Not your turn',
-        commitHash: '',
-        currentController: -1,
-        axes: [],
-        buttons: [],
-        deadzone: 0.15,
-        allControllers: [],
-        myTurn: false
+    data: function() {
+        return {
+            currentController: -1,
+            axes: [],
+            buttons: [],
+            deadzone: 0.15,
+            allControllers: [],
+            connectState: stateEnum.NOT_CONNECTED,
+            lastPing: 0
+        };
     },
     created: function() {
         let that = this;
@@ -451,35 +518,51 @@ new Vue({
             that.allControllers = that.getGamepads();
         });
 
-        fetch('https://api.github.com/repos/wchill/SwitchInputEmulator/commits')
-            .then(function(response) {
-                return response.json();
-            }).then(function(response) {
-            that.$data.commitHash = 'Build ' + response[0]['sha'].slice(0, 7);
-        });
-
         this.ws = new WebSocket('wss://api.chilly.codes/switch/ws', null, {
             backoff: 'fibonacci'
         });
 
+        this.connectState = stateEnum.CONNECTING;
+
         this.ws.addEventListener('open', function (e) {
-            that.$data.connectionState = 'Connected';
+            if (!that.isControllerConnected) {
+                that.connectState = stateEnum.CONNECTED_NO_CONTROLLER;
+            } else if (!that.isControllerSupported) {
+                that.connectState = stateEnum.CONNECTED_UNSUPPORTED_CONTROLLER;
+            } else {
+                that.connectState = stateEnum.CONNECTED_INACTIVE;
+            }
+            that.lastPing = performance.now();
+            that.sendMessage('PING');
         });
 
         this.ws.addEventListener('close', function (e) {
-            that.$data.connectionState = 'Disconnected';
+            that.connectState = stateEnum.NOT_CONNECTED;
         });
 
         this.ws.addEventListener('error', function (e) {
-            that.$data.connectionState = 'Connection failed';
+            that.connectState = stateEnum.ERROR;
         });
 
         this.ws.addEventListener('reconnect', function (e) {
-            that.$data.connectionState = 'Reconnecting';
+            that.connectState = stateEnum.CONNECTING;
+        });
+
+        this.ws.addEventListener('message', function(e) {
+            that.onServerMessage(e.data);
         });
     },
     watch: {
         currentController: function() {
+            if (this.connectState === stateEnum.CONNECTED_UNSUPPORTED_CONTROLLER || this.connectState === stateEnum.CONNECTED_NO_CONTROLLER || this.connectState === stateEnum.CONNECTED_INACTIVE || this.connectState === stateEnum.CONNECTED_WAITING || this.connectState === stateEnum.CONNECTED_ACTIVE) {
+                if (!this.isControllerConnected) {
+                    this.connectState = stateEnum.CONNECTED_NO_CONTROLLER;
+                } else if (!this.isControllerSupported) {
+                    this.connectState = stateEnum.CONNECTED_UNSUPPORTED_CONTROLLER;
+                } else if (this.connectState === stateEnum.CONNECTED_NO_CONTROLLER || this.connectState === stateEnum.CONNECTED_UNSUPPORTED_CONTROLLER) {
+                    this.connectState = stateEnum.CONNECTED_INACTIVE;
+                }
+            }
             this.update();
         }
     },
@@ -531,14 +614,71 @@ new Vue({
 
             requestAnimationFrame(this.update);
         },
-        onChildUpdate: function(newState) {
-            if (this.ws.readyState === this.ws.OPEN && this.myTurn) {
-                this.ws.send(`UPDATE ${newState.button} ${newState.dpad} ${newState.lx} ${newState.ly} ${newState.rx} ${newState.ry}`);
+        onControllerUpdate: function(newState) {
+            if (this.connectState === stateEnum.CONNECTED_ACTIVE) {
+                this.sendMessage(`UPDATE ${newState.button} ${newState.dpad} ${newState.lx} ${newState.ly} ${newState.rx} ${newState.ry}`);
             }
-            console.log(`UPDATE ${newState.button} ${newState.dpad} ${newState.lx} ${newState.ly} ${newState.rx} ${newState.ry}`);
+        },
+        requestTurn: function() {
+            if (this.connectState !== stateEnum.CONNECTED_INACTIVE) {
+                this.$notify({
+                    type: 'warn',
+                    text: 'Can\'t request turn right now.'
+                });
+            } else {
+                this.connectState = stateEnum.CONNECTED_WAITING;
+                this.sendMessage('REQUEST_TURN');
+            }
+        },
+        sendMessage: function(message) {
+            if (this.ws.readyState === this.ws.OPEN) {
+                this.ws.send(message);
+                return true;
+            }
+            console.warn('Failed to send message: ' + message);
+            return false;
+        },
+        onServerMessage: function(message) {
+            const wsParseRegex = /(\w+)(?: (.*))?/;
+            let match = wsParseRegex.exec(message);
+            if (!match) {
+                console.warn(`Got invalid message: ${message}`);
+                return;
+            }
+
+            let command = match[1];
+            let args = match[2];
+
+            if (command === 'PONG') {
+                let that = this;
+
+                let time = performance.now();
+                let duration = (time - this.lastPing) / 2;
+                this.$emit('pong', duration);
+                setTimeout(function() {
+                    that.lastPing = performance.now();
+                    that.sendMessage('PING');
+                }, Math.max(duration, 1000));
+            } else if (command === 'CLIENT_ACTIVE') {
+                if (this.connectState === stateEnum.CONNECTED_INACTIVE || this.connectState === stateEnum.CONNECTED_WAITING) {
+                    this.connectState = stateEnum.CONNECTED_ACTIVE;
+                } else {
+                    // TODO: cancel turn
+                }
+            } else if (command === 'CLIENT_INACTIVE') {
+                if (this.connectState === stateEnum.CONNECTED_ACTIVE || this.connectState === stateEnum.CONNECTED_WAITING) {
+                    this.connectState = stateEnum.CONNECTED_INACTIVE;
+                }
+            }
         }
     },
     computed: {
+        isControllerConnected: function() {
+            return this.currentControllerComponent !== 'no-controller';
+        },
+        isControllerSupported: function() {
+            return this.currentControllerComponent !== 'unsupported-controller';
+        },
         currentControllerComponent: function() {
             // TODO: make this code less unwieldy.
             if (this.currentController < 0) return 'no-controller';
