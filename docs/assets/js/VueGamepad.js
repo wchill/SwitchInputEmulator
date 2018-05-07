@@ -388,6 +388,59 @@ Vue.component('switch-pro-controller', {
                     share: {val: 0, index: 13}
                 },
                 dpadMapping: {
+                    dpadUp: {axis: 5, sign: -1},
+                    dpadDown: {axis: 5, sign: 1},
+                    dpadLeft: {axis: 4, sign: -1},
+                    dpadRight: {axis: 4, sign: 1}
+                },
+                stickMapping: {
+                    leftStick: {axisX: 0, axisY: 1, index: 10},
+                    rightStick: {axisX: 2, axisY: 3, index: 11}
+                },
+                canonicalName: 'Switch Pro Controller',
+                experimental: true
+            }
+        };
+    },
+    methods: {
+        isDpadPressed: function(name, mapping) {
+            return mapping.hasOwnProperty('axis') && mapping.hasOwnProperty('sign') && this.axes[mapping.axis] * mapping.sign > this.deadzone;
+        }
+    }
+});
+
+Vue.component('powera-wired-controller', {
+    mixins: [baseController],
+    data: function() {
+        return {
+            overrides: {
+                spriteSheetUrl: 'assets/images/proControllerSpriteSheet.png',
+                buttonSprites: {a:{x:838,y:178,w:78,h:79,inactive:{x:5,y:5},active:{x:93,y:5}},b:{x:757,y:249,w:78,h:79,inactive:{x:181,y:5},active:{x:269,y:5}},x:{x:757,y:107,w:78,h:79,inactive:{x:873,y:5},active:{x:961,y:5}},y:{x:675,y:178,w:78,h:79,inactive:{x:873,y:94},active:{x:961,y:94}},l:{x:114,y:0,w:248,h:85,inactive:{x:357,y:5},active:{x:615,y:5}},r:{x:679,y:0,w:248,h:85,inactive:{x:5,y:100},active:{x:263,y:100}},zl:{x:300,y:533,w:150,h:150,inactive:{x:521,y:183},active:{x:681,y:183}},zr:{x:590,y:533,w:150,h:150,inactive:{x:841,y:183},active:{x:5,y:343}},minus:{x:370,y:117,w:44,h:44,inactive:{x:225,y:269},active:{x:279,y:269}},plus:{x:627,y:117,w:44,h:44,inactive:{x:333,y:269},active:{x:387,y:269}},share:{x:427,y:198,w:39,h:39,inactive:{x:113,y:269},active:{x:440,y:269}},home:{x:572,y:196,w:44,h:44,inactive:{x:5,y:269},active:{x:59,y:269}},dpadUp:{x:335,y:285,w:50,h:76,inactive:{x:1001,y:269},active:{x:165,y:355},opacity:!0},dpadDown:{x:335,y:361,w:50,h:76,inactive:{x:1001,y:183},active:{x:165,y:269},opacity:!0},dpadLeft:{x:284,y:336,w:75,h:50,inactive:{x:225,y:343},active:{x:310,y:343},opacity:!0},dpadRight:{x:360,y:336,w:76,h:51,inactive:{x:395,y:343},active:{x:481,y:343},opacity:!0}},
+                stickSprites: {leftStick:{x:174,y:155,w:120,h:120,travel:40,inactive:{x:5,y:738},active:{x:135,y:738}},rightStick:{x:598,y:299,w:120,h:120,travel:40,inactive:{x:5,y:738},active:{x:135,y:738}}},
+                canvasSize: {
+                    x: 1061,
+                    y: 5,
+                    width: 1040,
+                    height: 723,
+                    scale: 0.75
+                },
+                buttonMapping: {
+                    y: {val: 1, index: 0},
+                    b: {val: 2, index: 1},
+                    a: {val: 4, index: 2},
+                    x: {val: 8, index: 3},
+                    l: {val: 16, index: 4},
+                    r: {val: 32, index: 5},
+                    zl: {val: 64, index: 6},
+                    zr: {val: 128, index: 7},
+                    minus: {val: 256, index: 8},
+                    plus: {val: 512, index: 9},
+                    leftStick: {val: 1024, index: 10, invisible: true},
+                    rightStick: {val: 2048, index: 11, invisible: true},
+                    home: {val: 0, index: 12},
+                    share: {val: 0, index: 13}
+                },
+                dpadMapping: {
                     dpadUp: {index: 16},
                     dpadDown: {index: 17},
                     dpadLeft: {index: 18},
@@ -693,6 +746,8 @@ new Vue({
                 return 'switch-pro-controller';
             } else if (gamepad.mapping === '' && gamepad.id.indexOf('54c') > -1 && gamepad.id.indexOf('9cc') > -1) {
                 return 'ps4-controller';
+            } else if (gamepad.id.indexOf('20d6') > -1 && gamepad.id.indexOf('a711') > -1) {
+                return 'powera-wired-controller';
             } else {
                 return 'unsupported-controller';
             }
