@@ -356,7 +356,7 @@ Vue.component('dualshock-controller', {
         };
     }
 });
-Vue.component('switch-pro-controller', {
+Vue.component('powera-wired-controller', {
     mixins: [baseController],
     data: function() {
         return {
@@ -397,7 +397,7 @@ Vue.component('switch-pro-controller', {
                     leftStick: {axisX: 0, axisY: 1, index: 10},
                     rightStick: {axisX: 2, axisY: 3, index: 11}
                 },
-                canonicalName: 'Switch Pro Controller',
+                canonicalName: 'PowerA Wired Controller',
                 experimental: true
             }
         };
@@ -409,7 +409,7 @@ Vue.component('switch-pro-controller', {
     }
 });
 
-Vue.component('powera-wired-controller', {
+Vue.component('switch-pro-controller', {
     mixins: [baseController],
     data: function() {
         return {
