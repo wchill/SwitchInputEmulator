@@ -707,7 +707,7 @@ new Vue({
 
                 let time = performance.now();
                 let duration = (time - this.lastPing) / 2;
-                this.$emit('pong', duration);
+                statusBus.$emit('pong', duration);
                 setTimeout(function() {
                     that.lastPing = performance.now();
                     that.sendMessage('PING');
