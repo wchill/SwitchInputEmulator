@@ -1,0 +1,34 @@
+---
+layout: default
+---
+
+<canvas id="testcanvas"></canvas>
+
+<script type="text/javascript">
+    var canvas = document.getElementById("testcanvas");
+    canvas.width = 960;
+    canvas.height = 540;
+    var context = canvas.getContext('2d');
+    //context.scale(0.5, 0.5);
+    var img = new Image();
+    img.onload = function() {
+        context.drawImage(img, 0, 0);
+    };
+    var ws = new WebSocket('wss://api.chilly.codes/switch/stream');
+    ws.addEventListener('message', function(e) {
+        var data = JSON.parse(e.data);
+        img.src = data.data.image;
+        requestAnimationFrame(draw);
+    });
+
+    let count = 0;
+    function draw() {
+        if (ws.readyState === ws.OPEN) {
+            ws.send('request');
+        } else {
+            requestAnimationFrame(draw);
+        }
+    }
+    requestAnimationFrame(draw);
+
+</script>
