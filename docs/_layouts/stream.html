@@ -14,20 +14,19 @@ layout: default
     img.onload = function() {
         context.drawImage(img, 0, 0);
     };
+    var lastTime = 0;
     var ws = new WebSocket('wss://api.chilly.codes/switch/stream');
     ws.addEventListener('message', function(e) {
         var data = JSON.parse(e.data);
         img.src = data.data.image;
-        requestAnimationFrame(draw);
     });
 
-    let count = 0;
     function draw() {
-        if (ws.readyState === ws.OPEN) {
+        if (ws.readyState === ws.OPEN && lastTime + 30 < Date.getTime()) {
             ws.send('request');
-        } else {
-            requestAnimationFrame(draw);
+            lastTime = Date.getTime();
         }
+        requestAnimationFrame(draw);
     }
     requestAnimationFrame(draw);
 
