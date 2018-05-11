@@ -22,9 +22,9 @@ layout: default
     });
 
     function draw() {
-        if (ws.readyState === ws.OPEN && lastTime + 30 < Date.getTime()) {
+        if (ws.readyState === ws.OPEN && lastTime + 30 < new Date().getTime()) {
             ws.send('request');
-            lastTime = Date.getTime();
+            lastTime = new Date().getTime();
         }
         requestAnimationFrame(draw);
     }
