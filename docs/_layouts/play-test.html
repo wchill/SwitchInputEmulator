@@ -7,6 +7,7 @@ layout: default
 <div id="app" v-cloak>
     <controller-select class="center-text min-padding" v-model="currentController" v-bind:gamepads="allControllers"></controller-select>
     <server-status v-bind:state="connectState" v-on:request="requestTurn"></server-status>
+    <twitch-login></twitch-login>
 
     <component v-bind:is="currentControllerComponent" v-bind:gamepadindex="currentController" v-bind:gamepadname="gamepadName" v-bind:axes="axes" v-bind:buttons="buttons" v-on:update="onControllerUpdate"></component>
 
@@ -25,4 +26,5 @@ layout: default
 </script>
 <script src="assets/js/websocket.js"></script>
 <script src="assets/js/stats.js"></script>
+<script src="assets/js/oidc-client.min.js"></script>
 <script src="assets/js/VueGamepad.js"></script>

@@ -478,6 +478,161 @@ Vue.component('controller-select', {
     '</select>'
 });
 
+Vue.component('twitch-login', {
+    props: [],
+    data: function() {
+        let that = this;
+
+        const origin = window.location.origin;
+        const oidcSettings = {
+            authority: 'https://id.twitch.tv/oauth2/',
+            client_id: 'tjvvefdqsiy5jqvm7omx90u7382plw',
+            redirect_uri: origin + '/gamepad.html',
+            popup_redirect_uri: origin + '/gamepad.html',
+            popupWindowTarget: 'twitch_login',
+            silent_redirect_uri: origin + '/oa2-silentrenew.html',
+            post_logout_redirect_uri: origin + '/gamepad.html',
+            response_type: 'code id_token', // HACK: 'code' is the secret ingredient for oidc-client to work with twitch ;P
+            scope: 'openid',
+            // automaticSilentRenew: false,
+            // accessTokenExpiringNotificationTime: 60,
+            // silentRequestTimeout: 10000,
+            // filterProtocolClaims: true,
+            loadUserInfo: true
+        };
+
+        let Oidc = window.Oidc;
+        if (Oidc && Oidc.Log && Oidc.Log.logger) {
+            Oidc.Log.level = Oidc.Log.DEBUG; // TODO: hide these logs
+            Oidc.Log.logger = ["debug","info","warn","error"]
+                .reduce((logger, lvl) => {
+                    logger[lvl] = function() {
+                        let args = ["OIDC:", lvl+":"].concat(Array.prototype.slice.call(arguments));
+                        window.console[lvl].apply(window.console, args);
+                    };
+                    return logger;
+                }, {});
+            // aka:
+            // {
+            //     debug: function() { c.debug.apply(c, format(arguments)); },
+            //     info: function() { c.info.apply(c, format(arguments)); },
+            //     warn: function() { c.warn.apply(c, format(arguments)); },
+            //     error: function() { c.error.apply(c, format(arguments)); },
+            // };
+        };
+
+        function loadUser(loadedUser)
+        {
+            if (loadedUser == null) return unloadUser();
+            that.state = 'valid';
+            that.lastError = null;
+            that.user = loadedUser;
+            Oidc.Log.debug("Evt: userLoaded", loadedUser);
+        }
+
+        function unloadUser()
+        {
+            that.state = 'new';
+            that.lastError = null;
+            that.user = null;
+            Oidc.Log.debug("Evt: userUnloaded");
+        }
+
+        let oidcManager = new Oidc.UserManager(oidcSettings);
+        oidcManager.events.addUserLoaded(loadUser);
+        oidcManager.events.addUserUnloaded(unloadUser);
+        oidcManager.getUser().then(loadUser);
+
+        return {
+
+            state: 'new', /* new, waiting, valid, error */
+            lastError: null,
+            user: null,
+
+            open: function() {
+                let that = this;
+                that.state = 'waiting';
+                that.user = null;
+                
+                oidcManager.signinRedirect() //.signinPopup()
+                    .catch(function (er) {
+                        that.state = 'error';
+                        that.lastError = er.message;
+                        // if (that.lastError === "Popup window closed")
+                        // {
+                        //     that.state = 'new';
+                        //     that.lastError = null;
+                        // }
+                    });
+            },
+            close: function() {
+                let that = this;
+                that.state = 'waiting';
+                oidcManager.removeUser()
+                    .then(function() {
+                        that.state = 'new';
+                        that.lastError = null;
+                        user = null;
+                        that.$emit("changed");
+                    })
+                    .catch(function (er) {
+                        that.state = 'error';
+                        that.lastError = er.message;
+                    });
+            },
+            handleRedirect: function() {
+                return oidcManager.signinRedirectCallback();
+            }
+        };
+    },
+    mounted: function() {
+        if (window.location.hash)
+            this.handleRedirect()
+            .then(function() { let w = window; w.history.replaceState({}, w.document.title, w.location.origin + w.location.pathname); });
+    },
+    methods: {
+        login: function () {
+            if (!this.canLogin) return;
+            this.open();
+            this.$emit('loggedin');
+        },
+        logout: function() {
+            if (!this.canLogout) return;
+            this.close();
+            this.$emit('loggedout');
+        },
+        toggleLogin: function() {
+            if (this.canLogout) this.logout();
+            else if (this.canLogin) this.login();
+        }
+    },
+    computed: {
+        canLogin: function() {
+            return this.state === 'new' || this.state === 'error';
+        },
+        canLogout: function() {
+            return this.state === 'valid';
+        },
+        isDisabled: function() {
+            return !this.canLogin && !this.canLogout;
+        },
+        loginState: function() {
+            if (this.canLogin) return 'Sign-in with Twitch';
+            if (this.canLogout) return 'Sign-out Twitch';
+            if (this.state === 'waiting') return 'Please wait...';
+            return '';
+        },
+        username: function() {
+            return this.user.profile.preferred_username;
+        },
+        picture: function() {
+            return this.user.profile.picture;
+        }
+    },
+    template: '<div class="center-text"><button type="button" class="center-text min-padding" @click="toggleLogin" v-text="loginState" v-bind:disabled="isDisabled"></button><div class="warning" v-if="lastError">{{ lastError }}</div></div>'
+
+});
+
 Vue.component('server-status', {
     props: ['state'],
     data: function() {
