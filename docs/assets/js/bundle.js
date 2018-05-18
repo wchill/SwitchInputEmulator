@@ -53,7 +53,7 @@
     };
 
     let baseController = {
-        props: ['gamepadindex', 'gamepadname', 'axes', 'buttons'],
+        props: ['gamepadindexes', 'gamepadname', 'axes', 'buttons'],
         data: function() {
             return {
                 spriteSheetUrl: 'assets/images/xboxGamepadSprites.png',
@@ -311,15 +311,6 @@
                 this.$emit('request');
             }
         },
-        created: function() {
-            // bit of a hack - I could use optionMergeStrategies but this works
-            let that = this;
-            if (this.overrides) {
-                Object.keys(this.overrides).map(function(key) {
-                    that[key] = that.overrides[key];
-                });
-            }
-        },
         mounted: function() {
             if (this.experimental) {
                 this.$notify({
@@ -343,50 +334,57 @@
         template: '<div><canvas class="gamepadCanvas" ref="gamepadCanvas"></canvas><img ref="spriteSheet" v-bind:src="spriteSheetUrl" style="display:none;" @load="imageLoaded"/><span class="center-text">Controller (( gamepadindex )): (( gamepadname ))</span><span class="center-text">Detected as: (( canonicalName ))</span></div>'
     };
 
+    let xboxController = {
+        mixins: [baseController],
+        data: function() {
+            return {
+                canonicalName: 'Xbox/XInput controller'
+            };
+        }
+    };
+
     let switchProControllerStandard = {
         mixins: [baseController],
         data: function() {
             return {
-                overrides: {
-                    spriteSheetUrl: 'assets/images/proControllerSpritesheet.png',
-                    buttonSprites: {faceRight:{x:838,y:178,w:78,h:79,inactive:{x:5,y:5},active:{x:93,y:5}},faceDown:{x:757,y:249,w:78,h:79,inactive:{x:181,y:5},active:{x:269,y:5}},faceUp:{x:757,y:107,w:78,h:79,inactive:{x:873,y:5},active:{x:961,y:5}},faceLeft:{x:675,y:178,w:78,h:79,inactive:{x:873,y:94},active:{x:961,y:94}},leftTop:{x:114,y:0,w:248,h:85,inactive:{x:357,y:5},active:{x:615,y:5}},rightTop:{x:679,y:0,w:248,h:85,inactive:{x:5,y:100},active:{x:263,y:100}},leftTrigger:{x:300,y:533,w:150,h:150,inactive:{x:521,y:183},active:{x:681,y:183}},rightTrigger:{x:590,y:533,w:150,h:150,inactive:{x:841,y:183},active:{x:5,y:343}},select:{x:370,y:117,w:44,h:44,inactive:{x:225,y:269},active:{x:279,y:269}},start:{x:627,y:117,w:44,h:44,inactive:{x:333,y:269},active:{x:387,y:269}},share:{x:427,y:198,w:39,h:39,inactive:{x:113,y:269},active:{x:440,y:269}},home:{x:572,y:196,w:44,h:44,inactive:{x:5,y:269},active:{x:59,y:269}},dpadUp:{x:335,y:285,w:50,h:76,inactive:{x:1001,y:269},active:{x:165,y:355},opacity:!0},dpadDown:{x:335,y:361,w:50,h:76,inactive:{x:1001,y:183},active:{x:165,y:269},opacity:!0},dpadLeft:{x:284,y:336,w:75,h:50,inactive:{x:225,y:343},active:{x:310,y:343},opacity:!0},dpadRight:{x:360,y:336,w:76,h:51,inactive:{x:395,y:343},active:{x:481,y:343},opacity:!0}},
-                    stickSprites: {leftStick:{x:174,y:155,w:120,h:120,travel:40,inactive:{x:5,y:738},active:{x:135,y:738}},rightStick:{x:598,y:299,w:120,h:120,travel:40,inactive:{x:5,y:738},active:{x:135,y:738}}},
-                    canvasSize: {
-                        x: 1061,
-                        y: 5,
-                        width: 1040,
-                        height: 723,
-                        scale: 0.75
-                    },
-                    buttonMapping: {
-                        faceDown: {val: switchButtons.B, index: 0},
-                        faceRight: {val: switchButtons.A, index: 1},
-                        faceLeft: {val: switchButtons.Y, index: 2},
-                        faceUp: {val: switchButtons.X, index: 3},
-                        leftTop: {val: switchButtons.L, index: 4},
-                        rightTop: {val: switchButtons.R, index: 5},
-                        leftTrigger: {val: switchButtons.ZL, index: 6},
-                        rightTrigger: {val: switchButtons.ZR, index: 7},
-                        select: {val: switchButtons.MINUS, index: 8},
-                        start: {val: switchButtons.PLUS, index: 9},
-                        leftStick: {val: switchButtons.L3, index: 10, invisible: true},
-                        rightStick: {val: switchButtons.R3, index: 11, invisible: true},
-                        home: {val: switchButtons.HOME, index: 16},
-                        share: {val: switchButtons.SHARE, index: 17}
-                    },
-                    dpadMapping: {
-                        dpadUp: {index: 12},
-                        dpadDown: {index: 13},
-                        dpadLeft: {index: 14},
-                        dpadRight: {index: 15}
-                    },
-                    stickMapping: {
-                        leftStick: {axisX: 0, axisY: 1, index: 10},
-                        rightStick: {axisX: 2, axisY: 3, index: 11}
-                    },
-                    canonicalName: 'Switch Pro Controller',
-                    experimental: true
-                }
+                spriteSheetUrl: 'assets/images/proControllerSpritesheet.png',
+                buttonSprites: {faceRight:{x:838,y:178,w:78,h:79,inactive:{x:5,y:5},active:{x:93,y:5}},faceDown:{x:757,y:249,w:78,h:79,inactive:{x:181,y:5},active:{x:269,y:5}},faceUp:{x:757,y:107,w:78,h:79,inactive:{x:873,y:5},active:{x:961,y:5}},faceLeft:{x:675,y:178,w:78,h:79,inactive:{x:873,y:94},active:{x:961,y:94}},leftTop:{x:114,y:0,w:248,h:85,inactive:{x:357,y:5},active:{x:615,y:5}},rightTop:{x:679,y:0,w:248,h:85,inactive:{x:5,y:100},active:{x:263,y:100}},leftTrigger:{x:300,y:533,w:150,h:150,inactive:{x:521,y:183},active:{x:681,y:183}},rightTrigger:{x:590,y:533,w:150,h:150,inactive:{x:841,y:183},active:{x:5,y:343}},select:{x:370,y:117,w:44,h:44,inactive:{x:225,y:269},active:{x:279,y:269}},start:{x:627,y:117,w:44,h:44,inactive:{x:333,y:269},active:{x:387,y:269}},share:{x:427,y:198,w:39,h:39,inactive:{x:113,y:269},active:{x:440,y:269}},home:{x:572,y:196,w:44,h:44,inactive:{x:5,y:269},active:{x:59,y:269}},dpadUp:{x:335,y:285,w:50,h:76,inactive:{x:1001,y:269},active:{x:165,y:355},opacity:!0},dpadDown:{x:335,y:361,w:50,h:76,inactive:{x:1001,y:183},active:{x:165,y:269},opacity:!0},dpadLeft:{x:284,y:336,w:75,h:50,inactive:{x:225,y:343},active:{x:310,y:343},opacity:!0},dpadRight:{x:360,y:336,w:76,h:51,inactive:{x:395,y:343},active:{x:481,y:343},opacity:!0}},
+                stickSprites: {leftStick:{x:174,y:155,w:120,h:120,travel:40,inactive:{x:5,y:738},active:{x:135,y:738}},rightStick:{x:598,y:299,w:120,h:120,travel:40,inactive:{x:5,y:738},active:{x:135,y:738}}},
+                canvasSize: {
+                    x: 1061,
+                    y: 5,
+                    width: 1040,
+                    height: 723,
+                    scale: 0.75
+                },
+                buttonMapping: {
+                    faceDown: {val: switchButtons.B, index: 0},
+                    faceRight: {val: switchButtons.A, index: 1},
+                    faceLeft: {val: switchButtons.Y, index: 2},
+                    faceUp: {val: switchButtons.X, index: 3},
+                    leftTop: {val: switchButtons.L, index: 4},
+                    rightTop: {val: switchButtons.R, index: 5},
+                    leftTrigger: {val: switchButtons.ZL, index: 6},
+                    rightTrigger: {val: switchButtons.ZR, index: 7},
+                    select: {val: switchButtons.MINUS, index: 8},
+                    start: {val: switchButtons.PLUS, index: 9},
+                    leftStick: {val: switchButtons.L3, index: 10, invisible: true},
+                    rightStick: {val: switchButtons.R3, index: 11, invisible: true},
+                    home: {val: switchButtons.HOME, index: 16},
+                    share: {val: switchButtons.SHARE, index: 17}
+                },
+                dpadMapping: {
+                    dpadUp: {index: 12},
+                    dpadDown: {index: 13},
+                    dpadLeft: {index: 14},
+                    dpadRight: {index: 15}
+                },
+                stickMapping: {
+                    leftStick: {axisX: 0, axisY: 1, index: 10},
+                    rightStick: {axisX: 2, axisY: 3, index: 11}
+                },
+                canonicalName: 'Switch Pro Controller',
+                experimental: true
             };
         }
     };
@@ -395,10 +393,8 @@
         mixins: [switchProControllerStandard],
         data: function() {
             return {
-                overrides: {
-                    canonicalName: 'PowerA Wired Controller',
-                    experimental: true
-                }
+                canonicalName: 'PowerA Wired Controller',
+                experimental: true
             };
         }
     };
@@ -407,23 +403,21 @@
         mixins: [powerAWiredControllerStandard],
         data: function() {
             return {
-                overrides: {
-                    buttonMapping: {
-                        faceLeft: {val: switchButtons.Y, index: 0},
-                        faceDown: {val: switchButtons.B, index: 1},
-                        faceRight: {val: switchButtons.A, index: 2},
-                        faecUp: {val: switchButtons.X, index: 3},
-                        leftTop: {val: switchButtons.L, index: 4},
-                        rightTop: {val: switchButtons.R, index: 5},
-                        leftTrigger: {val: switchButtons.ZL, index: 6},
-                        rightTrigger: {val: switchButtons.ZR, index: 7},
-                        select: {val: switchButtons.MINUS, index: 8},
-                        start: {val: switchButtons.PLUS, index: 9},
-                        leftStick: {val: switchButtons.L3, index: 10, invisible: true},
-                        rightStick: {val: switchButtons.R3, index: 11, invisible: true},
-                        home: {val: switchButtons.HOME, index: 12},
-                        share: {val: switchButtons.SHARE, index: 13}
-                    }
+                buttonMapping: {
+                    faceLeft: {val: switchButtons.Y, index: 0},
+                    faceDown: {val: switchButtons.B, index: 1},
+                    faceRight: {val: switchButtons.A, index: 2},
+                    faecUp: {val: switchButtons.X, index: 3},
+                    leftTop: {val: switchButtons.L, index: 4},
+                    rightTop: {val: switchButtons.R, index: 5},
+                    leftTrigger: {val: switchButtons.ZL, index: 6},
+                    rightTrigger: {val: switchButtons.ZR, index: 7},
+                    select: {val: switchButtons.MINUS, index: 8},
+                    start: {val: switchButtons.PLUS, index: 9},
+                    leftStick: {val: switchButtons.L3, index: 10, invisible: true},
+                    rightStick: {val: switchButtons.R3, index: 11, invisible: true},
+                    home: {val: switchButtons.HOME, index: 12},
+                    share: {val: switchButtons.SHARE, index: 13}
                 }
             };
         }
@@ -433,29 +427,27 @@
         mixins: [powerAWiredControllerBase],
         data: function() {
             return {
-                overrides: {
-                    buttonMapping: {
-                        faceLeft: {val: switchButtons.Y, index: 0},
-                        faceDown: {val: switchButtons.B, index: 1},
-                        faceRight: {val: switchButtons.A, index: 2},
-                        faceUp: {val: switchButtons.X, index: 3},
-                        leftTop: {val: switchButtons.L, index: 4},
-                        rightTop: {val: switchButtons.R, index: 5},
-                        leftTrigger: {val: switchButtons.ZL, index: 6},
-                        rightTrigger: {val: switchButtons.ZR, index: 7},
-                        select: {val: switchButtons.MINUS, index: 8},
-                        start: {val: switchButtons.PLUS, index: 9},
-                        leftStick: {val: switchButtons.L3, index: 10, invisible: true},
-                        rightStick: {val: switchButtons.R3, index: 11, invisible: true},
-                        home: {val: switchButtons.HOME, index: 12},
-                        share: {val: switchButtons.SHARE, index: 13}
-                    },
-                    dpadMapping: {
-                        dpadUp: {axis: 5, sign: -1},
-                        dpadDown: {axis: 5, sign: 1},
-                        dpadLeft: {axis: 4, sign: -1},
-                        dpadRight: {axis: 4, sign: 1}
-                    }
+                buttonMapping: {
+                    faceLeft: {val: switchButtons.Y, index: 0},
+                    faceDown: {val: switchButtons.B, index: 1},
+                    faceRight: {val: switchButtons.A, index: 2},
+                    faceUp: {val: switchButtons.X, index: 3},
+                    leftTop: {val: switchButtons.L, index: 4},
+                    rightTop: {val: switchButtons.R, index: 5},
+                    leftTrigger: {val: switchButtons.ZL, index: 6},
+                    rightTrigger: {val: switchButtons.ZR, index: 7},
+                    select: {val: switchButtons.MINUS, index: 8},
+                    start: {val: switchButtons.PLUS, index: 9},
+                    leftStick: {val: switchButtons.L3, index: 10, invisible: true},
+                    rightStick: {val: switchButtons.R3, index: 11, invisible: true},
+                    home: {val: switchButtons.HOME, index: 12},
+                    share: {val: switchButtons.SHARE, index: 13}
+                },
+                dpadMapping: {
+                    dpadUp: {axis: 5, sign: -1},
+                    dpadDown: {axis: 5, sign: 1},
+                    dpadLeft: {axis: 4, sign: -1},
+                    dpadRight: {axis: 4, sign: 1}
                 }
             };
         },
@@ -470,17 +462,15 @@
         mixins: [powerAWiredControllerBase],
         data: function() {
             return {
-                overrides: {
-                    dpadMapping: {
-                        dpadUp: {axis: 9, axisVals: [-7, -5, 7]},
-                        dpadDown: {axis: 9, axisVals: [-1, 1, 3]},
-                        dpadLeft: {axis: 9, axisVals: [3, 5, 7]},
-                        dpadRight: {axis: 9, axisVals: [-5, -3, -1]},
-                    },
-                    stickMapping: {
-                        leftStick: {axisX: 0, axisY: 1, index: 10},
-                        rightStick: {axisX: 2, axisY: 5, index: 11}
-                    }
+                dpadMapping: {
+                    dpadUp: {axis: 9, axisVals: [-7, -5, 7]},
+                    dpadDown: {axis: 9, axisVals: [-1, 1, 3]},
+                    dpadLeft: {axis: 9, axisVals: [3, 5, 7]},
+                    dpadRight: {axis: 9, axisVals: [-5, -3, -1]},
+                },
+                stickMapping: {
+                    leftStick: {axisX: 0, axisY: 1, index: 10},
+                    rightStick: {axisX: 2, axisY: 5, index: 11}
                 }
             }
         },
@@ -500,16 +490,14 @@
         mixins: [powerAWiredControllerBase],
         data: function() {
             return {
-                overrides: {
-                    dpadMapping: {
-                        // Remap dpadUp to Home
-                        dpadUp: {index: 12},
-                        dpadDown: {index: 13},
-                        dpadLeft: {},
-                        dpadRight: {},
-                    },
-                    notifyMessage: 'The D-Pad does not work properly in Firefox on Windows. The Home button has been mapped to D-Pad Up. If this doesn\'t work for you, try using Chrome.'
-                }
+                dpadMapping: {
+                    // Remap dpadUp to Home
+                    dpadUp: {index: 12},
+                    dpadDown: {index: 13},
+                    dpadLeft: {},
+                    dpadRight: {},
+                },
+                notifyMessage: 'The D-Pad does not work properly in Firefox on Windows. The Home button has been mapped to D-Pad Up. If this doesn\'t work for you, try using Chrome.'
             }
         },
         methods: {
@@ -524,23 +512,31 @@
         mixins: [switchProControllerStandard],
         data: function() {
             return {
-                overrides: {
-                    buttonMapping: {
-                        faceLeft: {val: switchButtons.Y, index: 0},
-                        faceDown: {val: switchButtons.B, index: 1},
-                        faceRight: {val: switchButtons.A, index: 2},
-                        faceUp: {val: switchButtons.X, index: 3}
-                    },
-                    dpadMapping: {
-                        dpadUp: {index: 16},
-                        dpadDown: {index: 17},
-                        dpadLeft: {index: 18},
-                        dpadRight: {index: 19}
-                    },
-                    stickMapping: {
-                        leftStick: {axisX: 0, axisY: 1, index: 10},
-                        rightStick: {axisX: 2, axisY: 3, index: 11}
-                    }
+                buttonMapping: {
+                    faceLeft: {val: switchButtons.Y, index: 0},
+                    faceDown: {val: switchButtons.B, index: 1},
+                    faceRight: {val: switchButtons.A, index: 2},
+                    faceUp: {val: switchButtons.X, index: 3},
+                    leftTop: {val: switchButtons.L, index: 4},
+                    rightTop: {val: switchButtons.R, index: 5},
+                    leftTrigger: {val: switchButtons.ZL, index: 6},
+                    rightTrigger: {val: switchButtons.ZR, index: 7},
+                    select: {val: switchButtons.MINUS, index: 8},
+                    start: {val: switchButtons.PLUS, index: 9},
+                    leftStick: {val: switchButtons.L3, index: 10, invisible: true},
+                    rightStick: {val: switchButtons.R3, index: 11, invisible: true},
+                    home: {val: switchButtons.HOME, index: 16},
+                    share: {val: switchButtons.SHARE, index: 17}
+                },
+                dpadMapping: {
+                    dpadUp: {index: 16},
+                    dpadDown: {index: 17},
+                    dpadLeft: {index: 18},
+                    dpadRight: {index: 19}
+                },
+                stickMapping: {
+                    leftStick: {axisX: 0, axisY: 1, index: 10},
+                    rightStick: {axisX: 2, axisY: 3, index: 11}
                 }
             };
         }
@@ -550,35 +546,33 @@
         mixins: [baseController],
         data: function() {
             return {
-                overrides: {
-                    // TODO: Provide a spritesheet for this.
-                    buttonMapping: {
-                        faceDown: {val: switchButtons.B, index: 0},
-                        faceRight: {val: switchButtons.A, index: 1},
-                        faceLeft: {val: switchButtons.Y, index: 2},
-                        faceUp: {val: switchButtons.X, index: 3},
-                        leftTop: {val: switchButtons.L, index: 4},
-                        rightTop: {val: switchButtons.R, index: 5},
-                        leftTrigger: {val: switchButtons.ZL, index: 6, invisible: true},
-                        rightTrigger: {val: switchButtons.ZR, index: 7, invisible: true},
-                        select: {val: switchButtons.MINUS, index: 8},
-                        start: {val: switchButtons.PLUS, index: 9},
-                        leftStick: {val: switchButtons.L3, index: 10, invisible: true},
-                        rightStick: {val: switchButtons.R3, index: 11, invisible: true}
-                    },
-                    dpadMapping: {
-                        dpadUp: {index: 12},
-                        dpadDown: {index: 13},
-                        dpadLeft: {index: 14},
-                        dpadRight: {index: 15}
-                    },
-                    stickMapping: {
-                        leftStick: {axisX: 0, axisY: 1, index: 10},
-                        rightStick: {axisX: 2, axisY: 3, index: 11}
-                    },
-                    canonicalName: 'DualShock Controller',
-                    experimental: true
-                }
+                // TODO: Provide a spritesheet for this.
+                buttonMapping: {
+                    faceDown: {val: switchButtons.B, index: 0},
+                    faceRight: {val: switchButtons.A, index: 1},
+                    faceLeft: {val: switchButtons.Y, index: 2},
+                    faceUp: {val: switchButtons.X, index: 3},
+                    leftTop: {val: switchButtons.L, index: 4},
+                    rightTop: {val: switchButtons.R, index: 5},
+                    leftTrigger: {val: switchButtons.ZL, index: 6, invisible: true},
+                    rightTrigger: {val: switchButtons.ZR, index: 7, invisible: true},
+                    select: {val: switchButtons.MINUS, index: 8},
+                    start: {val: switchButtons.PLUS, index: 9},
+                    leftStick: {val: switchButtons.L3, index: 10, invisible: true},
+                    rightStick: {val: switchButtons.R3, index: 11, invisible: true}
+                },
+                dpadMapping: {
+                    dpadUp: {index: 12},
+                    dpadDown: {index: 13},
+                    dpadLeft: {index: 14},
+                    dpadRight: {index: 15}
+                },
+                stickMapping: {
+                    leftStick: {axisX: 0, axisY: 1, index: 10},
+                    rightStick: {axisX: 2, axisY: 3, index: 11}
+                },
+                canonicalName: 'DualShock Controller',
+                experimental: true
             };
         }
     };
@@ -591,41 +585,64 @@
         mixins: [dualShockControllerBase],
         data: function() {
             return {
-                overrides: {
-                    buttonMapping: {
-                        faceLeft: {index: 0},
-                        faceDown: {index: 1},
-                        faceRight: {index: 2},
-                        faceUp: {index: 3}
-                    },
-                    dpadMapping: {
-                        // Remap the guide button to index 12
-                        // The other buttons don't seem to work, so leave them blank.
-                        dpadUp: {index: 13},
-                        dpadDown: {index: 12},
-                        dpadLeft: {},
-                        dpadRight: {}
-                    },
-                    stickMapping: {
-                        leftStick: {axisX: 0, axisY: 1, index: 10},
-                        rightStick: {axisX: 2, axisY: 5, index: 11}
-                    },
-                    notifyMessage: 'The D-Pad does not work properly in Firefox on Windows. The touchpad has been mapped to D-Pad Up. If this doesn\'t work for you, try using Chrome.'
-                }
+                buttonMapping: {
+                    faceLeft: {index: 0},
+                    faceDown: {index: 1},
+                    faceRight: {index: 2},
+                    faceUp: {index: 3}
+                },
+                dpadMapping: {
+                    // Remap the guide button to index 12
+                    // The other buttons don't seem to work, so leave them blank.
+                    dpadUp: {index: 13},
+                    dpadDown: {index: 12},
+                    dpadLeft: {},
+                    dpadRight: {}
+                },
+                stickMapping: {
+                    leftStick: {axisX: 0, axisY: 1, index: 10},
+                    rightStick: {axisX: 2, axisY: 5, index: 11}
+                },
+                notifyMessage: 'The D-Pad does not work properly in Firefox on Windows. The touchpad has been mapped to D-Pad Up. If this doesn\'t work for you, try using Chrome.'
             };
         }
     };
 
-    Vue.component('xbox-controller', {
-        mixins: [baseController],
-        data: function() {
-            return {
-                overrides: {
-                    canonicalName: 'Xbox/XInput controller'
-                }
-            };
+    let detectBrowser = function() {
+        if(navigator.userAgent.indexOf("Chrome") !== -1 ) {
+            return 'Chrome';
+        } else if(navigator.userAgent.indexOf("Firefox") !== -1 ) {
+            return 'Firefox';
+        } else {
+            return 'unknown';
         }
-    });
+    };
+    let detectOS = function() {
+        let userAgent = window.navigator.userAgent,
+            platform = window.navigator.platform,
+            macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'],
+            windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE'],
+            iosPlatforms = ['iPhone', 'iPad', 'iPod'];
+
+        if (macosPlatforms.indexOf(platform) !== -1) {
+            return 'Mac OS';
+        } else if (iosPlatforms.indexOf(platform) !== -1) {
+            return 'iOS';
+        } else if (windowsPlatforms.indexOf(platform) !== -1) {
+            return 'Windows';
+        } else if (/Android/.test(userAgent)) {
+            return 'Android';
+        } else if (/CrOS/.test(userAgent)) {
+            return 'Chrome OS';
+        } else if (/Linux/.test(platform)) {
+            return 'Linux';
+        }
+
+        return 'unknown';
+    };
+    let checkVidPid = function(id, vid, pid) {
+        return id.indexOf(vid) > -1 && id.indexOf(pid) > -1;
+    };
 
     Vue.component('controller-select', {
         props: ['gamepads', 'gamepadindex'],
@@ -713,6 +730,7 @@
         components: {
             'no-controller': noController,
             'unsupported-controller': unsupportedController,
+            'xbox-controller': xboxController,
             'switch-pro-controller': switchProController,
             'switch-pro-controller-standard': switchProControllerStandard,
             'powera-wired-controller-standard': powerAWiredControllerStandard,
@@ -747,7 +765,6 @@
             window.addEventListener('gamepaddisconnected', function(e) {
                 console.log('Gamepad disconnected: ' + e.gamepad.id);
                 if (that.currentController.index === e.gamepad.index) {
-                    that.currentController = -1;
                     that.currentController = that.getGamepad().index;
                 }
                 that.allControllers = that.getGamepads();
@@ -805,8 +822,8 @@
             }
         },
         mounted: function() {
-            let browser = this.detectBrowser();
-            let os = this.detectOS();
+            let browser = detectBrowser();
+            let os = detectOS();
 
             console.log(`Browser: ${browser} OS: ${os}`);
 
@@ -911,41 +928,6 @@
                         this.connectState = stateEnum.CONNECTED_INACTIVE;
                     }
                 }
-            },
-            detectBrowser: function() {
-                if(navigator.userAgent.indexOf("Chrome") !== -1 ) {
-                    return 'Chrome';
-                } else if(navigator.userAgent.indexOf("Firefox") !== -1 ) {
-                    return 'Firefox';
-                } else {
-                    return 'unknown';
-                }
-            },
-            detectOS: function() {
-                let userAgent = window.navigator.userAgent,
-                    platform = window.navigator.platform,
-                    macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'],
-                    windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE'],
-                    iosPlatforms = ['iPhone', 'iPad', 'iPod'];
-
-                if (macosPlatforms.indexOf(platform) !== -1) {
-                    return 'Mac OS';
-                } else if (iosPlatforms.indexOf(platform) !== -1) {
-                    return 'iOS';
-                } else if (windowsPlatforms.indexOf(platform) !== -1) {
-                    return 'Windows';
-                } else if (/Android/.test(userAgent)) {
-                    return 'Android';
-                } else if (/CrOS/.test(userAgent)) {
-                    return 'Chrome OS';
-                } else if (!os && /Linux/.test(platform)) {
-                    return 'Linux';
-                }
-
-                return 'unknown';
-            },
-            checkVidPid: function(id, vid, pid) {
-                return id.indexOf(vid) > -1 && id.indexOf(pid) > -1;
             }
         },
         computed: {
@@ -957,24 +939,20 @@
             },
             currentControllerComponent: function() {
                 // TODO: make this code less unwieldy.
-                let browser = this.detectBrowser();
-                let os = this.detectOS();
-
-                console.log(`Browser: ${browser} OS: ${os}`);
-
-
                 if (this.currentController < 0) return 'no-controller';
                 let gamepad = this.getGamepad();
                 if (!gamepad) {
                     return 'no-controller';
                 }
 
+                let browser = detectBrowser();
+                let os = detectOS();
                 let id = gamepad.id;
-                let mappipng = gamepad.mapping;
+                let mapping = gamepad.mapping;
 
-                if (gamepad.mapping === 'standard') {
+                if (mapping === 'standard') {
                     // Check for Pro Controller (2009) or Joycon Grip (200e) connected via cable (won't work)
-                    if (this.checkVidPid(id, '57e', '2009') || this.checkVidPid(id, '57e', '200e')) {
+                    if (checkVidPid(id, '57e', '2009') || checkVidPid(id, '57e', '200e')) {
                         if (id.indexOf('Nintendo Co., Ltd.') > -1) {
                             return 'unsupported-controller';
                         } else {
@@ -982,23 +960,23 @@
                         }
                     }
 
-                    if (this.checkVidPid(id, '54c', '9cc')) {
+                    if (checkVidPid(id, '54c', '9cc')) {
                         return 'dualshock-controller-standard';
                     }
                     return 'xbox-controller';
                 }
 
-                if (this.checkVidPid(id, '57e', '2009')) {
+                if (checkVidPid(id, '57e', '2009')) {
                     // Pro Controllers in Firefox report 4 axes. In Chrome, for some reason they report 9.
                     return 'switch-pro-controller';
                 }
 
-                if (this.checkVidPid(id, '54c', '9cc')) {
+                if (checkVidPid(id, '54c', '9cc')) {
                     if (os === 'Windows' && browser === 'Firefox') return 'dualshock-controller-win-firefox';
                     return 'dualshock-controller';
                 }
 
-                if (this.checkVidPid(id, '20d6', 'a711')) {
+                if (checkVidPid(id, '20d6', 'a711')) {
                     if (os === 'Windows') {
                         if (browser === 'Chrome') return 'powera-wired-controller-win-chrome';
                         if (browser === 'Firefox') return 'powera-wired-controller-win-firefox';

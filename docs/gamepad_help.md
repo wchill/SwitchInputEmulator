@@ -12,10 +12,10 @@ layout: help
 * Your controller might need some additional configuration, read the sections below for details.
 
 ## Q: Is my controller supported?
-### A: I've tested and confirmed that the following controllers work:
+### A: I've personally tested and confirmed that the following controllers work:
 * Windows
     * Xbox One controller
-        * Xbox 360 controllers should also work.
+        * Xbox 360 controllers and anything else that's exposed as an Xinput controller should also work.
     * DualShock 4 (PS4) controller
         * Chrome detects this as an XInput controller without problems.
         * In Firefox, the D-Pad does not work (Firefox does not detect it). Instead, the center button has been mapped to D-Pad up.
@@ -27,6 +27,7 @@ layout: help
 * MacOS
     * Xbox One controller
         * Firefox does not detect this controller at all.
+        * You can try installing [360Controller](https://github.com/360Controller/360Controller) to make this work.
     * DualShock 4 (PS4) controller
         * Chrome detects this as an XInput controller without problems.
         * Firefox detects this controller, but uses nonstandard mappings.
@@ -48,8 +49,8 @@ layout: help
 
 ## Q: My Switch Pro Controller isn't being detected/isn't responding/is showing up as "Unsupported"!
 ### A: Switch Pro Controller support also is very finicky. Try using Bluetooth instead of USB.
-* Under Windows, try using [ProconXInput](https://github.com/MTCKC/ProconXInput) or [BetterJoyForCemu](https://github.com/Davidobot/BetterJoyForCemu). You could also try using Firefox or Edge with Bluetooth, but I don't have a way to test this.
-* Under MacOS, try using Firefox. Use Bluetooth - USB support seems to be broken.
+* Under Windows, try using [ProconXInput](https://github.com/MTCKC/ProconXInput) or [BetterJoyForCemu](https://github.com/Davidobot/BetterJoyForCemu) or [JoyCon-Driver](https://github.com/mfosse/JoyCon-Driver).
+* Under MacOS, try using Firefox. You must use Bluetooth as USB input does not work.
 * Under Chrome OS (but not regular Chrome), it seems to work natively when using Bluetooth. USB support seems to be broken.
 
 ## Q: I have some other controller that isn't working correctly or isn't supported!

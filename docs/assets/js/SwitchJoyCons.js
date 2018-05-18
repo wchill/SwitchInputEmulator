@@ -1,15 +1,9 @@
-import {switchButtons, statusBus} from './VueConstants.js';
+import {switchButtons} from "./VueConstants";
+import {baseController} from "./BaseController";
 
-export let noController = {
-    template: '<p class="center-text">No controller connected.</p>'
-};
-
-export let unsupportedController = {
-    template: '<div><p class="center-text">This isn\'t a supported controller. Select another controller or check the help documentation for details.</p></div>'
-};
-
-export let baseController = {
-    props: ['gamepadindexes', 'gamepadname', 'axes', 'buttons'],
+export let switchJoyCons = {
+    mixins: [baseController],
+    props: ['gamepadindex', 'gamepadname', 'axes', 'buttons'],
     data: function() {
         return {
             spriteSheetUrl: 'assets/images/xboxGamepadSprites.png',
@@ -288,13 +282,4 @@ export let baseController = {
         this.spriteSheetReady = false;
     },
     template: '<div><canvas class="gamepadCanvas" ref="gamepadCanvas"></canvas><img ref="spriteSheet" v-bind:src="spriteSheetUrl" style="display:none;" @load="imageLoaded"/><span class="center-text">Controller (( gamepadindex )): (( gamepadname ))</span><span class="center-text">Detected as: (( canonicalName ))</span></div>'
-};
-
-export let xboxController = {
-    mixins: [baseController],
-    data: function() {
-        return {
-            canonicalName: 'Xbox/XInput controller'
-        };
-    }
 };

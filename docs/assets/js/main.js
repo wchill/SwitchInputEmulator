@@ -1,18 +1,8 @@
-import {baseController, noController, unsupportedController} from "./BaseController";
+import {baseController, xboxController, noController, unsupportedController} from "./BaseController";
 import {stateEnum, statusBus} from "./VueConstants";
 import {powerAWiredControllerStandard, powerAWiredControllerChromeOS, powerAWiredControllerWinChrome, powerAWiredControllerWinFirefox, switchProController, switchProControllerStandard} from "./SwitchProController";
 import {dualShockControllerStandard, dualShockControllerWinFirefox} from "./DualshockController";
-
-Vue.component('xbox-controller', {
-    mixins: [baseController],
-    data: function() {
-        return {
-            overrides: {
-                canonicalName: 'Xbox/XInput controller'
-            }
-        };
-    }
-});
+import * as Utils from "./Utils";
 
 Vue.component('controller-select', {
     props: ['gamepads', 'gamepadindex'],
@@ -100,6 +90,7 @@ new Vue({
     components: {
         'no-controller': noController,
         'unsupported-controller': unsupportedController,
+        'xbox-controller': xboxController,
         'switch-pro-controller': switchProController,
         'switch-pro-controller-standard': switchProControllerStandard,
         'powera-wired-controller-standard': powerAWiredControllerStandard,
@@ -134,7 +125,6 @@ new Vue({
         window.addEventListener('gamepaddisconnected', function(e) {
             console.log('Gamepad disconnected: ' + e.gamepad.id);
             if (that.currentController.index === e.gamepad.index) {
-                that.currentController = -1;
                 that.currentController = that.getGamepad().index;
             }
             that.allControllers = that.getGamepads();
@@ -192,8 +182,8 @@ new Vue({
         }
     },
     mounted: function() {
-        let browser = this.detectBrowser();
-        let os = this.detectOS();
+        let browser = Utils.detectBrowser();
+        let os = Utils.detectOS();
 
         console.log(`Browser: ${browser} OS: ${os}`);
 
@@ -300,41 +290,6 @@ new Vue({
                     this.connectState = stateEnum.CONNECTED_INACTIVE;
                 }
             }
-        },
-        detectBrowser: function() {
-            if(navigator.userAgent.indexOf("Chrome") !== -1 ) {
-                return 'Chrome';
-            } else if(navigator.userAgent.indexOf("Firefox") !== -1 ) {
-                return 'Firefox';
-            } else {
-                return 'unknown';
-            }
-        },
-        detectOS: function() {
-            let userAgent = window.navigator.userAgent,
-                platform = window.navigator.platform,
-                macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'],
-                windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE'],
-                iosPlatforms = ['iPhone', 'iPad', 'iPod'];
-
-            if (macosPlatforms.indexOf(platform) !== -1) {
-                return 'Mac OS';
-            } else if (iosPlatforms.indexOf(platform) !== -1) {
-                return 'iOS';
-            } else if (windowsPlatforms.indexOf(platform) !== -1) {
-                return 'Windows';
-            } else if (/Android/.test(userAgent)) {
-                return 'Android';
-            } else if (/CrOS/.test(userAgent)) {
-                return 'Chrome OS';
-            } else if (!os && /Linux/.test(platform)) {
-                return 'Linux';
-            }
-
-            return 'unknown';
-        },
-        checkVidPid: function(id, vid, pid) {
-            return id.indexOf(vid) > -1 && id.indexOf(pid) > -1;
         }
     },
     computed: {
@@ -346,24 +301,20 @@ new Vue({
         },
         currentControllerComponent: function() {
             // TODO: make this code less unwieldy.
-            let browser = this.detectBrowser();
-            let os = this.detectOS();
-
-            console.log(`Browser: ${browser} OS: ${os}`);
-
-
             if (this.currentController < 0) return 'no-controller';
             let gamepad = this.getGamepad();
             if (!gamepad) {
                 return 'no-controller';
             }
 
+            let browser = Utils.detectBrowser();
+            let os = Utils.detectOS();
             let id = gamepad.id;
-            let mappipng = gamepad.mapping;
+            let mapping = gamepad.mapping;
 
-            if (gamepad.mapping === 'standard') {
+            if (mapping === 'standard') {
                 // Check for Pro Controller (2009) or Joycon Grip (200e) connected via cable (won't work)
-                if (this.checkVidPid(id, '57e', '2009') || this.checkVidPid(id, '57e', '200e')) {
+                if (Utils.checkVidPid(id, '57e', '2009') || Utils.checkVidPid(id, '57e', '200e')) {
                     if (id.indexOf('Nintendo Co., Ltd.') > -1) {
                         return 'unsupported-controller';
                     } else {
@@ -371,23 +322,23 @@ new Vue({
                     }
                 }
 
-                if (this.checkVidPid(id, '54c', '9cc')) {
+                if (Utils.checkVidPid(id, '54c', '9cc')) {
                     return 'dualshock-controller-standard';
                 }
                 return 'xbox-controller';
             }
 
-            if (this.checkVidPid(id, '57e', '2009')) {
+            if (Utils.checkVidPid(id, '57e', '2009')) {
                 // Pro Controllers in Firefox report 4 axes. In Chrome, for some reason they report 9.
                 return 'switch-pro-controller';
             }
 
-            if (this.checkVidPid(id, '54c', '9cc')) {
+            if (Utils.checkVidPid(id, '54c', '9cc')) {
                 if (os === 'Windows' && browser === 'Firefox') return 'dualshock-controller-win-firefox';
                 return 'dualshock-controller';
             }
 
-            if (this.checkVidPid(id, '20d6', 'a711')) {
+            if (Utils.checkVidPid(id, '20d6', 'a711')) {
                 if (os === 'Windows') {
                     if (browser === 'Chrome') return 'powera-wired-controller-win-chrome';
                     if (browser === 'Firefox') return 'powera-wired-controller-win-firefox';
