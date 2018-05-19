@@ -1,9 +1,13 @@
-import {connectionStateEnum} from "./Common"
+import {ConnectionState} from "./Common"
 
-export const socketBus = new Vue();
+export const SocketBus = new Vue();
+export const SocketEvents = Object.freeze({
+    SEND_MESSAGE: 'send',
+    PONG: 'pong'
+});
 
 // This really shouldn't be a Vue component, but I don't know how I want to structure this. This works for now though
-export const controlWs = {
+export const ControlWs = {
     props: ['endpoint'],
     data: function() {
         return {
@@ -18,26 +22,26 @@ export const controlWs = {
             backoff: 'fibonacci'
         });
 
-        this.$store.commit('setConnectionState', connectionStateEnum.CONNECTING);
+        this.$store.commit('setConnectionState', ConnectionState.CONNECTING);
 
         this.ws.addEventListener('open', function(e) {
             console.log('Control websocket connected');
-            self.$store.commit('setConnectionState', connectionStateEnum.CONNECTED);
+            self.$store.commit('setConnectionState', ConnectionState.CONNECTED);
         });
 
         this.ws.addEventListener('close', function(e) {
             console.log('Control websocket closed');
-            self.$store.commit('setConnectionState', connectionStateEnum.NOT_CONNECTED);
+            self.$store.commit('setConnectionState', ConnectionState.NOT_CONNECTED);
         });
 
         this.ws.addEventListener('error', function(e) {
             console.log('Control websocket errored out');
-            self.$store.commit('setConnectionState', connectionStateEnum.ERROR);
+            self.$store.commit('setConnectionState', ConnectionState.ERROR);
         });
 
         this.ws.addEventListener('reconnect', function(e) {
             console.log('Control websocket reconnecting');
-            self.$store.commit('setConnectionState', connectionStateEnum.CONNECTING);
+            self.$store.commit('setConnectionState', ConnectionState.CONNECTING);
         });
 
         this.ws.addEventListener('message', function(e) {
@@ -56,14 +60,14 @@ export const controlWs = {
                     let time = performance.now();
                     let duration = (time - self.pendingPings[args]) / 2;
                     delete self.pendingPings[args];
-                    socketBus.$emit('pong', duration);
+                    SocketBus.$emit('pong', duration);
                 }
             } else {
-                socketBus.$emit(command, args);
+                SocketBus.$emit(command, args);
             }
         });
 
-        socketBus.$on('send', this.sendMessage);
+        SocketBus.$on(SocketEvents.SEND_MESSAGE, this.sendMessage);
         setInterval(this.ping, 1000);
     },
     methods: {

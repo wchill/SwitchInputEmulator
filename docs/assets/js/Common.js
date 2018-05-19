@@ -1,22 +1,11 @@
-export const stateEnum = Object.freeze({
-    NOT_CONNECTED: 1,
-    CONNECTED_NO_CONTROLLER: 2,
-    CONNECTED_UNSUPPORTED_CONTROLLER: 3,
-    CONNECTED_INACTIVE: 4,
-    CONNECTED_WAITING: 5,
-    CONNECTED_ACTIVE: 6,
-    ERROR: 7,
-    CONNECTING: 8
-});
-
-export const connectionStateEnum = Object.freeze({
+export const ConnectionState = Object.freeze({
     NOT_CONNECTED: 1,
     CONNECTED: 2,
     ERROR: 3,
     CONNECTING: 4
 });
 
-export const controlStateEnum = Object.freeze({
+export const ControlState = Object.freeze({
     NO_CONTROLLER: 1,
     UNSUPPORTED_CONTROLLER: 2,
     INACTIVE: 3,
@@ -24,14 +13,14 @@ export const controlStateEnum = Object.freeze({
     ACTIVE: 5
 });
 
-const controlModeEnum = Object.freeze({
+export const ControlMode = Object.freeze({
     SINGLE_CONTROLLER: 1,
     MULTIPLE_CONTROLLERS: 2,
     KEYBOARD: 3,
     TOUCH: 4
 });
 
-export const switchButtons = Object.freeze({
+export const SwitchButtons = Object.freeze({
     Y: 1,
     B: 2,
     A: 4,
@@ -57,14 +46,22 @@ export const switchButtons = Object.freeze({
     DPAD_NONE: 8
 });
 
-export const statusBus = new Vue();
+export const BusEvents = Object.freeze({
+    RENDER_TIME_START: 'start-render',
+    RENDER_TIME_END: 'finish-render',
+    UPDATE_INPUT: 'update-input',
+    INPUT_CHANGED: 'input-changed',
+    SEND_MESSAGE: 'send'
+});
+
+export const StatusBus = new Vue();
 
 // TODO: use Vuex for centralized state management
 export const store = new Vuex.Store({
     state: {
-        connectionState: connectionStateEnum.NOT_CONNECTED,
-        controlState: controlStateEnum.NO_CONTROLLER,
-        controlMode: controlModeEnum.SINGLE_CONTROLLER
+        connectionState: ConnectionState.NOT_CONNECTED,
+        controlState: ControlState.NO_CONTROLLER,
+        controlMode: ControlMode.SINGLE_CONTROLLER
     },
     mutations: {
         setConnectionState: function(state, newState) {
@@ -74,6 +71,10 @@ export const store = new Vuex.Store({
         setControlState: function(state, newState) {
             console.log(`Changing control state to ${newState}`);
             state.controlState = newState;
+        },
+        setControlMode: function(state, newMode) {
+            console.log(`Changing control mode to ${newMode}`);
+            state.controlMode = newMode;
         }
     }
 });

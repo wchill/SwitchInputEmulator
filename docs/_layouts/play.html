@@ -6,10 +6,12 @@ layout: default
 
 <div id="app" v-cloak>
     <control-ws v-bind:endpoint="controlEndpoint"></control-ws>
+    <control-mode-select class="center-text min-padding"></control-mode-select>
     <controller-select class="center-text min-padding" v-model="currentController" v-bind:gamepads="allControllers"></controller-select>
     <server-status></server-status>
 
-    <component v-bind:is="currentControllerComponent" v-bind:gamepadindex="currentController" v-bind:gamepadname="gamepadName" v-bind:axes="axes" v-bind:buttons="buttons" v-on:update="onControllerUpdate"></component>
+    <component v-bind:is="currentControllerComponent" v-bind:gamepadindex="currentController" v-bind:gamepadname="gamepadName" v-bind:axes="axes" v-bind:buttons="buttons"></component>
+    <controller-renderer></controller-renderer>
 
     <div id="help">{{content}}</div>
     <notifications position="top center"/>

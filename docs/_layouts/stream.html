@@ -2,17 +2,19 @@
 layout: default
 ---
 
-<canvas id="testcanvas"></canvas>
+<canvas id="playercanvas"></canvas>
 
 <script type="text/javascript" src="assets/js/http-live-player.min.js">;</script>
 <script type="text/javascript">
-    let canvas = document.createElement("canvas");
-    document.body.appendChild(canvas);
-
-    let uri = 'wss://api.chilly.codes/switch/stream';
-    let wsavc = new WSAvcPlayer(document.getElementById('testcanvas'), "webgl", 1, 35);
-    wsavc.connect(uri);
-
-    //expose instance for button callbacks
-    window.wsavc = wsavc;
+    let wsavc = new WSAvcPlayer(document.getElementById('playercanvas'), "webgl", 1, 35);
+    wsavc.connect('wss://api.chilly.codes/switch/stream');
+    document.addEventListener('visibilitychange', function(e) {
+        if (document.hidden) {
+            console.log('Pausing stream because page lost focus');
+            wsavc.stopStream();
+        } else {
+            console.log('Resuming stream because page received focus');
+            wsavc.playStream();
+        }
+    }, false);
 </script>

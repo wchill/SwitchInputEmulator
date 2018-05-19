@@ -1,8 +1,8 @@
-import {switchButtons} from "./Common";
-import {baseController} from "./BaseController";
+import {SwitchButtons} from "./Common";
+import {BaseController} from "./BaseController";
 
 export let switchJoyCons = {
-    mixins: [baseController],
+    mixins: [BaseController],
     props: ['gamepadindex', 'gamepadname', 'axes', 'buttons'],
     data: function() {
         return {
@@ -17,18 +17,18 @@ export let switchJoyCons = {
                 scale: 0.75
             },
             buttonMapping: {
-                faceDown: {val: switchButtons.B, index: 0},
-                faceRight: {val: switchButtons.A, index: 1},
-                faceLeft: {val: switchButtons.Y, index: 2},
-                faceUp: {val: switchButtons.X, index: 3},
-                leftTop: {val: switchButtons.L, index: 4},
-                rightTop: {val: switchButtons.R, index: 5},
-                leftTrigger: {val: switchButtons.ZL, index: 6, invisible: true},
-                rightTrigger: {val: switchButtons.ZR, index: 7, invisible: true},
-                select: {val: switchButtons.MINUS, index: 8},
-                start: {val: switchButtons.PLUS, index: 9},
-                leftStick: {val: switchButtons.L3, index: 10, invisible: true},
-                rightStick: {val: switchButtons.R3, index: 11, invisible: true}
+                faceDown: {val: SwitchButtons.B, index: 0},
+                faceRight: {val: SwitchButtons.A, index: 1},
+                faceLeft: {val: SwitchButtons.Y, index: 2},
+                faceUp: {val: SwitchButtons.X, index: 3},
+                leftTop: {val: SwitchButtons.L, index: 4},
+                rightTop: {val: SwitchButtons.R, index: 5},
+                leftTrigger: {val: SwitchButtons.ZL, index: 6, invisible: true},
+                rightTrigger: {val: SwitchButtons.ZR, index: 7, invisible: true},
+                select: {val: SwitchButtons.MINUS, index: 8},
+                start: {val: SwitchButtons.PLUS, index: 9},
+                leftStick: {val: SwitchButtons.L3, index: 10, invisible: true},
+                rightStick: {val: SwitchButtons.R3, index: 11, invisible: true}
             },
             dpadMapping: {
                 dpadUp: {index: 12},
@@ -41,14 +41,14 @@ export let switchJoyCons = {
                 rightStick: {axisX: 2, axisY: 3, index: 11}
             },
             dpadButtons: [
-                {name: 'dpadUp dpadRight', val: switchButtons.DPAD_UPRIGHT},
-                {name: 'dpadDown dpadRight', val: switchButtons.DPAD_DOWNRIGHT},
-                {name: 'dpadDown dpadLeft', val: switchButtons.DPAD_DOWNLEFT},
-                {name: 'dpadUp dpadLeft', val: switchButtons.DPAD_UPLEFT},
-                {name: 'dpadUp', val: switchButtons.DPAD_UP},
-                {name: 'dpadRight', val: switchButtons.DPAD_RIGHT},
-                {name: 'dpadDown', val: switchButtons.DPAD_DOWN},
-                {name: 'dpadLeft', val: switchButtons.DPAD_LEFT}
+                {name: 'dpadUp dpadRight', val: SwitchButtons.DPAD_UPRIGHT},
+                {name: 'dpadDown dpadRight', val: SwitchButtons.DPAD_DOWNRIGHT},
+                {name: 'dpadDown dpadLeft', val: SwitchButtons.DPAD_DOWNLEFT},
+                {name: 'dpadUp dpadLeft', val: SwitchButtons.DPAD_UPLEFT},
+                {name: 'dpadUp', val: SwitchButtons.DPAD_UP},
+                {name: 'dpadRight', val: SwitchButtons.DPAD_RIGHT},
+                {name: 'dpadDown', val: SwitchButtons.DPAD_DOWN},
+                {name: 'dpadLeft', val: SwitchButtons.DPAD_LEFT}
             ],
             spriteSheetReady: false,
             gamepadState: {
@@ -180,7 +180,7 @@ export let switchJoyCons = {
         renderImage: function() {
             if (!this.spriteSheetReady) return;
 
-            statusBus.$emit('startRender');
+            StatusBus.$emit('startRender');
             this.calculateState();
 
             let that = this;
@@ -209,7 +209,7 @@ export let switchJoyCons = {
                 if (mapping.invisible) return;
                 that.renderStick(context, spriteSheet, stick, mapping);
             });
-            statusBus.$emit('finishRender');
+            StatusBus.$emit('finishRender');
         },
         renderButton: function(context, spriteSheet, name, mapping) {
             let sprite = this.buttonSprites[name];

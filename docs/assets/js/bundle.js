@@ -1,25 +1,14 @@
 (function () {
     'use strict';
 
-    const stateEnum = Object.freeze({
-        NOT_CONNECTED: 1,
-        CONNECTED_NO_CONTROLLER: 2,
-        CONNECTED_UNSUPPORTED_CONTROLLER: 3,
-        CONNECTED_INACTIVE: 4,
-        CONNECTED_WAITING: 5,
-        CONNECTED_ACTIVE: 6,
-        ERROR: 7,
-        CONNECTING: 8
-    });
-
-    const connectionStateEnum = Object.freeze({
+    const ConnectionState = Object.freeze({
         NOT_CONNECTED: 1,
         CONNECTED: 2,
         ERROR: 3,
         CONNECTING: 4
     });
 
-    const controlStateEnum = Object.freeze({
+    const ControlState = Object.freeze({
         NO_CONTROLLER: 1,
         UNSUPPORTED_CONTROLLER: 2,
         INACTIVE: 3,
@@ -27,14 +16,14 @@
         ACTIVE: 5
     });
 
-    const controlModeEnum = Object.freeze({
+    const ControlMode = Object.freeze({
         SINGLE_CONTROLLER: 1,
         MULTIPLE_CONTROLLERS: 2,
         KEYBOARD: 3,
         TOUCH: 4
     });
 
-    const switchButtons = Object.freeze({
+    const SwitchButtons = Object.freeze({
         Y: 1,
         B: 2,
         A: 4,
@@ -60,14 +49,22 @@
         DPAD_NONE: 8
     });
 
-    const statusBus = new Vue();
+    const BusEvents = Object.freeze({
+        RENDER_TIME_START: 'start-render',
+        RENDER_TIME_END: 'finish-render',
+        UPDATE_INPUT: 'update-input',
+        INPUT_CHANGED: 'input-changed',
+        SEND_MESSAGE: 'send'
+    });
+
+    const StatusBus = new Vue();
 
     // TODO: use Vuex for centralized state management
     const store = new Vuex.Store({
         state: {
-            connectionState: connectionStateEnum.NOT_CONNECTED,
-            controlState: controlStateEnum.NO_CONTROLLER,
-            controlMode: controlModeEnum.SINGLE_CONTROLLER
+            connectionState: ConnectionState.NOT_CONNECTED,
+            controlState: ControlState.NO_CONTROLLER,
+            controlMode: ControlMode.SINGLE_CONTROLLER
         },
         mutations: {
             setConnectionState: function(state, newState) {
@@ -77,6 +74,10 @@
             setControlState: function(state, newState) {
                 console.log(`Changing control state to ${newState}`);
                 state.controlState = newState;
+            },
+            setControlMode: function(state, newMode) {
+                console.log(`Changing control mode to ${newMode}`);
+                state.controlMode = newMode;
             }
         }
     });
@@ -85,166 +86,384 @@
         delimiters: ['((', '))']
     });
 
-    let noController = {
-        template: '<p class="center-text">No controller connected.</p>'
-    };
+    const SocketBus = new Vue();
+    const SocketEvents = Object.freeze({
+        SEND_MESSAGE: 'send',
+        PONG: 'pong'
+    });
 
-    let unsupportedController = {
-        template: '<div><p class="center-text">This isn\'t a supported controller. Select another controller or check the help documentation for details.</p></div>'
-    };
-
-    let baseController = {
-        props: ['gamepadindex', 'gamepadname', 'axes', 'buttons'],
+    // This really shouldn't be a Vue component, but I don't know how I want to structure this. This works for now though
+    const ControlWs = {
+        props: ['endpoint'],
         data: function() {
             return {
-                spriteSheetUrl: 'assets/images/xboxGamepadSprites.png',
-                buttonSprites: {faceDown:{x:745,y:242,w:79,h:79,inactive:{x:1217,y:643},active:{x:1062,y:643}},faceRight:{x:820,y:175,w:79,h:79,inactive:{x:1140,y:800},active:{x:1141,y:725}},faceLeft:{x:678,y:176,w:79,h:79,inactive:{x:1220,y:725},active:{x:1065,y:801}},faceUp:{x:745,y:105,w:79,h:79,inactive:{x:1140,y:645},active:{x:1062,y:721}},leftTop:{x:144,y:0,w:245,h:90,inactive:{x:613,y:818},active:{x:1062,y:94}},rightTop:{x:645,y:0,w:245,h:90,inactive:{x:1056,y:0},active:{x:1056,y:188}},select:{x:414,y:183,w:54,h:54,inactive:{x:1241,y:552},active:{x:1244,y:460}},start:{x:569,y:183,w:54,h:54,inactive:{x:1245,y:370},active:{x:1247,y:278}},dpadUp:{x:352,y:290,w:70,h:87,inactive:{x:1074,y:557},active:{x:1166,y:557},opacity:!0},dpadDown:{x:351,y:369,w:70,h:87,inactive:{x:1074,y:366},active:{x:1165,y:366},opacity:!0},dpadLeft:{x:298,y:342,w:87,h:70,inactive:{x:1066,y:475},active:{x:1158,y:475},opacity:!0},dpadRight:{x:383,y:342,w:87,h:70,inactive:{x:1062,y:292},active:{x:1156,y:292},opacity:!0}},
-                stickSprites: {leftStick:{x:185,y:134,w:150,h:150,travel:40,inactive:{x:464,y:816},active:{x:310,y:813}},rightStick:{x:581,y:290,w:150,h:150,travel:40,inactive:{x:464,y:816},active:{x:310,y:813}}},
-                canvasSize: {
-                    x: 0,
-                    y: 0,
-                    width: 1040,
-                    height: 700,
-                    scale: 0.75
-                },
-                buttonMapping: {
-                    faceDown: {val: switchButtons.B, index: 0},
-                    faceRight: {val: switchButtons.A, index: 1},
-                    faceLeft: {val: switchButtons.Y, index: 2},
-                    faceUp: {val: switchButtons.X, index: 3},
-                    leftTop: {val: switchButtons.L, index: 4},
-                    rightTop: {val: switchButtons.R, index: 5},
-                    leftTrigger: {val: switchButtons.ZL, index: 6, invisible: true},
-                    rightTrigger: {val: switchButtons.ZR, index: 7, invisible: true},
-                    select: {val: switchButtons.MINUS, index: 8},
-                    start: {val: switchButtons.PLUS, index: 9},
-                    leftStick: {val: switchButtons.L3, index: 10, invisible: true},
-                    rightStick: {val: switchButtons.R3, index: 11, invisible: true}
-                },
-                dpadMapping: {
-                    dpadUp: {index: 12},
-                    dpadDown: {index: 13},
-                    dpadLeft: {index: 14},
-                    dpadRight: {index: 15}
-                },
-                stickMapping: {
-                    leftStick: {axisX: 0, axisY: 1, index: 10},
-                    rightStick: {axisX: 2, axisY: 3, index: 11}
-                },
-                dpadButtons: [
-                    {name: 'dpadUp dpadRight', val: switchButtons.DPAD_UPRIGHT},
-                    {name: 'dpadDown dpadRight', val: switchButtons.DPAD_DOWNRIGHT},
-                    {name: 'dpadDown dpadLeft', val: switchButtons.DPAD_DOWNLEFT},
-                    {name: 'dpadUp dpadLeft', val: switchButtons.DPAD_UPLEFT},
-                    {name: 'dpadUp', val: switchButtons.DPAD_UP},
-                    {name: 'dpadRight', val: switchButtons.DPAD_RIGHT},
-                    {name: 'dpadDown', val: switchButtons.DPAD_DOWN},
-                    {name: 'dpadLeft', val: switchButtons.DPAD_LEFT}
-                ],
-                spriteSheetReady: false,
-                gamepadState: {
-                    button: 0,
-                    dpad: 8,
-                    lx: 0.0,
-                    ly: 0.0,
-                    rx: 0.0,
-                    ry: 0.0
-                },
-                prevState: {
-                    button: 0,
-                    dpad: 8,
-                    lx: 0.0,
-                    ly: 0.0,
-                    rx: 0.0,
-                    ry: 0.0
-                },
-                deadzone: 0.15,
-                experimental: false
+                ws: null,
+                pendingPings: {}
             };
         },
-        watch: {
-            axes: function() {
-                this.renderImage();
+        created: function() {
+            let self = this;
+
+            this.ws = new WebSocket(this.endpoint, null, {
+                backoff: 'fibonacci'
+            });
+
+            this.$store.commit('setConnectionState', ConnectionState.CONNECTING);
+
+            this.ws.addEventListener('open', function(e) {
+                console.log('Control websocket connected');
+                self.$store.commit('setConnectionState', ConnectionState.CONNECTED);
+            });
+
+            this.ws.addEventListener('close', function(e) {
+                console.log('Control websocket closed');
+                self.$store.commit('setConnectionState', ConnectionState.NOT_CONNECTED);
+            });
+
+            this.ws.addEventListener('error', function(e) {
+                console.log('Control websocket errored out');
+                self.$store.commit('setConnectionState', ConnectionState.ERROR);
+            });
+
+            this.ws.addEventListener('reconnect', function(e) {
+                console.log('Control websocket reconnecting');
+                self.$store.commit('setConnectionState', ConnectionState.CONNECTING);
+            });
+
+            this.ws.addEventListener('message', function(e) {
+                const wsParseRegex = /(\w+)(?: (.*))?/;
+                let match = wsParseRegex.exec(e.data);
+                if (!match) {
+                    console.warn(`Got invalid message: ${e.data}`);
+                    return;
+                }
+
+                let command = match[1];
+                let args = match[2];
+
+                if (command === 'PONG') {
+                    if (self.pendingPings.hasOwnProperty(args)) {
+                        let time = performance.now();
+                        let duration = (time - self.pendingPings[args]) / 2;
+                        delete self.pendingPings[args];
+                        SocketBus.$emit('pong', duration);
+                    }
+                } else {
+                    SocketBus.$emit(command, args);
+                }
+            });
+
+            SocketBus.$on(SocketEvents.SEND_MESSAGE, this.sendMessage);
+            setInterval(this.ping, 1000);
+        },
+        methods: {
+            sendMessage: function(message) {
+                if (this.ws && this.ws.readyState === this.ws.OPEN) {
+                    this.ws.send(message);
+                    return true;
+                }
+                console.warn('Failed to send message: ' + message);
+                return false;
             },
-            buttons: function() {
+            ping: function() {
+                if (this.ws && this.ws.readyState === this.ws.OPEN) {
+                    let id = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER));
+                    this.pendingPings[id] = performance.now();
+                    this.sendMessage(`PING ${id}`);
+                }
+            }
+        },
+        template: '<div></div>'
+    };
+
+    const ProControllerSprites = {
+        data: function() {
+            return {
+                spriteSheetUrl: 'assets/images/proControllerSpritesheet.png',
+                buttonSprites: {faceRight:{x:838,y:178,w:78,h:79,inactive:{x:5,y:5},active:{x:93,y:5}},faceDown:{x:757,y:249,w:78,h:79,inactive:{x:181,y:5},active:{x:269,y:5}},faceUp:{x:757,y:107,w:78,h:79,inactive:{x:873,y:5},active:{x:961,y:5}},faceLeft:{x:675,y:178,w:78,h:79,inactive:{x:873,y:94},active:{x:961,y:94}},leftTop:{x:114,y:0,w:248,h:85,inactive:{x:357,y:5},active:{x:615,y:5}},rightTop:{x:679,y:0,w:248,h:85,inactive:{x:5,y:100},active:{x:263,y:100}},leftTrigger:{x:300,y:533,w:150,h:150,inactive:{x:521,y:183},active:{x:681,y:183}},rightTrigger:{x:590,y:533,w:150,h:150,inactive:{x:841,y:183},active:{x:5,y:343}},select:{x:370,y:117,w:44,h:44,inactive:{x:225,y:269},active:{x:279,y:269}},start:{x:627,y:117,w:44,h:44,inactive:{x:333,y:269},active:{x:387,y:269}},share:{x:427,y:198,w:39,h:39,inactive:{x:113,y:269},active:{x:440,y:269}},home:{x:572,y:196,w:44,h:44,inactive:{x:5,y:269},active:{x:59,y:269}},dpadUp:{x:335,y:285,w:50,h:76,inactive:{x:1001,y:269},active:{x:165,y:355},opacity:!0},dpadDown:{x:335,y:361,w:50,h:76,inactive:{x:1001,y:183},active:{x:165,y:269},opacity:!0},dpadLeft:{x:284,y:336,w:75,h:50,inactive:{x:225,y:343},active:{x:310,y:343},opacity:!0},dpadRight:{x:360,y:336,w:76,h:51,inactive:{x:395,y:343},active:{x:481,y:343},opacity:!0}},
+                stickSprites: {leftStick:{x:174,y:155,w:120,h:120,travel:40,inactive:{x:5,y:738},active:{x:135,y:738}},rightStick:{x:598,y:299,w:120,h:120,travel:40,inactive:{x:5,y:738},active:{x:135,y:738}}},
+                canvasSize: {
+                    x: 1061,
+                    y: 5,
+                    width: 1040,
+                    height: 723,
+                    scale: 0.75
+                }
+            };
+        }
+    };
+
+    const ControllerRenderer = {
+        mixins: [ProControllerSprites],
+        data: function() {
+            return {
+                spriteSheetReady: false
+            };
+        },
+        methods: {
+            setStylesheet: function(stylesheet) {
+                this.spriteSheetReady = false;
+                this.buttonSprites = stylesheet.buttonSprites;
+                this.stickSprites = stylesheet.stickSprites;
+                this.canvasSize = stylesheet.canvasSize;
+                this.spriteSheetUrl = stylesheet.spriteSheetUrl;
+            },
+            renderImage: function(newState) {
+                if (!this.spriteSheetReady) return;
+
+                let that = this;
+                let canvas = this.$refs.controlCanvas;
+                let context = canvas.getContext('2d');
+                let spriteSheet = this.$refs.spriteSheet;
+
+                StatusBus.$emit(BusEvents.RENDER_TIME_START);
+
+                context.clearRect(0, 0, this.canvasSize.width, this.canvasSize.height);
+                context.drawImage(spriteSheet, this.canvasSize.x, this.canvasSize.y, this.canvasSize.width, this.canvasSize.height, 0, 0, this.canvasSize.width, this.canvasSize.height);
+
+                if (!newState) {
+                    Object.keys(this.buttonSprites).map(function (button) {
+                        that.renderButton(context, spriteSheet, button, false);
+                    });
+
+                    Object.keys(this.stickSprites).map(function (stick) {
+                        that.renderStick(context, spriteSheet, stick, false, 0, 0);
+                    });
+                } else {
+                    let buttons = newState.state.buttons;
+                    let sticks = newState.state.sticks;
+
+                    Object.keys(this.buttonSprites).map(function (button) {
+                        let pressed = buttons[button];
+                        that.renderButton(context, spriteSheet, button, pressed);
+                    });
+
+                    Object.keys(this.stickSprites).map(function (stick) {
+                        let pressed = sticks[stick].pressed;
+                        let x = sticks[stick].x;
+                        let y = sticks[stick].y;
+                        that.renderStick(context, spriteSheet, stick, pressed, x, y);
+                    });
+                }
+                StatusBus.$emit(BusEvents.RENDER_TIME_END);
+            },
+            renderButton: function(context, spriteSheet, name, pressed) {
+                let sprite = this.buttonSprites[name];
+
+                if (!pressed || sprite.opacity) {
+                    let coord = sprite.inactive;
+                    context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, sprite.x, sprite.y, sprite.w, sprite.h);
+                }
+                if (pressed) {
+                    let coord = sprite.active;
+                    context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, sprite.x, sprite.y, sprite.w, sprite.h);
+                }
+            },
+            renderStick: function(context, spriteSheet, name, pressed, x, y) {
+                let sprite = this.stickSprites[name];
+                if (!sprite) return;
+
+                let coord = pressed ? sprite.active : sprite.inactive;
+                context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, sprite.x + x * sprite.travel, sprite.y + y * sprite.travel, sprite.w, sprite.h);
+            },
+            imageLoaded: function() {
+                let canvas = this.$refs.controlCanvas;
+                canvas.width = this.canvasSize.width * this.canvasSize.scale;
+                canvas.height = this.canvasSize.height * this.canvasSize.scale;
+
+                let context = canvas.getContext('2d');
+                context.scale(this.canvasSize.scale, this.canvasSize.scale);
+
+                this.spriteSheetReady = true;
                 this.renderImage();
             }
         },
+        mounted: function() {
+            StatusBus.$on(BusEvents.INPUT_CHANGED, this.renderImage);
+        },
+        beforeDestroy: function() {
+            this.spriteSheetReady = false;
+        },
+        template: '<div><canvas class="controlCanvas" ref="controlCanvas"></canvas><img ref="spriteSheet" v-bind:src="spriteSheetUrl" style="display:none;" @load="imageLoaded"/></div>'
+    };
+
+    const InputSource = {
+        data: function() {
+            return {
+                buttonValues: {
+                    faceDown: SwitchButtons.B,
+                    faceRight: SwitchButtons.A,
+                    faceLeft: SwitchButtons.Y,
+                    faceUp: SwitchButtons.X,
+                    leftTop: SwitchButtons.L,
+                    rightTop: SwitchButtons.R,
+                    leftTrigger: SwitchButtons.ZL,
+                    rightTrigger: SwitchButtons.ZR,
+                    select: SwitchButtons.MINUS,
+                    start: SwitchButtons.PLUS,
+                    leftStick: SwitchButtons.L3,
+                    rightStick: SwitchButtons.R3,
+                    home: 0,
+                    share: 0
+                },
+                dpadValues: {
+                    'dpadUp dpadRight': SwitchButtons.DPAD_UPRIGHT,
+                    'dpadDown dpadRight': SwitchButtons.DPAD_DOWNRIGHT,
+                    'dpadDown dpadLeft': SwitchButtons.DPAD_DOWNLEFT,
+                    'dpadUp dpadLeft': SwitchButtons.DPAD_UPLEFT,
+                    'dpadUp': SwitchButtons.DPAD_UP,
+                    'dpadRight': SwitchButtons.DPAD_RIGHT,
+                    'dpadDown': SwitchButtons.DPAD_DOWN,
+                    'dpadLeft': SwitchButtons.DPAD_LEFT
+                },
+                deadzone: 0.15,
+                gamepadState: {
+                    buttons: {
+                        faceDown: false,
+                        faceRight: false,
+                        faceLeft: false,
+                        faceUp: false,
+                        leftTop: false,
+                        rightTop: false,
+                        leftTrigger: false,
+                        rightTrigger: false,
+                        select: false,
+                        start: false,
+                        leftStick: false,
+                        rightStick: false,
+                        home: false,
+                        share: false,
+                        dpadUp: false,
+                        dpadDown: false,
+                        dpadLeft: false,
+                        dpadRight: false
+                    },
+                    sticks: {
+                        leftStick: {
+                            x: 0.0,
+                            y: 0.0,
+                            pressed: false
+                        },
+                        rightStick: {
+                            x: 0.0,
+                            y: 0.0,
+                            pressed: false
+                        }
+                    }
+                },
+                prevState: {
+                    buttons: {
+                        faceDown: false,
+                        faceRight: false,
+                        faceLeft: false,
+                        faceUp: false,
+                        leftTop: false,
+                        rightTop: false,
+                        leftTrigger: false,
+                        rightTrigger: false,
+                        select: false,
+                        start: false,
+                        leftStick: false,
+                        rightStick: false,
+                        home: false,
+                        share: false
+                    },
+                    sticks: {
+                        leftStick: {
+                            x: 0.0,
+                            y: 0.0,
+                            pressed: false
+                        },
+                        rightStick: {
+                            x: 0.0,
+                            y: 0.0,
+                            pressed: false
+                        }
+                    }
+                }
+            };
+        },
+        mounted: function() {
+            StatusBus.$on(BusEvents.UPDATE_INPUT, this.updateState);
+        },
         methods: {
             compareState: function() {
-                if (this.gamepadState.button !== this.prevState.button) return true;
-                if (this.gamepadState.dpad !== this.prevState.dpad) return true;
-                if (this.gamepadState.lx !== this.prevState.lx) return true;
-                if (this.gamepadState.ly !== this.prevState.ly) return true;
-                if (this.gamepadState.rx !== this.prevState.rx) return true;
-                if (this.gamepadState.ry !== this.prevState.ry) return true;
+                // Returns true on change
+                let buttons = Object.keys(this.gamepadState.buttons);
+                for (let i = 0; i < buttons.length; i++) {
+                    let button = buttons[i];
+                    if (this.gamepadState.buttons[button] !== this.prevState.buttons[button]) return true;
+                }
+
+                let sticks = Object.keys(this.gamepadState.sticks);
+                for (let i = 0; i < sticks.length; i++) {
+                    let stick = sticks[i];
+                    if (this.gamepadState.sticks[stick].x !== this.prevState.sticks[stick].x) return true;
+                    if (this.gamepadState.sticks[stick].y !== this.prevState.sticks[stick].y) return true;
+                    if (this.gamepadState.sticks[stick].pressed !== this.prevState.sticks[stick].pressed) return true;
+                }
 
                 return false;
             },
-            calculateState: function() {
-                this.prevState.button = this.gamepadState.button;
-                this.prevState.dpad = this.gamepadState.dpad;
-                this.prevState.lx = this.gamepadState.lx;
-                this.prevState.ly = this.gamepadState.ly;
-                this.prevState.rx = this.gamepadState.rx;
-                this.prevState.ry = this.gamepadState.ry;
+            updateState: function() {
+                let buttons = Object.keys(this.gamepadState.buttons);
+                let sticks = Object.keys(this.gamepadState.sticks);
 
-                this.gamepadState.button = this.calculateButton();
-                this.gamepadState.dpad = this.calculateDpad();
-                let ls = this.calculateStick('leftStick');
-                let rs = this.calculateStick('rightStick');
-                this.gamepadState.lx = ls[0];
-                this.gamepadState.ly = ls[1];
-                this.gamepadState.rx = rs[0];
-                this.gamepadState.ry = rs[1];
+                this.prevState = this.gamepadState;
+                this.gamepadState = {
+                    buttons: {},
+                    sticks: {}
+                };
+
+                for (let i = 0; i < buttons.length; i++) {
+                    let button = buttons[i];
+                    this.gamepadState.buttons[button] = this.isButtonPressed(button);
+                }
+
+                for (let i = 0; i < sticks.length; i++) {
+                    let stick = sticks[i];
+                    this.gamepadState.sticks[stick] = {
+                        x: this.getStickX(stick),
+                        y: this.getStickY(stick),
+                        pressed: this.isButtonPressed(stick)
+                    };
+                }
 
                 if (this.compareState()) {
-                    this.$emit('update', this.gamepadState);
+                    StatusBus.$emit(BusEvents.INPUT_CHANGED, {
+                        state: this.gamepadState,
+                        stateStr: this.generateStateStr()
+                    });
                 }
             },
-            isDpadPressed: function(name, mapping) {
-                // Need to be able to override this function for certain situations, like axis instead of buttons.
-                return mapping.hasOwnProperty('index') && !!this.buttons[mapping.index];
+            isButtonPressed: function(name) {
+                // Should be overridden
+                console.warn(`Tried calling default isButtonPressed!`);
+                return false;
             },
-            isButtonPressed: function(name, mapping) {
-                return mapping.hasOwnProperty('index') && !!this.buttons[mapping.index];
+            getStickX: function(stick) {
+                // Should be overridden
+                console.warn(`Tried calling default getStickX!`);
+                return 0.0;
             },
-            calculateButton: function() {
-                let that = this;
-                return Object.keys(this.buttonMapping).reduce(function (accumulator, button) {
-                    let mapping = that.buttonMapping[button];
-                    if (mapping.hasOwnProperty('index') && !!that.buttons[mapping.index]) {
-                        return accumulator + mapping.val;
-                    }
-                    return accumulator;
-                }, 0);
+            getStickY: function(stick) {
+                // Should be overridden
+                console.warn(`Tried calling default getStickY!`);
+                return 0.0;
             },
-            calculateDpad: function() {
-                // Need to be able to override this function for certain situations, like axis instead of buttons.
-                let that = this;
-
-                let pressedDpad = Object.keys(this.dpadMapping).reduce(function (accumulator, dpad) {
-                    if (that.isDpadPressed(dpad, that.dpadMapping[dpad])) {
-                        accumulator.push(dpad);
-                    }
-                    return accumulator;
-                }, []).join(' ');
-
-                for (let i = 0; i < this.dpadButtons.length; i++) {
-                    if (pressedDpad === this.dpadButtons[i].name) {
-                        return this.dpadButtons[i].val;
-                    }
-                }
-
-                return 8;
+            generateStateStr: function() {
+                let button = this.calculateButton();
+                let dpad = this.calculateDpad();
+                let ls = this.calculateStick('leftStick');
+                let rs = this.calculateStick('rightStick');
+                return `${button} ${dpad} ${ls[0]} ${ls[1]} ${rs[0]} ${rs[1]}`;
             },
-            calculateStick: function(stickName) {
+            calculateStick: function(stick) {
                 // Applies dead zone calculations and then maps the range [-1.0, 1.0] to [0, 255]
                 // Reference: http://www.third-helix.com/2013/04/12/doing-thumbstick-dead-zones-right.html
 
-                let mapping = this.stickMapping[stickName];
-                let x = this.axes[mapping.axisX];
-                let y = this.axes[mapping.axisY];
+                let x = this.getStickX(stick);
+                let y = this.getStickY(stick);
 
                 let res = [128, 128];
                 let mag = Math.sqrt((x * x) + (y * y));
@@ -268,88 +487,86 @@
 
                 return res;
             },
-            renderImage: function() {
-                if (!this.spriteSheetReady) return;
+            calculateDpad: function() {
+                let accumulator = '';
+                let dpadButtons = ['dpadUp', 'dpadDown', 'dpadLeft', 'dpadRight'];
+                for (let i = 0; i < dpadButtons.length; i++) {
+                    if (this.isButtonPressed(dpadButtons[i])) {
+                        accumulator += dpadButtons[i];
+                    }
+                }
 
-                statusBus.$emit('startRender');
-                this.calculateState();
-
+                return this.dpadValues[accumulator] || SwitchButtons.DPAD_NONE;
+            },
+            calculateButton: function() {
                 let that = this;
-
-                let canvas = this.$refs.gamepadCanvas;
-                let context = canvas.getContext('2d');
-                let spriteSheet = this.$refs.spriteSheet;
-
-                context.clearRect(0, 0, this.canvasSize.width, this.canvasSize.height);
-                context.drawImage(spriteSheet, this.canvasSize.x, this.canvasSize.y, this.canvasSize.width, this.canvasSize.height, 0, 0, this.canvasSize.width, this.canvasSize.height);
-
-                Object.keys(this.buttonMapping).map(function (button) {
-                    let mapping = that.buttonMapping[button];
-                    if (mapping.invisible) return;
-                    that.renderButton(context, spriteSheet, button, mapping);
-                });
-
-                Object.keys(this.dpadMapping).map(function (dpad) {
-                    let mapping = that.dpadMapping[dpad];
-                    if (mapping.invisible) return;
-                    that.renderDpad(context, spriteSheet, dpad, mapping);
-                });
-
-                Object.keys(this.stickMapping).map(function (stick) {
-                    let mapping = that.stickMapping[stick];
-                    if (mapping.invisible) return;
-                    that.renderStick(context, spriteSheet, stick, mapping);
-                });
-                statusBus.$emit('finishRender');
+                return Object.keys(this.buttonValues).reduce(function (accumulator, button) {
+                    if (that.isButtonPressed(button)) {
+                        accumulator += that.buttonValues[button];
+                    }
+                    return accumulator;
+                }, 0);
             },
-            renderButton: function(context, spriteSheet, name, mapping) {
-                let sprite = this.buttonSprites[name];
-                let pressed = this.isButtonPressed(name, mapping);
+        }
+    };
 
-                if (!pressed || sprite.opacity) {
-                    let coord = sprite.inactive;
-                    context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, sprite.x, sprite.y, sprite.w, sprite.h);
+    let noController = {
+        template: '<p class="center-text">No controller connected.</p>'
+    };
+
+    let unsupportedController = {
+        template: '<div><p class="center-text">This isn\'t a supported controller. Select another controller or check the help documentation for details.</p></div>'
+    };
+
+    let StandardMappings = {
+        data: function() {
+            return {
+                buttonMapping: {
+                    faceDown: 0,
+                    faceRight: 1,
+                    faceLeft: 2,
+                    faceUp: 3,
+                    leftTop: 4,
+                    rightTop: 5,
+                    leftTrigger: 6,
+                    rightTrigger: 7,
+                    select: 8,
+                    start: 9,
+                    leftStick: 10,
+                    rightStick: 11,
+                    dpadUp: 12,
+                    dpadDown: 13,
+                    dpadLeft: 14,
+                    dpadRight: 15
+                },
+                stickMapping: {
+                    leftStick: {axisX: 0, axisY: 1},
+                    rightStick: {axisX: 2, axisY: 3}
                 }
-                if (pressed) {
-                    let coord = sprite.active;
-                    context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, sprite.x, sprite.y, sprite.w, sprite.h);
-                }
-            },
-            renderDpad: function(context, spriteSheet, name, mapping) {
-                let sprite = this.buttonSprites[name];
-                let pressed = this.isDpadPressed(name, mapping);
+            };
+        }
+    };
 
-                if (!pressed || sprite.opacity) {
-                    let coord = sprite.inactive;
-                    context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, sprite.x, sprite.y, sprite.w, sprite.h);
-                }
-                if (pressed) {
-                    let coord = sprite.active;
-                    context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, sprite.x, sprite.y, sprite.w, sprite.h);
-                }
+    let BaseController = {
+        mixins: [InputSource],
+        props: ['gamepadindex', 'gamepadname', 'axes', 'buttons'],
+        data: function() {
+            return {
+                experimental: false
+            };
+        },
+        methods: {
+            isButtonPressed: function(name) {
+                // May need to override for certain controllers due to dpad
+                let index = this.buttonMapping[name];
+                if (index === null || index === undefined || index < 0) return false;
+                return !!this.buttons[index];
             },
-            renderStick: function(context, spriteSheet, name, mapping) {
-                let sprite = this.stickSprites[name];
-                let pressed = this.isButtonPressed(name, mapping);
-                let x = this.axes[mapping.axisX];
-                let y = this.axes[mapping.axisY];
-
-                let coord = pressed ? sprite.active : sprite.inactive;
-                context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, sprite.x + x * sprite.travel, sprite.y + y * sprite.travel, sprite.w, sprite.h);
+            getStickX: function(name) {
+                return this.axes[this.stickMapping[name].axisX];
             },
-            imageLoaded: function() {
-                let canvas = this.$refs.gamepadCanvas;
-                canvas.width = this.canvasSize.width * this.canvasSize.scale;
-                canvas.height = this.canvasSize.height * this.canvasSize.scale;
-
-                let context = canvas.getContext('2d');
-                context.scale(this.canvasSize.scale, this.canvasSize.scale);
-
-                this.spriteSheetReady = true;
-                this.renderImage();
-            },
-            requestTurn: function() {
-                this.$emit('request');
+            getStickY: function(name) {
+                return this.axes[this.stickMapping[name].axisY];
             }
         },
         mounted: function() {
@@ -369,14 +586,11 @@
                 });
             }
         },
-        beforeDestroy: function() {
-            this.spriteSheetReady = false;
-        },
-        template: '<div><canvas class="gamepadCanvas" ref="gamepadCanvas"></canvas><img ref="spriteSheet" v-bind:src="spriteSheetUrl" style="display:none;" @load="imageLoaded"/><span class="center-text">Controller (( gamepadindex )): (( gamepadname ))</span><span class="center-text">Detected as: (( canonicalName ))</span></div>'
+        template: '<div><span class="center-text">Controller (( gamepadindex )): (( gamepadname ))</span><span class="center-text">Detected as: (( canonicalName ))</span></div>'
     };
 
     let xboxController = {
-        mixins: [baseController],
+        mixins: [BaseController, StandardMappings],
         data: function() {
             return {
                 canonicalName: 'Xbox/XInput controller'
@@ -384,191 +598,79 @@
         }
     };
 
-    const socketBus = new Vue();
-
-    // This really shouldn't be a Vue component, but I don't know how I want to structure this. This works for now though
-    const controlWs = {
-        props: ['endpoint'],
+    let SwitchProControllerBase = {
+        mixins: [BaseController],
         data: function() {
             return {
-                ws: null,
-                pendingPings: {}
-            };
-        },
-        created: function() {
-            let self = this;
-
-            this.ws = new WebSocket(this.endpoint, null, {
-                backoff: 'fibonacci'
-            });
-
-            this.$store.commit('setConnectionState', connectionStateEnum.CONNECTING);
-
-            this.ws.addEventListener('open', function(e) {
-                console.log('Control websocket connected');
-                self.$store.commit('setConnectionState', connectionStateEnum.CONNECTED);
-            });
-
-            this.ws.addEventListener('close', function(e) {
-                console.log('Control websocket closed');
-                self.$store.commit('setConnectionState', connectionStateEnum.NOT_CONNECTED);
-            });
-
-            this.ws.addEventListener('error', function(e) {
-                console.log('Control websocket errored out');
-                self.$store.commit('setConnectionState', connectionStateEnum.ERROR);
-            });
-
-            this.ws.addEventListener('reconnect', function(e) {
-                console.log('Control websocket reconnecting');
-                self.$store.commit('setConnectionState', connectionStateEnum.CONNECTING);
-            });
-
-            this.ws.addEventListener('message', function(e) {
-                const wsParseRegex = /(\w+)(?: (.*))?/;
-                let match = wsParseRegex.exec(e.data);
-                if (!match) {
-                    console.warn(`Got invalid message: ${e.data}`);
-                    return;
-                }
-
-                let command = match[1];
-                let args = match[2];
-
-                if (command === 'PONG') {
-                    if (self.pendingPings.hasOwnProperty(args)) {
-                        let time = performance.now();
-                        let duration = (time - self.pendingPings[args]) / 2;
-                        delete self.pendingPings[args];
-                        socketBus.$emit('pong', duration);
-                    }
-                } else {
-                    socketBus.$emit(command, args);
-                }
-            });
-
-            socketBus.$on('send', this.sendMessage);
-            setInterval(this.ping, 1000);
-        },
-        methods: {
-            sendMessage: function(message) {
-                if (this.ws && this.ws.readyState === this.ws.OPEN) {
-                    this.ws.send(message);
-                    return true;
-                }
-                console.warn('Failed to send message: ' + message);
-                return false;
-            },
-            ping: function() {
-                if (this.ws && this.ws.readyState === this.ws.OPEN) {
-                    let id = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER));
-                    this.pendingPings[id] = performance.now();
-                    this.sendMessage(`PING ${id}`);
-                }
-            }
-        },
-        template: '<div></div>'
-    };
-
-    let switchProControllerStandard = {
-        mixins: [baseController],
-        data: function() {
-            return {
-                spriteSheetUrl: 'assets/images/proControllerSpritesheet.png',
-                buttonSprites: {faceRight:{x:838,y:178,w:78,h:79,inactive:{x:5,y:5},active:{x:93,y:5}},faceDown:{x:757,y:249,w:78,h:79,inactive:{x:181,y:5},active:{x:269,y:5}},faceUp:{x:757,y:107,w:78,h:79,inactive:{x:873,y:5},active:{x:961,y:5}},faceLeft:{x:675,y:178,w:78,h:79,inactive:{x:873,y:94},active:{x:961,y:94}},leftTop:{x:114,y:0,w:248,h:85,inactive:{x:357,y:5},active:{x:615,y:5}},rightTop:{x:679,y:0,w:248,h:85,inactive:{x:5,y:100},active:{x:263,y:100}},leftTrigger:{x:300,y:533,w:150,h:150,inactive:{x:521,y:183},active:{x:681,y:183}},rightTrigger:{x:590,y:533,w:150,h:150,inactive:{x:841,y:183},active:{x:5,y:343}},select:{x:370,y:117,w:44,h:44,inactive:{x:225,y:269},active:{x:279,y:269}},start:{x:627,y:117,w:44,h:44,inactive:{x:333,y:269},active:{x:387,y:269}},share:{x:427,y:198,w:39,h:39,inactive:{x:113,y:269},active:{x:440,y:269}},home:{x:572,y:196,w:44,h:44,inactive:{x:5,y:269},active:{x:59,y:269}},dpadUp:{x:335,y:285,w:50,h:76,inactive:{x:1001,y:269},active:{x:165,y:355},opacity:!0},dpadDown:{x:335,y:361,w:50,h:76,inactive:{x:1001,y:183},active:{x:165,y:269},opacity:!0},dpadLeft:{x:284,y:336,w:75,h:50,inactive:{x:225,y:343},active:{x:310,y:343},opacity:!0},dpadRight:{x:360,y:336,w:76,h:51,inactive:{x:395,y:343},active:{x:481,y:343},opacity:!0}},
-                stickSprites: {leftStick:{x:174,y:155,w:120,h:120,travel:40,inactive:{x:5,y:738},active:{x:135,y:738}},rightStick:{x:598,y:299,w:120,h:120,travel:40,inactive:{x:5,y:738},active:{x:135,y:738}}},
-                canvasSize: {
-                    x: 1061,
-                    y: 5,
-                    width: 1040,
-                    height: 723,
-                    scale: 0.75
-                },
-                buttonMapping: {
-                    faceDown: {val: switchButtons.B, index: 0},
-                    faceRight: {val: switchButtons.A, index: 1},
-                    faceLeft: {val: switchButtons.Y, index: 2},
-                    faceUp: {val: switchButtons.X, index: 3},
-                    leftTop: {val: switchButtons.L, index: 4},
-                    rightTop: {val: switchButtons.R, index: 5},
-                    leftTrigger: {val: switchButtons.ZL, index: 6},
-                    rightTrigger: {val: switchButtons.ZR, index: 7},
-                    select: {val: switchButtons.MINUS, index: 8},
-                    start: {val: switchButtons.PLUS, index: 9},
-                    leftStick: {val: switchButtons.L3, index: 10, invisible: true},
-                    rightStick: {val: switchButtons.R3, index: 11, invisible: true},
-                    home: {val: switchButtons.HOME, index: 16},
-                    share: {val: switchButtons.SHARE, index: 17}
-                },
-                dpadMapping: {
-                    dpadUp: {index: 12},
-                    dpadDown: {index: 13},
-                    dpadLeft: {index: 14},
-                    dpadRight: {index: 15}
-                },
-                stickMapping: {
-                    leftStick: {axisX: 0, axisY: 1, index: 10},
-                    rightStick: {axisX: 2, axisY: 3, index: 11}
-                },
-                canonicalName: 'Switch Pro Controller',
-                experimental: true
+                canonicalName: 'Switch Pro Controller'
             };
         }
     };
 
-    let powerAWiredControllerStandard = {
-        mixins: [switchProControllerStandard],
-        data: function() {
-            return {
-                canonicalName: 'PowerA Wired Controller',
-                experimental: true
-            };
-        }
+    let SwitchProControllerStandard = {
+        mixins: [SwitchProControllerBase, StandardMappings]
+    };
+
+    let SwitchProControllerMacFirefox = {
+        mixins: [SwitchProControllerBase, StandardMappings]
     };
 
     let powerAWiredControllerBase = {
-        mixins: [powerAWiredControllerStandard],
+        mixins: [BaseController],
         data: function() {
             return {
-                buttonMapping: {
-                    faceLeft: {val: switchButtons.Y, index: 0},
-                    faceDown: {val: switchButtons.B, index: 1},
-                    faceRight: {val: switchButtons.A, index: 2},
-                    faceUp: {val: switchButtons.X, index: 3},
-                    leftTop: {val: switchButtons.L, index: 4},
-                    rightTop: {val: switchButtons.R, index: 5},
-                    leftTrigger: {val: switchButtons.ZL, index: 6},
-                    rightTrigger: {val: switchButtons.ZR, index: 7},
-                    select: {val: switchButtons.MINUS, index: 8},
-                    start: {val: switchButtons.PLUS, index: 9},
-                    leftStick: {val: switchButtons.L3, index: 10, invisible: true},
-                    rightStick: {val: switchButtons.R3, index: 11, invisible: true},
-                    home: {val: switchButtons.HOME, index: 12},
-                    share: {val: switchButtons.SHARE, index: 13}
-                }
+                canonicalName: 'PowerA Wired Controller'
             };
         }
     };
 
-    let powerAWiredControllerChromeOS = {
+    let PowerAWiredControllerStandard = {
+        mixins: [powerAWiredControllerBase, StandardMappings]
+    };
+
+    let PowerAWiredControllerMacFirefox = {
         mixins: [powerAWiredControllerBase],
         data: function() {
             return {
                 buttonMapping: {
-                    faceLeft: {val: switchButtons.Y, index: 0},
-                    faceDown: {val: switchButtons.B, index: 1},
-                    faceRight: {val: switchButtons.A, index: 2},
-                    faceUp: {val: switchButtons.X, index: 3},
-                    leftTop: {val: switchButtons.L, index: 4},
-                    rightTop: {val: switchButtons.R, index: 5},
-                    leftTrigger: {val: switchButtons.ZL, index: 6},
-                    rightTrigger: {val: switchButtons.ZR, index: 7},
-                    select: {val: switchButtons.MINUS, index: 8},
-                    start: {val: switchButtons.PLUS, index: 9},
-                    leftStick: {val: switchButtons.L3, index: 10, invisible: true},
-                    rightStick: {val: switchButtons.R3, index: 11, invisible: true},
-                    home: {val: switchButtons.HOME, index: 12},
-                    share: {val: switchButtons.SHARE, index: 13}
+                    faceLeft: 0,
+                    faceDown: 1,
+                    faceRight: 2,
+                    faceUp: 3,
+                    leftTop: 4,
+                    rightTop: 5,
+                    leftTrigger: 6,
+                    rightTrigger: 7,
+                    select: 8,
+                    start: 9,
+                    leftStick: 10,
+                    rightStick: 11,
+                    dpadUp: 14,
+                    dpadDown: 15,
+                    dpadLeft: 16,
+                    dpadRight: 17
+                }
+            };
+        }
+    };
+
+    let PowerAWiredControllerChromeOS = {
+        mixins: [powerAWiredControllerBase],
+        data: function() {
+            return {
+                buttonMapping: {
+                    faceLeft: 0,
+                    faceDown: 1,
+                    faceRight: 2,
+                    faceUp: 3,
+                    leftTop: 4,
+                    rightTop: 5,
+                    leftTrigger: 6,
+                    rightTrigger: 7,
+                    select: 8,
+                    start: 9,
+                    leftStick: 10,
+                    rightStick: 11
                 },
                 dpadMapping: {
                     dpadUp: {axis: 5, sign: -1},
@@ -579,16 +681,37 @@
             };
         },
         methods: {
-            isDpadPressed: function(name, mapping) {
-                return mapping.hasOwnProperty('axis') && mapping.hasOwnProperty('sign') && this.axes[mapping.axis] * mapping.sign > this.deadzone;
+            isButtonPressed: function(name) {
+                if (this.dpadMapping.hasOwnProperty(name)) {
+                    let mapping = this.dpadMapping[name];
+                    return mapping && mapping.hasOwnProperty('axis') && mapping.hasOwnProperty('sign') && this.axes[mapping.axis] * mapping.sign > this.deadzone;
+                } else {
+                    let index = this.buttonMapping[name];
+                    if (index === null || index === undefined || index < 0) return false;
+                    return this.buttons[index];
+                }
             }
         }
     };
 
-    let powerAWiredControllerWinChrome = {
+    let PowerAWiredControllerChrome = {
         mixins: [powerAWiredControllerBase],
         data: function() {
             return {
+                buttonMapping: {
+                    faceLeft: 0,
+                    faceDown: 1,
+                    faceRight: 2,
+                    faceUp: 3,
+                    leftTop: 4,
+                    rightTop: 5,
+                    leftTrigger: 6,
+                    rightTrigger: 7,
+                    select: 8,
+                    start: 9,
+                    leftStick: 10,
+                    rightStick: 11
+                },
                 dpadMapping: {
                     dpadUp: {axis: 9, axisVals: [-7, -5, 7]},
                     dpadDown: {axis: 9, axisVals: [-1, 1, 3]},
@@ -596,116 +719,69 @@
                     dpadRight: {axis: 9, axisVals: [-5, -3, -1]},
                 },
                 stickMapping: {
-                    leftStick: {axisX: 0, axisY: 1, index: 10},
-                    rightStick: {axisX: 2, axisY: 5, index: 11}
+                    leftStick: {axisX: 0, axisY: 1},
+                    rightStick: {axisX: 2, axisY: 5}
                 }
             }
         },
         methods: {
-            isDpadPressed: function(name, mapping) {
-                if (!(mapping.hasOwnProperty('axis') && mapping.hasOwnProperty('axisVals'))) return false;
-                let axisValNormalized = this.axes[mapping.axis] * 7;
-                for (let i = 0; i < mapping.axisVals.length; i++) {
-                    if (Math.abs(mapping.axisVals[i] - axisValNormalized) < 0.1) return true;
+            isButtonPressed: function(name) {
+                if (this.dpadMapping.hasOwnProperty(name)) {
+                    let mapping = this.dpadMapping[name];
+                    if (!(mapping && mapping.hasOwnProperty('axis') && mapping.hasOwnProperty('axisVals'))) return false;
+                    let axisValNormalized = this.axes[mapping.axis] * 7;
+                    for (let i = 0; i < mapping.axisVals.length; i++) {
+                        if (Math.abs(mapping.axisVals[i] - axisValNormalized) < 0.1) return true;
+                    }
+                    return false;
+                } else {
+                    let index = this.buttonMapping[name];
+                    if (index === null || index === undefined || index < 0) return false;
+                    return this.buttons[index];
                 }
-                return false;
             }
         }
     };
 
-    let powerAWiredControllerWinFirefox = {
+    let PowerAWiredControllerWinFirefox = {
         mixins: [powerAWiredControllerBase],
         data: function() {
             return {
-                dpadMapping: {
-                    // Remap dpadUp to Home
-                    dpadUp: {index: 12},
-                    dpadDown: {index: 13},
-                    dpadLeft: {},
-                    dpadRight: {},
-                },
-                notifyMessage: 'The D-Pad does not work properly in Firefox on Windows. The Home button has been mapped to D-Pad Up. If this doesn\'t work for you, try using Chrome.'
-            }
-        },
-        methods: {
-            isDpadPressed: function(name, mapping) {
-                if (!mapping.hasOwnProperty('index')) return false;
-                return this.buttons[mapping.index];
-            }
-        }
-    };
-
-    let switchProController = {
-        mixins: [switchProControllerStandard],
-        data: function() {
-            return {
                 buttonMapping: {
-                    faceLeft: {val: switchButtons.Y, index: 0},
-                    faceDown: {val: switchButtons.B, index: 1},
-                    faceRight: {val: switchButtons.A, index: 2},
-                    faceUp: {val: switchButtons.X, index: 3},
-                    leftTop: {val: switchButtons.L, index: 4},
-                    rightTop: {val: switchButtons.R, index: 5},
-                    leftTrigger: {val: switchButtons.ZL, index: 6},
-                    rightTrigger: {val: switchButtons.ZR, index: 7},
-                    select: {val: switchButtons.MINUS, index: 8},
-                    start: {val: switchButtons.PLUS, index: 9},
-                    leftStick: {val: switchButtons.L3, index: 10, invisible: true},
-                    rightStick: {val: switchButtons.R3, index: 11, invisible: true},
-                    home: {val: switchButtons.HOME, index: 16},
-                    share: {val: switchButtons.SHARE, index: 17}
+                    faceLeft: 0,
+                    faceDown: 1,
+                    faceRight: 2,
+                    faceUp: 3,
+                    leftTop: 4,
+                    rightTop: 5,
+                    leftTrigger: 6,
+                    rightTrigger: 7,
+                    select: 8,
+                    start: 9,
+                    leftStick: 10,
+                    rightStick: 11,
+                    // DPad Up is mapped to share, DPad down is mapped to home
+                    dpadUp: 13,
+                    dpadDown: 12,
+                    dpadLeft: null,
+                    dpadRight: null
                 },
-                dpadMapping: {
-                    dpadUp: {index: 16},
-                    dpadDown: {index: 17},
-                    dpadLeft: {index: 18},
-                    dpadRight: {index: 19}
-                },
-                stickMapping: {
-                    leftStick: {axisX: 0, axisY: 1, index: 10},
-                    rightStick: {axisX: 2, axisY: 3, index: 11}
-                }
-            };
+                notifyMessage: 'The D-Pad does not work properly in Firefox on Windows. The Share button has been mapped to D-Pad Up. If this doesn\'t work for you, try using Chrome.'
+            }
         }
     };
 
     let dualShockControllerBase = {
-        mixins: [baseController],
+        mixins: [BaseController],
         data: function() {
             return {
-                // TODO: Provide a spritesheet for this.
-                buttonMapping: {
-                    faceDown: {val: switchButtons.B, index: 0},
-                    faceRight: {val: switchButtons.A, index: 1},
-                    faceLeft: {val: switchButtons.Y, index: 2},
-                    faceUp: {val: switchButtons.X, index: 3},
-                    leftTop: {val: switchButtons.L, index: 4},
-                    rightTop: {val: switchButtons.R, index: 5},
-                    leftTrigger: {val: switchButtons.ZL, index: 6, invisible: true},
-                    rightTrigger: {val: switchButtons.ZR, index: 7, invisible: true},
-                    select: {val: switchButtons.MINUS, index: 8},
-                    start: {val: switchButtons.PLUS, index: 9},
-                    leftStick: {val: switchButtons.L3, index: 10, invisible: true},
-                    rightStick: {val: switchButtons.R3, index: 11, invisible: true}
-                },
-                dpadMapping: {
-                    dpadUp: {index: 12},
-                    dpadDown: {index: 13},
-                    dpadLeft: {index: 14},
-                    dpadRight: {index: 15}
-                },
-                stickMapping: {
-                    leftStick: {axisX: 0, axisY: 1, index: 10},
-                    rightStick: {axisX: 2, axisY: 3, index: 11}
-                },
-                canonicalName: 'DualShock Controller',
-                experimental: true
+                canonicalName: 'DualShock Controller'
             };
         }
     };
 
     let dualShockControllerStandard = {
-        mixins: [dualShockControllerBase]
+        mixins: [dualShockControllerBase, StandardMappings]
     };
 
     let dualShockControllerWinFirefox = {
@@ -713,24 +789,60 @@
         data: function() {
             return {
                 buttonMapping: {
-                    faceLeft: {index: 0},
-                    faceDown: {index: 1},
-                    faceRight: {index: 2},
-                    faceUp: {index: 3}
-                },
-                dpadMapping: {
+                    faceLeft: 0,
+                    faceDown: 1,
+                    faceRight: 2,
+                    faceUp: 3,
+                    leftTop: 4,
+                    rightTop: 5,
+                    leftTrigger: 6,
+                    rightTrigger: 7,
+                    select: 8,
+                    start: 9,
+                    leftStick: 10,
+                    rightStick: 11,
                     // Remap the guide button to index 12
                     // The other buttons don't seem to work, so leave them blank.
-                    dpadUp: {index: 13},
-                    dpadDown: {index: 12},
-                    dpadLeft: {},
-                    dpadRight: {}
+                    dpadUp: 13,
+                    dpadDown: 12,
+                    dpadLeft: null,
+                    dpadRight: null
                 },
                 stickMapping: {
-                    leftStick: {axisX: 0, axisY: 1, index: 10},
-                    rightStick: {axisX: 2, axisY: 5, index: 11}
+                    leftStick: {axisX: 0, axisY: 1},
+                    rightStick: {axisX: 2, axisY: 5}
                 },
                 notifyMessage: 'The D-Pad does not work properly in Firefox on Windows. The touchpad has been mapped to D-Pad Up. If this doesn\'t work for you, try using Chrome.'
+            };
+        }
+    };
+
+    let dualShockControllerMacFirefox = {
+        mixins: [dualShockControllerBase],
+        data: function() {
+            return {
+                buttonMapping: {
+                    faceLeft: 0,
+                    faceDown: 1,
+                    faceRight: 2,
+                    faceUp: 3,
+                    leftTop: 4,
+                    rightTop: 5,
+                    leftTrigger: 6,
+                    rightTrigger: 7,
+                    select: 8,
+                    start: 9,
+                    leftStick: 10,
+                    rightStick: 11,
+                    dpadUp: 14,
+                    dpadDown: 15,
+                    dpadLeft: 16,
+                    dpadRight: 17
+                },
+                stickMapping: {
+                    leftStick: {axisX: 0, axisY: 1},
+                    rightStick: {axisX: 2, axisY: 5}
+                }
             };
         }
     };
@@ -770,6 +882,39 @@
     let checkVidPid = function(id, vid, pid) {
         return id.indexOf(vid) > -1 && id.indexOf(pid) > -1;
     };
+
+    Vue.component('control-mode-select', {
+        data: function() {
+            return {
+                selectedMode: ControlMode.SINGLE_CONTROLLER,
+                enabledModes: [
+                    ControlMode.SINGLE_CONTROLLER,
+                    ControlMode.MULTIPLE_CONTROLLERS
+                ]
+            }
+        },
+        watch: {
+            selectedMode: function() {
+                this.$store.commit('setControlMode', parseInt(this.selectedMode));
+            }
+        },
+        methods: {
+            getModeText: function(mode){
+                if (mode === ControlMode.SINGLE_CONTROLLER) {
+                    return 'Controller';
+                } else if (mode === ControlMode.MULTIPLE_CONTROLLERS) {
+                    return 'Joycons';
+                } else if (mode === ControlMode.TOUCH) {
+                    return 'Touch controls';
+                }
+
+                return 'Keyboard';
+            }
+        },
+        template: '<select v-model="selectedMode">'+
+        '<option v-for="mode in enabledModes" v-bind:value="mode">Use (( getModeText(mode) ))</option>' +
+        '</select>'
+    });
 
     Vue.component('controller-select', {
         props: ['gamepads', 'gamepadindex'],
@@ -813,10 +958,10 @@
             let that = this;
             this.$nextTick(function() {
                 this.$refs.statsContainer.appendChild(this.stats.dom);
-                statusBus.$on('startRender', function() {that.stats.begin();});
-                statusBus.$on('finishRender', function() {that.stats.end();});
+                StatusBus.$on(BusEvents.RENDER_TIME_START, function() {that.stats.begin();});
+                StatusBus.$on(BusEvents.RENDER_TIME_END, function() {that.stats.end();});
             });
-            socketBus.$on('pong', function(time) {
+            SocketBus.$on(SocketEvents.PONG, function(time) {
                 that.pingPanel.update(time, 1000);
             });
             // todo: handle countdown for until it's user's turn
@@ -824,8 +969,8 @@
         methods: {
             requestTurn: function() {
                 if (this.canRequestTurn) {
-                    socketBus.$emit('send', 'REQUEST_TURN');
-                    this.$store.commit('setControlState', controlStateEnum.WAITING);
+                    SocketBus.$emit(SocketEvents.SEND_MESSAGE, 'REQUEST_TURN');
+                    this.$store.commit('setControlState', ControlState.WAITING);
                 }
             }
         },
@@ -834,23 +979,23 @@
                 let connectionState = this.$store.state.connectionState;
                 let controlState = this.$store.state.controlState;
 
-                if (connectionState === connectionStateEnum.CONNECTED) {
-                    if (controlState === controlStateEnum.NO_CONTROLLER) {
+                if (connectionState === ConnectionState.CONNECTED) {
+                    if (controlState === ControlState.NO_CONTROLLER) {
                         return 'No controller connected';
-                    } else if (controlState === controlStateEnum.UNSUPPORTED_CONTROLLER) {
+                    } else if (controlState === ControlState.UNSUPPORTED_CONTROLLER) {
                         return 'Unsupported controller';
-                    } else if (controlState === controlStateEnum.INACTIVE) {
+                    } else if (controlState === ControlState.INACTIVE) {
                         return 'Request turn';
-                    } else if (controlState === controlStateEnum.ACTIVE) {
+                    } else if (controlState === ControlState.ACTIVE) {
                         return 'Currently your turn';
-                    } else if (controlState === controlStateEnum.WAITING) {
+                    } else if (controlState === ControlState.WAITING) {
                         return 'Waiting for turn';
                     }
-                } else if (connectionState === connectionStateEnum.NOT_CONNECTED) {
+                } else if (connectionState === ConnectionState.NOT_CONNECTED) {
                     return 'Not connected';
-                } else if (connectionStateEnum === connectionStateEnum.CONNECTING) {
+                } else if (ConnectionState === ConnectionState.CONNECTING) {
                     return 'Connecting to server';
-                } else if (connectionStateEnum === connectionStateEnum.ERROR) {
+                } else if (ConnectionState === ConnectionState.ERROR) {
                     return 'Connection error';
                 }
 
@@ -860,7 +1005,7 @@
                 let connectionState = this.$store.state.connectionState;
                 let controlState = this.$store.state.controlState;
 
-                return connectionState === connectionStateEnum.CONNECTED && controlState === controlStateEnum.INACTIVE;
+                return connectionState === ConnectionState.CONNECTED && controlState === ControlState.INACTIVE;
             }
         },
         template: '<div class="center-text"><button type="button" class="center-text min-padding" @click="requestTurn" v-text="turnState" v-bind:disabled="!canRequestTurn"></button><div ref="statsContainer" class="stats"></div></div>'
@@ -870,18 +1015,21 @@
         el: '#app',
         store,
         components: {
-            'control-ws': controlWs,
+            'control-ws': ControlWs,
+            'controller-renderer': ControllerRenderer,
             'no-controller': noController,
             'unsupported-controller': unsupportedController,
             'xbox-controller': xboxController,
-            'switch-pro-controller': switchProController,
-            'switch-pro-controller-standard': switchProControllerStandard,
-            'powera-wired-controller-standard': powerAWiredControllerStandard,
-            'powera-wired-controller-chromeos': powerAWiredControllerChromeOS,
-            'powera-wired-controller-win-chrome': powerAWiredControllerWinChrome,
-            'powera-wired-controller-win-firefox': powerAWiredControllerWinFirefox,
+            'switch-pro-controller-standard': SwitchProControllerStandard,
+            'switch-pro-controller-mac-firefox': SwitchProControllerMacFirefox,
+            'powera-wired-controller-standard': PowerAWiredControllerStandard,
+            'powera-wired-controller-chromeos': PowerAWiredControllerChromeOS,
+            'powera-wired-controller-chrome': PowerAWiredControllerChrome,
+            'powera-wired-controller-win-firefox': PowerAWiredControllerWinFirefox,
+            'powera-wired-controller-mac-firefox': PowerAWiredControllerMacFirefox,
             'dualshock-controller-standard': dualShockControllerStandard,
-            'dualshock-controller-win-firefox': dualShockControllerWinFirefox
+            'dualshock-controller-win-firefox': dualShockControllerWinFirefox,
+            'dualshock-controller-mac-firefox': dualShockControllerMacFirefox,
         },
         data: function() {
             return {
@@ -912,28 +1060,27 @@
                 that.allControllers = that.getGamepads();
             });
 
-            socketBus.$on('CLIENT_ACTIVE', function() {
-                that.$store.commit('setControlState', controlStateEnum.ACTIVE);
+            SocketBus.$on('CLIENT_ACTIVE', function() {
+                that.$store.commit('setControlState', ControlState.ACTIVE);
             });
 
-            socketBus.$on('CLIENT_INACTIVE', function() {
-                that.$store.commit('setControlState', controlStateEnum.INACTIVE);
+            SocketBus.$on('CLIENT_INACTIVE', function() {
+                that.$store.commit('setControlState', ControlState.INACTIVE);
             });
         },
         watch: {
             currentController: function() {
                 let controlState = this.$store.state.controlState;
 
-                if (this.connected) {
-                    if (!this.isControllerConnected) {
-                        this.$store.commit('setControlState', controlStateEnum.NO_CONTROLLER);
-                    } else if (!this.isControllerSupported) {
-                        this.$store.commit('setControlState', controlStateEnum.UNSUPPORTED_CONTROLLER);
-                    } else if (controlState === controlStateEnum.NO_CONTROLLER || controlStateEnum.UNSUPPORTED_CONTROLLER) {
-                        this.$store.commit('setControlState', controlStateEnum.INACTIVE);
-                    }
+                if (!this.isControllerConnected) {
+                    this.$store.commit('setControlState', ControlState.NO_CONTROLLER);
+                } else if (!this.isControllerSupported) {
+                    this.$store.commit('setControlState', ControlState.UNSUPPORTED_CONTROLLER);
+                } else if (controlState === ControlState.NO_CONTROLLER || ControlState.UNSUPPORTED_CONTROLLER) {
+                    this.$store.commit('setControlState', ControlState.INACTIVE);
                 }
-                this.update();
+
+                requestAnimationFrame(this.update);
             },
             currentControllerComponent: function() {
                 console.log(`Loading controller component ${this.currentControllerComponent}`);
@@ -944,6 +1091,8 @@
             let os = detectOS();
 
             console.log(`Browser: ${browser} OS: ${os}`);
+
+            StatusBus.$on(BusEvents.INPUT_CHANGED, this.onControllerUpdate);
 
             this.$nextTick(function() {
                 requestAnimationFrame(this.update);
@@ -990,20 +1139,22 @@
                 this.axes = newAxes;
                 this.buttons = newButtons;
 
+                StatusBus.$emit(BusEvents.UPDATE_INPUT);
+
                 requestAnimationFrame(this.update);
             },
             onControllerUpdate: function(newState) {
                 if (this.connected && this.controlActive) {
-                    socketBus.$emit('send', `UPDATE ${newState.button} ${newState.dpad} ${newState.lx} ${newState.ly} ${newState.rx} ${newState.ry}`);
+                    SocketBus.$emit(SocketEvents.SEND_MESSAGE, `UPDATE ${newState.stateStr}`);
                 }
             }
         },
         computed: {
             connected: function() {
-                return this.$store.state.connectionState === connectionStateEnum.CONNECTED;
+                return this.$store.state.connectionState === ConnectionState.CONNECTED;
             },
             controlActive: function() {
-                return this.$store.state.controlState === controlStateEnum.ACTIVE;
+                return this.$store.state.controlState === ControlState.ACTIVE;
             },
             isControllerConnected: function() {
                 return this.currentControllerComponent !== 'no-controller';
@@ -1026,41 +1177,58 @@
 
                 if (mapping === 'standard') {
                     // Check for Pro Controller (2009) or Joycon Grip (200e) connected via cable (won't work)
-                    if (checkVidPid(id, '57e', '2009') || checkVidPid(id, '57e', '200e')) {
-                        if (id.indexOf('Nintendo Co., Ltd.') > -1) {
-                            return 'unsupported-controller';
-                        } else {
-                            return 'switch-pro-controller-standard';
-                        }
+                    if (id.indexOf('Nintendo Co., Ltd.') > -1) {
+                        return 'unsupported-controller';
                     }
 
+                    // Pro Controller reported as standard on Chrome OS only
+                    if (checkVidPid(id, '57e', '2009')) {
+                        return 'switch-pro-controller-standard';
+                    }
+
+                    // DualShock 4 reported as standard by Chrome on all OSes
                     if (checkVidPid(id, '54c', '9cc')) {
                         return 'dualshock-controller-standard';
                     }
+
+                    // Not reported as standard mappings on any tested OS/browser, but here just in case
+                    if (checkVidPid(id, '20d6', 'a711')) {
+                        return 'powera-wired-controller-standard';
+                    }
+
+                    // Xbox controller works on Windows and Chrome on Mac OS only
                     return 'xbox-controller';
                 }
 
+                // Pro Controller uses standard mappings (but not reported as standard) on Mac OS/Firefox
                 if (checkVidPid(id, '57e', '2009')) {
-                    // Pro Controllers in Firefox report 4 axes. In Chrome, for some reason they report 9.
-                    return 'switch-pro-controller';
+                    if (os === 'Mac OS' && browser === 'Firefox') {
+                        return 'switch-pro-controller-mac-firefox';
+                    }
                 }
 
+                // DualShock 4 D-Pad doesn't work properly on Windows/Firefox. On Mac OS/Firefox it works fine but needs remapping.
                 if (checkVidPid(id, '54c', '9cc')) {
                     if (os === 'Windows' && browser === 'Firefox') return 'dualshock-controller-win-firefox';
-                    return 'dualshock-controller';
+                    if (os === 'Mac OS' && browser === 'Firefox') return 'dualshock-controller-mac-firefox';
                 }
 
+                // PowerA Wired Controller Plus works fine on every OS (Windows/Firefox needs D-Pad fix), but needs remapping.
                 if (checkVidPid(id, '20d6', 'a711')) {
-                    if (os === 'Windows') {
-                        if (browser === 'Chrome') return 'powera-wired-controller-win-chrome';
-                        if (browser === 'Firefox') return 'powera-wired-controller-win-firefox';
-                    } else if (os === 'Chrome OS') {
+                    if (os === 'Chrome OS') {
                         return 'powera-wired-controller-chromeos';
                     }
-                    return 'powera-wired-controller';
-                } else {
-                    return 'unsupported-controller';
+                    if (browser === 'Chrome') {
+                        return 'powera-wired-controller-chrome';
+                    }
+                    if (browser === 'Firefox') {
+                        if (os === 'Windows') return 'powera-wired-controller-win-firefox';
+                        if (os === 'Mac OS') return 'powera-wired-controller-mac-firefox';
+                    }
                 }
+
+                // No supported profile found
+                return 'unsupported-controller';
             },
             gamepadName: function() {
                 if (this.currentController < 0) {

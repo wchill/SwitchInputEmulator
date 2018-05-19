@@ -13,48 +13,71 @@ layout: help
 
 ## Q: Is my controller supported?
 ### A: I've personally tested and confirmed that the following controllers work:
-* Windows
-    * Xbox One controller
-        * Xbox 360 controllers and anything else that's exposed as an Xinput controller should also work.
-    * DualShock 4 (PS4) controller
-        * Chrome detects this as an XInput controller without problems.
-        * In Firefox, the D-Pad does not work (Firefox does not detect it). Instead, the center button has been mapped to D-Pad up.
-        * Edge does not detect this controller at all.
-        * You can install 3rd party tools to make it show up as an Xbox controller instead. See below.
-    * Switch Pro Controller
-        * Does not work at all over USB without additional setup. See below.
-        * Bluetooth *may* work, but this hasn't been tested.
-* MacOS
-    * Xbox One controller
-        * Firefox does not detect this controller at all.
-        * You can try installing [360Controller](https://github.com/360Controller/360Controller) to make this work.
-    * DualShock 4 (PS4) controller
-        * Chrome detects this as an XInput controller without problems.
-        * Firefox detects this controller, but uses nonstandard mappings.
-    * Switch Pro Controller
-        * Does not work under Chrome (the left analog stick is not detected).
-        * Firefox detects this controller, but uses nonstandard mappings.
-        * Does not work at all over USB, Bluetooth is required.
-* Joycons are currently unsupported without an external program.
 
-## Q: Why is the page showing an Xbox controller? I'm using a (Dualshock 4/Pro Controller/other controller)!
-### A: Your browser is reporting your controller as an Xbox controller, which makes it impossible to detect if it's anything else. Alternatively, I haven't gotten around to making sprite sheets for your controller yet.
+:heavy_check_mark: - Works, either fully or mostly. See footnotes if applicable.  
+:heavy_exclamation_mark: - Works, but requires additional setup.  
+:x: - Does not work, see footnotes.  
+:grey_question: - I haven't tried this yet. May or may not be easy to add support.
+
+### Windows
+| | Chrome | Firefox | Edge
+| --- | --- | --- | ---
+| Xbox/Xinput controller | :heavy_check_mark: | :heavy_check_mark: | :x: (1)
+| DualShock 4 controller | :heavy_check_mark: | :heavy_check_mark: (2) | :x: (3)
+| Pro Controller | :heavy_exclamation_mark: (4) | :heavy_exclamation_mark: (4) | :grey_question:
+| Joycons | :heavy_exclamation_mark: (4) | :heavy_exclamation_mark: (4) | :grey_question:
+| PowerA Wired Controller Plus | :heavy_check_mark: | :heavy_check_mark: (5) | :grey_question:
+
+(1) Technically works, but sometimes Edge does weird things like making the controller control the browser itself. Not recommended.  
+(2) The D-Pad does not work fully in Firefox. The touchpad button on a DualShock 4 has been mapped to D-Pad Up. You can perform additional setup to make it be recognized as an Xbox controller, see below.  
+(3) Not detected at all by Edge without additional setup, see below.  
+(4) Requires additional setup, see below.  
+(5) The D-Pad does not work fully in Firefox. The share button has been mapped to D-Pad Up and the home button has been mapped to D-Pad Down.
+
+### MacOS
+| | Chrome | Firefox | Safari
+| --- | --- | --- | ---
+| Xbox/Xinput controller | :heavy_check_mark: | :x: (1) | :grey_question:
+| DualShock 4 controller | :heavy_check_mark: | :heavy_check_mark: | :grey_question:
+| Pro Controller | :x: (2) | :heavy_check_mark: (3) | :grey_question:
+| Joycons | :heavy_check_mark: (3) | :heavy_check_mark: (3) | :grey_question:
+| PowerA Wired Controller Plus | :heavy_check_mark: | :heavy_check_mark: | :grey_question:
+
+(1) Not detected at all by Firefox without additional setup, see below.  
+(2) The left analog stick does not work in Chrome.  
+(3) Bluetooth is required; USB does not work.
+
+### Chrome OS
+| | Chrome
+| --- | ---
+| Xbox/Xinput controller | :x: (1)
+| DualShock controller | :heavy_check_mark:
+| Pro Controller | :heavy_check_mark: (2)
+| Joycons | :heavy_check_mark: (2)
+| PowerA Wired Controller Plus | :heavy_check_mark:
+
+(1) Crashed my Asus C302 Chromebook when plugged in.  
+(2) Bluetooth is required; USB does not work.
 
 ## Q: My inputs are being overridden/aren't showing up!
 ### A: In the current iteration, controller input and chat input happens simultaneously and they can override each other. If your input gets overridden, this is completely intentional.
 
-## Q: My DualShock 2/3/4 (PlayStation) controller isn't being detected/isn't responding/is showing up as "Unsupported"!
-### A: DualShock support is very finicky and experimental. Unfortunately there's not much I can do from my end about this.
-* If you're using Windows, [I would recommend trying the instructions on this page to make Windows recognize it as an Xbox controller.](http://emulation.gametechwiki.com/index.php/SCP_Driver_Package)
+## Q: My Xbox controller doesn't work. How do I make it work?
+### A:
+* On MacOS/Firefox, you can try [360Controller](https://github.com/360Controller/360Controller).
 
-## Q: My Switch Pro Controller isn't being detected/isn't responding/is showing up as "Unsupported"!
-### A: Switch Pro Controller support also is very finicky. Try using Bluetooth instead of USB.
-* Under Windows, try using [ProconXInput](https://github.com/MTCKC/ProconXInput) or [BetterJoyForCemu](https://github.com/Davidobot/BetterJoyForCemu) or [JoyCon-Driver](https://github.com/mfosse/JoyCon-Driver).
-* Under MacOS, try using Firefox. You must use Bluetooth as USB input does not work.
-* Under Chrome OS (but not regular Chrome), it seems to work natively when using Bluetooth. USB support seems to be broken.
+## Q: My DualShock 4 (PlayStation) controller doesn't work. How do I make it work?!
+### A:
+* On Windows/Firefox, [try these instructions](http://emulation.gametechwiki.com/index.php/SCP_Driver_Package)
+
+## Q: What do I need to do to make my Pro Controller/Joycons work?
+### A:
+* On Windows, try using [ProconXInput](https://github.com/MTCKC/ProconXInput) or [BetterJoyForCemu](https://github.com/Davidobot/BetterJoyForCemu) or [JoyCon-Driver](https://github.com/mfosse/JoyCon-Driver).
+* If using a Pro Controller, MacOS/Chrome will not work. This is a browser limitation.
+* If not on Windows, you must use Bluetooth. USB will not work.
 
 ## Q: I have some other controller that isn't working correctly or isn't supported!
-### A: See if your controller has a way to show up as an XInput controller - this might take the form of a hardware switch.
+### A:
 * On Windows, you could also try using [UCR](https://github.com/Snoothy/UCR). [x360ce](https://github.com/x360ce/x360ce) may also work but will require you to modify browser DLLs which is significantly more advanced.
 
 ## Q: Is motion control (gyroscope/accelerometer), vibration, or NFC/amiibo supported?

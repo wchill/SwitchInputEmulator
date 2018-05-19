@@ -1,9 +1,44 @@
+import {ConnectionState, ControlState, ControlMode, StatusBus, store, BusEvents} from "./Common";
+import {SocketBus, ControlWs, SocketEvents} from "./ControlWebSocket";
+import {ControllerRenderer} from "./ControllerRenderer";
 import {xboxController, noController, unsupportedController} from "./BaseController";
-import {connectionStateEnum, controlStateEnum, stateEnum, statusBus, store} from "./Common";
-import {socketBus, controlWs} from "./ControlWebSocket";
-import {powerAWiredControllerStandard, powerAWiredControllerChromeOS, powerAWiredControllerWinChrome, powerAWiredControllerWinFirefox, switchProController, switchProControllerStandard} from "./SwitchProController";
-import {dualShockControllerStandard, dualShockControllerWinFirefox} from "./DualshockController";
+import {SwitchProControllerStandard, SwitchProControllerMacFirefox} from "./SwitchProController";
+import {PowerAWiredControllerStandard, PowerAWiredControllerChrome, PowerAWiredControllerChromeOS, PowerAWiredControllerWinFirefox, PowerAWiredControllerMacFirefox} from "./PowerAWiredController"
+import {dualShockControllerStandard, dualShockControllerWinFirefox, dualShockControllerMacFirefox} from "./DualshockController";
 import * as Utils from "./Utils";
+
+Vue.component('control-mode-select', {
+    data: function() {
+        return {
+            selectedMode: ControlMode.SINGLE_CONTROLLER,
+            enabledModes: [
+                ControlMode.SINGLE_CONTROLLER,
+                ControlMode.MULTIPLE_CONTROLLERS
+            ]
+        }
+    },
+    watch: {
+        selectedMode: function() {
+            this.$store.commit('setControlMode', parseInt(this.selectedMode));
+        }
+    },
+    methods: {
+        getModeText: function(mode){
+            if (mode === ControlMode.SINGLE_CONTROLLER) {
+                return 'Controller';
+            } else if (mode === ControlMode.MULTIPLE_CONTROLLERS) {
+                return 'Joycons';
+            } else if (mode === ControlMode.TOUCH) {
+                return 'Touch controls';
+            }
+
+            return 'Keyboard';
+        }
+    },
+    template: '<select v-model="selectedMode">'+
+    '<option v-for="mode in enabledModes" v-bind:value="mode">Use (( getModeText(mode) ))</option>' +
+    '</select>'
+});
 
 Vue.component('controller-select', {
     props: ['gamepads', 'gamepadindex'],
@@ -47,10 +82,10 @@ Vue.component('server-status', {
         let that = this;
         this.$nextTick(function() {
             this.$refs.statsContainer.appendChild(this.stats.dom);
-            statusBus.$on('startRender', function() {that.stats.begin();});
-            statusBus.$on('finishRender', function() {that.stats.end();});
+            StatusBus.$on(BusEvents.RENDER_TIME_START, function() {that.stats.begin();});
+            StatusBus.$on(BusEvents.RENDER_TIME_END, function() {that.stats.end();});
         });
-        socketBus.$on('pong', function(time) {
+        SocketBus.$on(SocketEvents.PONG, function(time) {
             that.pingPanel.update(time, 1000);
         });
         // todo: handle countdown for until it's user's turn
@@ -58,8 +93,8 @@ Vue.component('server-status', {
     methods: {
         requestTurn: function() {
             if (this.canRequestTurn) {
-                socketBus.$emit('send', 'REQUEST_TURN');
-                this.$store.commit('setControlState', controlStateEnum.WAITING);
+                SocketBus.$emit(SocketEvents.SEND_MESSAGE, 'REQUEST_TURN');
+                this.$store.commit('setControlState', ControlState.WAITING);
             }
         }
     },
@@ -68,23 +103,23 @@ Vue.component('server-status', {
             let connectionState = this.$store.state.connectionState;
             let controlState = this.$store.state.controlState;
 
-            if (connectionState === connectionStateEnum.CONNECTED) {
-                if (controlState === controlStateEnum.NO_CONTROLLER) {
+            if (connectionState === ConnectionState.CONNECTED) {
+                if (controlState === ControlState.NO_CONTROLLER) {
                     return 'No controller connected';
-                } else if (controlState === controlStateEnum.UNSUPPORTED_CONTROLLER) {
+                } else if (controlState === ControlState.UNSUPPORTED_CONTROLLER) {
                     return 'Unsupported controller';
-                } else if (controlState === controlStateEnum.INACTIVE) {
+                } else if (controlState === ControlState.INACTIVE) {
                     return 'Request turn';
-                } else if (controlState === controlStateEnum.ACTIVE) {
+                } else if (controlState === ControlState.ACTIVE) {
                     return 'Currently your turn';
-                } else if (controlState === controlStateEnum.WAITING) {
+                } else if (controlState === ControlState.WAITING) {
                     return 'Waiting for turn';
                 }
-            } else if (connectionState === connectionStateEnum.NOT_CONNECTED) {
+            } else if (connectionState === ConnectionState.NOT_CONNECTED) {
                 return 'Not connected';
-            } else if (connectionStateEnum === connectionStateEnum.CONNECTING) {
+            } else if (ConnectionState === ConnectionState.CONNECTING) {
                 return 'Connecting to server';
-            } else if (connectionStateEnum === connectionStateEnum.ERROR) {
+            } else if (ConnectionState === ConnectionState.ERROR) {
                 return 'Connection error';
             }
 
@@ -94,7 +129,7 @@ Vue.component('server-status', {
             let connectionState = this.$store.state.connectionState;
             let controlState = this.$store.state.controlState;
 
-            return connectionState === connectionStateEnum.CONNECTED && controlState === controlStateEnum.INACTIVE;
+            return connectionState === ConnectionState.CONNECTED && controlState === ControlState.INACTIVE;
         }
     },
     template: '<div class="center-text"><button type="button" class="center-text min-padding" @click="requestTurn" v-text="turnState" v-bind:disabled="!canRequestTurn"></button><div ref="statsContainer" class="stats"></div></div>'
@@ -104,18 +139,21 @@ new Vue({
     el: '#app',
     store,
     components: {
-        'control-ws': controlWs,
+        'control-ws': ControlWs,
+        'controller-renderer': ControllerRenderer,
         'no-controller': noController,
         'unsupported-controller': unsupportedController,
         'xbox-controller': xboxController,
-        'switch-pro-controller': switchProController,
-        'switch-pro-controller-standard': switchProControllerStandard,
-        'powera-wired-controller-standard': powerAWiredControllerStandard,
-        'powera-wired-controller-chromeos': powerAWiredControllerChromeOS,
-        'powera-wired-controller-win-chrome': powerAWiredControllerWinChrome,
-        'powera-wired-controller-win-firefox': powerAWiredControllerWinFirefox,
+        'switch-pro-controller-standard': SwitchProControllerStandard,
+        'switch-pro-controller-mac-firefox': SwitchProControllerMacFirefox,
+        'powera-wired-controller-standard': PowerAWiredControllerStandard,
+        'powera-wired-controller-chromeos': PowerAWiredControllerChromeOS,
+        'powera-wired-controller-chrome': PowerAWiredControllerChrome,
+        'powera-wired-controller-win-firefox': PowerAWiredControllerWinFirefox,
+        'powera-wired-controller-mac-firefox': PowerAWiredControllerMacFirefox,
         'dualshock-controller-standard': dualShockControllerStandard,
-        'dualshock-controller-win-firefox': dualShockControllerWinFirefox
+        'dualshock-controller-win-firefox': dualShockControllerWinFirefox,
+        'dualshock-controller-mac-firefox': dualShockControllerMacFirefox,
     },
     data: function() {
         return {
@@ -146,28 +184,27 @@ new Vue({
             that.allControllers = that.getGamepads();
         });
 
-        socketBus.$on('CLIENT_ACTIVE', function() {
-            that.$store.commit('setControlState', controlStateEnum.ACTIVE);
+        SocketBus.$on('CLIENT_ACTIVE', function() {
+            that.$store.commit('setControlState', ControlState.ACTIVE);
         });
 
-        socketBus.$on('CLIENT_INACTIVE', function() {
-            that.$store.commit('setControlState', controlStateEnum.INACTIVE);
+        SocketBus.$on('CLIENT_INACTIVE', function() {
+            that.$store.commit('setControlState', ControlState.INACTIVE);
         });
     },
     watch: {
         currentController: function() {
             let controlState = this.$store.state.controlState;
 
-            if (this.connected) {
-                if (!this.isControllerConnected) {
-                    this.$store.commit('setControlState', controlStateEnum.NO_CONTROLLER);
-                } else if (!this.isControllerSupported) {
-                    this.$store.commit('setControlState', controlStateEnum.UNSUPPORTED_CONTROLLER);
-                } else if (controlState === controlStateEnum.NO_CONTROLLER || controlStateEnum.UNSUPPORTED_CONTROLLER) {
-                    this.$store.commit('setControlState', controlStateEnum.INACTIVE);
-                }
+            if (!this.isControllerConnected) {
+                this.$store.commit('setControlState', ControlState.NO_CONTROLLER);
+            } else if (!this.isControllerSupported) {
+                this.$store.commit('setControlState', ControlState.UNSUPPORTED_CONTROLLER);
+            } else if (controlState === ControlState.NO_CONTROLLER || ControlState.UNSUPPORTED_CONTROLLER) {
+                this.$store.commit('setControlState', ControlState.INACTIVE);
             }
-            this.update();
+
+            requestAnimationFrame(this.update);
         },
         currentControllerComponent: function() {
             console.log(`Loading controller component ${this.currentControllerComponent}`);
@@ -178,6 +215,8 @@ new Vue({
         let os = Utils.detectOS();
 
         console.log(`Browser: ${browser} OS: ${os}`);
+
+        StatusBus.$on(BusEvents.INPUT_CHANGED, this.onControllerUpdate);
 
         this.$nextTick(function() {
             requestAnimationFrame(this.update);
@@ -224,20 +263,22 @@ new Vue({
             this.axes = newAxes;
             this.buttons = newButtons;
 
+            StatusBus.$emit(BusEvents.UPDATE_INPUT);
+
             requestAnimationFrame(this.update);
         },
         onControllerUpdate: function(newState) {
             if (this.connected && this.controlActive) {
-                socketBus.$emit('send', `UPDATE ${newState.button} ${newState.dpad} ${newState.lx} ${newState.ly} ${newState.rx} ${newState.ry}`);
+                SocketBus.$emit(SocketEvents.SEND_MESSAGE, `UPDATE ${newState.stateStr}`);
             }
         }
     },
     computed: {
         connected: function() {
-            return this.$store.state.connectionState === connectionStateEnum.CONNECTED;
+            return this.$store.state.connectionState === ConnectionState.CONNECTED;
         },
         controlActive: function() {
-            return this.$store.state.controlState === controlStateEnum.ACTIVE;
+            return this.$store.state.controlState === ControlState.ACTIVE;
         },
         isControllerConnected: function() {
             return this.currentControllerComponent !== 'no-controller';
@@ -260,41 +301,58 @@ new Vue({
 
             if (mapping === 'standard') {
                 // Check for Pro Controller (2009) or Joycon Grip (200e) connected via cable (won't work)
-                if (Utils.checkVidPid(id, '57e', '2009') || Utils.checkVidPid(id, '57e', '200e')) {
-                    if (id.indexOf('Nintendo Co., Ltd.') > -1) {
-                        return 'unsupported-controller';
-                    } else {
-                        return 'switch-pro-controller-standard';
-                    }
+                if (id.indexOf('Nintendo Co., Ltd.') > -1) {
+                    return 'unsupported-controller';
                 }
 
+                // Pro Controller reported as standard on Chrome OS only
+                if (Utils.checkVidPid(id, '57e', '2009')) {
+                    return 'switch-pro-controller-standard';
+                }
+
+                // DualShock 4 reported as standard by Chrome on all OSes
                 if (Utils.checkVidPid(id, '54c', '9cc')) {
                     return 'dualshock-controller-standard';
                 }
+
+                // Not reported as standard mappings on any tested OS/browser, but here just in case
+                if (Utils.checkVidPid(id, '20d6', 'a711')) {
+                    return 'powera-wired-controller-standard';
+                }
+
+                // Xbox controller works on Windows and Chrome on Mac OS only
                 return 'xbox-controller';
             }
 
+            // Pro Controller uses standard mappings (but not reported as standard) on Mac OS/Firefox
             if (Utils.checkVidPid(id, '57e', '2009')) {
-                // Pro Controllers in Firefox report 4 axes. In Chrome, for some reason they report 9.
-                return 'switch-pro-controller';
+                if (os === 'Mac OS' && browser === 'Firefox') {
+                    return 'switch-pro-controller-mac-firefox';
+                }
             }
 
+            // DualShock 4 D-Pad doesn't work properly on Windows/Firefox. On Mac OS/Firefox it works fine but needs remapping.
             if (Utils.checkVidPid(id, '54c', '9cc')) {
                 if (os === 'Windows' && browser === 'Firefox') return 'dualshock-controller-win-firefox';
-                return 'dualshock-controller';
+                if (os === 'Mac OS' && browser === 'Firefox') return 'dualshock-controller-mac-firefox';
             }
 
+            // PowerA Wired Controller Plus works fine on every OS (Windows/Firefox needs D-Pad fix), but needs remapping.
             if (Utils.checkVidPid(id, '20d6', 'a711')) {
-                if (os === 'Windows') {
-                    if (browser === 'Chrome') return 'powera-wired-controller-win-chrome';
-                    if (browser === 'Firefox') return 'powera-wired-controller-win-firefox';
-                } else if (os === 'Chrome OS') {
+                if (os === 'Chrome OS') {
                     return 'powera-wired-controller-chromeos';
                 }
-                return 'powera-wired-controller';
-            } else {
-                return 'unsupported-controller';
+                if (browser === 'Chrome') {
+                    return 'powera-wired-controller-chrome';
+                }
+                if (browser === 'Firefox') {
+                    if (os === 'Windows') return 'powera-wired-controller-win-firefox';
+                    if (os === 'Mac OS') return 'powera-wired-controller-mac-firefox';
+                }
             }
+
+            // No supported profile found
+            return 'unsupported-controller';
         },
         gamepadName: function() {
             if (this.currentController < 0) {
