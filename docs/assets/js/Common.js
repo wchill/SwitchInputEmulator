@@ -9,14 +9,14 @@ export const stateEnum = Object.freeze({
     CONNECTING: 8
 });
 
-const connectionStateEnum = Object.freeze({
+export const connectionStateEnum = Object.freeze({
     NOT_CONNECTED: 1,
     CONNECTED: 2,
     ERROR: 3,
     CONNECTING: 4
 });
 
-const controlStateEnum = Object.freeze({
+export const controlStateEnum = Object.freeze({
     NO_CONTROLLER: 1,
     UNSUPPORTED_CONTROLLER: 2,
     INACTIVE: 3,
@@ -59,15 +59,21 @@ export const switchButtons = Object.freeze({
 
 export const statusBus = new Vue();
 
-const appState = new Vuex.Store({
+// TODO: use Vuex for centralized state management
+export const store = new Vuex.Store({
     state: {
         connectionState: connectionStateEnum.NOT_CONNECTED,
         controlState: controlStateEnum.NO_CONTROLLER,
         controlMode: controlModeEnum.SINGLE_CONTROLLER
     },
     mutations: {
-        increment (state) {
-            state.count++
+        setConnectionState: function(state, newState) {
+            console.log(`Changing connection state to ${newState}`);
+            state.connectionState = newState;
+        },
+        setControlState: function(state, newState) {
+            console.log(`Changing control state to ${newState}`);
+            state.controlState = newState;
         }
     }
 });

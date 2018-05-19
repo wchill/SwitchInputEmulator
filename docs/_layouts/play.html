@@ -5,8 +5,9 @@ layout: default
 <link rel="stylesheet" type="text/css" href="assets/css/gamepad.css">
 
 <div id="app" v-cloak>
+    <control-ws v-bind:endpoint="controlEndpoint"></control-ws>
     <controller-select class="center-text min-padding" v-model="currentController" v-bind:gamepads="allControllers"></controller-select>
-    <server-status v-bind:state="connectState" v-on:request="requestTurn"></server-status>
+    <server-status></server-status>
 
     <component v-bind:is="currentControllerComponent" v-bind:gamepadindex="currentController" v-bind:gamepadname="gamepadName" v-bind:axes="axes" v-bind:buttons="buttons" v-on:update="onControllerUpdate"></component>
 

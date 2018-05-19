@@ -6,11 +6,11 @@ layout: default
 
 <script type="text/javascript" src="assets/js/http-live-player.min.js">;</script>
 <script type="text/javascript">
-    var canvas = document.createElement("canvas");
+    let canvas = document.createElement("canvas");
     document.body.appendChild(canvas);
 
-    var uri = 'wss://api.chilly.codes/switch/stream';
-    var wsavc = new WSAvcPlayer(document.getElementById('testcanvas'), "webgl", 1, 35);
+    let uri = 'wss://api.chilly.codes/switch/stream';
+    let wsavc = new WSAvcPlayer(document.getElementById('testcanvas'), "webgl", 1, 35);
     wsavc.connect(uri);
 
     //expose instance for button callbacks

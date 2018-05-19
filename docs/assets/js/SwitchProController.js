@@ -65,7 +65,7 @@ let powerAWiredControllerBase = {
                 faceLeft: {val: switchButtons.Y, index: 0},
                 faceDown: {val: switchButtons.B, index: 1},
                 faceRight: {val: switchButtons.A, index: 2},
-                faecUp: {val: switchButtons.X, index: 3},
+                faceUp: {val: switchButtons.X, index: 3},
                 leftTop: {val: switchButtons.L, index: 4},
                 rightTop: {val: switchButtons.R, index: 5},
                 leftTrigger: {val: switchButtons.ZL, index: 6},

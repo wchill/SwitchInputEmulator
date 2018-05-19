@@ -9,7 +9,7 @@ export let unsupportedController = {
 };
 
 export let baseController = {
-    props: ['gamepadindexes', 'gamepadname', 'axes', 'buttons'],
+    props: ['gamepadindex', 'gamepadname', 'axes', 'buttons'],
     data: function() {
         return {
             spriteSheetUrl: 'assets/images/xboxGamepadSprites.png',

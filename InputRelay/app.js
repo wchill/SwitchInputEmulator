@@ -130,13 +130,22 @@ wss.on('connection', function connection(ws) {
 
 	ws.on('pong', heartbeat);
 	ws.on('message', function incoming(data) {
-		if (data == "PING") ws.send("PONG");
+        const wsParseRegex = /(\w+)(?: (.*))?/;
+        let match = wsParseRegex.exec(data);
+        if (!match) {
+            console.warn(`Got invalid message: ${data}`);
+            return;
+        }
+
+        let command = match[1];
+        let args = match[2];
+
+		if (command == "PING") ws.send(`PONG ${args}`);
 		else {
 			if (activeClient == ws.clientId && commandRegex.exec(data)) client.write(data + "\r\n");
 			else if (data == "REQUEST_TURN" && connectedClients.has(ws.clientId)) waitForTurn(ws.clientId);
 			//console.log(`Websocket received data: ${data}`);
 		}
-
 	});
 	ws.on('error', handleDisconnect);
 	ws.on('close', handleDisconnect);

@@ -62,15 +62,21 @@
 
     const statusBus = new Vue();
 
-    const appState = new Vuex.Store({
+    // TODO: use Vuex for centralized state management
+    const store = new Vuex.Store({
         state: {
             connectionState: connectionStateEnum.NOT_CONNECTED,
             controlState: controlStateEnum.NO_CONTROLLER,
             controlMode: controlModeEnum.SINGLE_CONTROLLER
         },
         mutations: {
-            increment (state) {
-                state.count++;
+            setConnectionState: function(state, newState) {
+                console.log(`Changing connection state to ${newState}`);
+                state.connectionState = newState;
+            },
+            setControlState: function(state, newState) {
+                console.log(`Changing control state to ${newState}`);
+                state.controlState = newState;
             }
         }
     });
@@ -88,7 +94,7 @@
     };
 
     let baseController = {
-        props: ['gamepadindexes', 'gamepadname', 'axes', 'buttons'],
+        props: ['gamepadindex', 'gamepadname', 'axes', 'buttons'],
         data: function() {
             return {
                 spriteSheetUrl: 'assets/images/xboxGamepadSprites.png',
@@ -378,6 +384,92 @@
         }
     };
 
+    const socketBus = new Vue();
+
+    // This really shouldn't be a Vue component, but I don't know how I want to structure this. This works for now though
+    const controlWs = {
+        props: ['endpoint'],
+        data: function() {
+            return {
+                ws: null,
+                pendingPings: {}
+            };
+        },
+        created: function() {
+            let self = this;
+
+            this.ws = new WebSocket(this.endpoint, null, {
+                backoff: 'fibonacci'
+            });
+
+            this.$store.commit('setConnectionState', connectionStateEnum.CONNECTING);
+
+            this.ws.addEventListener('open', function(e) {
+                console.log('Control websocket connected');
+                self.$store.commit('setConnectionState', connectionStateEnum.CONNECTED);
+            });
+
+            this.ws.addEventListener('close', function(e) {
+                console.log('Control websocket closed');
+                self.$store.commit('setConnectionState', connectionStateEnum.NOT_CONNECTED);
+            });
+
+            this.ws.addEventListener('error', function(e) {
+                console.log('Control websocket errored out');
+                self.$store.commit('setConnectionState', connectionStateEnum.ERROR);
+            });
+
+            this.ws.addEventListener('reconnect', function(e) {
+                console.log('Control websocket reconnecting');
+                self.$store.commit('setConnectionState', connectionStateEnum.CONNECTING);
+            });
+
+            this.ws.addEventListener('message', function(e) {
+                const wsParseRegex = /(\w+)(?: (.*))?/;
+                let match = wsParseRegex.exec(e.data);
+                if (!match) {
+                    console.warn(`Got invalid message: ${e.data}`);
+                    return;
+                }
+
+                let command = match[1];
+                let args = match[2];
+
+                if (command === 'PONG') {
+                    if (self.pendingPings.hasOwnProperty(args)) {
+                        let time = performance.now();
+                        let duration = (time - self.pendingPings[args]) / 2;
+                        delete self.pendingPings[args];
+                        socketBus.$emit('pong', duration);
+                    }
+                } else {
+                    socketBus.$emit(command, args);
+                }
+            });
+
+            socketBus.$on('send', this.sendMessage);
+            setInterval(this.ping, 1000);
+        },
+        methods: {
+            sendMessage: function(message) {
+                if (this.ws && this.ws.readyState === this.ws.OPEN) {
+                    this.ws.send(message);
+                    return true;
+                }
+                console.warn('Failed to send message: ' + message);
+                return false;
+            },
+            ping: function() {
+                if (this.ws && this.ws.readyState === this.ws.OPEN) {
+                    let id = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER));
+                    this.pendingPings[id] = performance.now();
+                    this.sendMessage(`PING ${id}`);
+                }
+            }
+        },
+        template: '<div></div>'
+    };
+
     let switchProControllerStandard = {
         mixins: [baseController],
         data: function() {
@@ -442,7 +534,7 @@
                     faceLeft: {val: switchButtons.Y, index: 0},
                     faceDown: {val: switchButtons.B, index: 1},
                     faceRight: {val: switchButtons.A, index: 2},
-                    faecUp: {val: switchButtons.X, index: 3},
+                    faceUp: {val: switchButtons.X, index: 3},
                     leftTop: {val: switchButtons.L, index: 4},
                     rightTop: {val: switchButtons.R, index: 5},
                     leftTrigger: {val: switchButtons.ZL, index: 6},
@@ -713,48 +805,62 @@
 
             return {
                 stats: stats,
-                pingPanel: pingPanel
+                pingPanel: pingPanel,
+                pendingPings: {}
             };
         },
         mounted: function() {
             let that = this;
             this.$nextTick(function() {
                 this.$refs.statsContainer.appendChild(this.stats.dom);
-                statusBus.$on('pong', this.updatePingGraph);
                 statusBus.$on('startRender', function() {that.stats.begin();});
                 statusBus.$on('finishRender', function() {that.stats.end();});
             });
+            socketBus.$on('pong', function(time) {
+                that.pingPanel.update(time, 1000);
+            });
+            // todo: handle countdown for until it's user's turn
         },
         methods: {
             requestTurn: function() {
-                this.$emit('request');
-            },
-            updatePingGraph: function(time) {
-                this.pingPanel.update(time, 1000);
+                if (this.canRequestTurn) {
+                    socketBus.$emit('send', 'REQUEST_TURN');
+                    this.$store.commit('setControlState', controlStateEnum.WAITING);
+                }
             }
         },
         computed: {
             turnState: function() {
-                if (this.state === stateEnum.CONNECTED_NO_CONTROLLER) {
-                    return 'No controller connected';
-                } else if (this.state === stateEnum.CONNECTED_UNSUPPORTED_CONTROLLER) {
-                    return 'Unsupported controller';
-                } else if (this.state === stateEnum.CONNECTED_ACTIVE) {
-                    return 'Currently your turn';
-                } else if (this.state === stateEnum.CONNECTED_WAITING) {
-                    return 'Waiting for turn';
-                } else if (this.state === stateEnum.CONNECTED_INACTIVE) {
-                    return 'Request turn';
-                } else if (this.state === stateEnum.NOT_CONNECTED) {
+                let connectionState = this.$store.state.connectionState;
+                let controlState = this.$store.state.controlState;
+
+                if (connectionState === connectionStateEnum.CONNECTED) {
+                    if (controlState === controlStateEnum.NO_CONTROLLER) {
+                        return 'No controller connected';
+                    } else if (controlState === controlStateEnum.UNSUPPORTED_CONTROLLER) {
+                        return 'Unsupported controller';
+                    } else if (controlState === controlStateEnum.INACTIVE) {
+                        return 'Request turn';
+                    } else if (controlState === controlStateEnum.ACTIVE) {
+                        return 'Currently your turn';
+                    } else if (controlState === controlStateEnum.WAITING) {
+                        return 'Waiting for turn';
+                    }
+                } else if (connectionState === connectionStateEnum.NOT_CONNECTED) {
                     return 'Not connected';
-                } else if (this.state === stateEnum.ERROR) {
-                    return 'Connection error';
-                } else if (this.state === stateEnum.CONNECTING) {
+                } else if (connectionStateEnum === connectionStateEnum.CONNECTING) {
                     return 'Connecting to server';
+                } else if (connectionStateEnum === connectionStateEnum.ERROR) {
+                    return 'Connection error';
                 }
+
+                return 'Unknown state';
             },
             canRequestTurn: function() {
-                return this.state === stateEnum.CONNECTED_INACTIVE;
+                let connectionState = this.$store.state.connectionState;
+                let controlState = this.$store.state.controlState;
+
+                return connectionState === connectionStateEnum.CONNECTED && controlState === controlStateEnum.INACTIVE;
             }
         },
         template: '<div class="center-text"><button type="button" class="center-text min-padding" @click="requestTurn" v-text="turnState" v-bind:disabled="!canRequestTurn"></button><div ref="statsContainer" class="stats"></div></div>'
@@ -762,7 +868,9 @@
 
     new Vue({
         el: '#app',
+        store,
         components: {
+            'control-ws': controlWs,
             'no-controller': noController,
             'unsupported-controller': unsupportedController,
             'xbox-controller': xboxController,
@@ -782,8 +890,7 @@
                 buttons: [],
                 deadzone: 0.15,
                 allControllers: [],
-                connectState: stateEnum.NOT_CONNECTED,
-                lastPing: 0
+                controlEndpoint: 'wss://api.chilly.codes/switch/ws'
             };
         },
         created: function() {
@@ -805,55 +912,31 @@
                 that.allControllers = that.getGamepads();
             });
 
-            this.ws = new WebSocket('wss://api.chilly.codes/switch/ws', null, {
-                backoff: 'fibonacci'
+            socketBus.$on('CLIENT_ACTIVE', function() {
+                that.$store.commit('setControlState', controlStateEnum.ACTIVE);
             });
 
-            this.connectState = stateEnum.CONNECTING;
-
-            this.ws.addEventListener('open', function (e) {
-                if (!that.isControllerConnected) {
-                    that.connectState = stateEnum.CONNECTED_NO_CONTROLLER;
-                } else if (!that.isControllerSupported) {
-                    that.connectState = stateEnum.CONNECTED_UNSUPPORTED_CONTROLLER;
-                } else {
-                    that.connectState = stateEnum.CONNECTED_INACTIVE;
-                }
-                that.lastPing = performance.now();
-                that.sendMessage('PING');
-            });
-
-            this.ws.addEventListener('close', function (e) {
-                that.connectState = stateEnum.NOT_CONNECTED;
-            });
-
-            this.ws.addEventListener('error', function (e) {
-                that.connectState = stateEnum.ERROR;
-            });
-
-            this.ws.addEventListener('reconnect', function (e) {
-                that.connectState = stateEnum.CONNECTING;
-            });
-
-            this.ws.addEventListener('message', function(e) {
-                that.onServerMessage(e.data);
+            socketBus.$on('CLIENT_INACTIVE', function() {
+                that.$store.commit('setControlState', controlStateEnum.INACTIVE);
             });
         },
         watch: {
             currentController: function() {
-                if (this.connectState === stateEnum.CONNECTED_UNSUPPORTED_CONTROLLER || this.connectState === stateEnum.CONNECTED_NO_CONTROLLER || this.connectState === stateEnum.CONNECTED_INACTIVE || this.connectState === stateEnum.CONNECTED_WAITING || this.connectState === stateEnum.CONNECTED_ACTIVE) {
+                let controlState = this.$store.state.controlState;
+
+                if (this.connected) {
                     if (!this.isControllerConnected) {
-                        this.connectState = stateEnum.CONNECTED_NO_CONTROLLER;
+                        this.$store.commit('setControlState', controlStateEnum.NO_CONTROLLER);
                     } else if (!this.isControllerSupported) {
-                        this.connectState = stateEnum.CONNECTED_UNSUPPORTED_CONTROLLER;
-                    } else if (this.connectState === stateEnum.CONNECTED_NO_CONTROLLER || this.connectState === stateEnum.CONNECTED_UNSUPPORTED_CONTROLLER) {
-                        this.connectState = stateEnum.CONNECTED_INACTIVE;
+                        this.$store.commit('setControlState', controlStateEnum.UNSUPPORTED_CONTROLLER);
+                    } else if (controlState === controlStateEnum.NO_CONTROLLER || controlStateEnum.UNSUPPORTED_CONTROLLER) {
+                        this.$store.commit('setControlState', controlStateEnum.INACTIVE);
                     }
                 }
                 this.update();
             },
             currentControllerComponent: function() {
-                console.log(this.currentControllerComponent);
+                console.log(`Loading controller component ${this.currentControllerComponent}`);
             }
         },
         mounted: function() {
@@ -910,62 +993,18 @@
                 requestAnimationFrame(this.update);
             },
             onControllerUpdate: function(newState) {
-                if (this.connectState === stateEnum.CONNECTED_ACTIVE) {
-                    this.sendMessage(`UPDATE ${newState.button} ${newState.dpad} ${newState.lx} ${newState.ly} ${newState.rx} ${newState.ry}`);
-                }
-            },
-            requestTurn: function() {
-                if (this.connectState !== stateEnum.CONNECTED_INACTIVE) {
-                    this.$notify({
-                        type: 'warn',
-                        text: 'Can\'t request turn right now.'
-                    });
-                } else {
-                    this.connectState = stateEnum.CONNECTED_WAITING;
-                    this.sendMessage('REQUEST_TURN');
-                }
-            },
-            sendMessage: function(message) {
-                if (this.ws.readyState === this.ws.OPEN) {
-                    this.ws.send(message);
-                    return true;
-                }
-                console.warn('Failed to send message: ' + message);
-                return false;
-            },
-            onServerMessage: function(message) {
-                const wsParseRegex = /(\w+)(?: (.*))?/;
-                let match = wsParseRegex.exec(message);
-                if (!match) {
-                    console.warn(`Got invalid message: ${message}`);
-                    return;
-                }
-
-                let command = match[1];
-                let args = match[2];
-
-                if (command === 'PONG') {
-                    let that = this;
-
-                    let time = performance.now();
-                    let duration = (time - this.lastPing) / 2;
-                    statusBus.$emit('pong', duration);
-                    setTimeout(function() {
-                        that.lastPing = performance.now();
-                        that.sendMessage('PING');
-                    }, Math.max(duration, 1000));
-                } else if (command === 'CLIENT_ACTIVE') {
-                    if (this.connectState === stateEnum.CONNECTED_INACTIVE || this.connectState === stateEnum.CONNECTED_WAITING) {
-                        this.connectState = stateEnum.CONNECTED_ACTIVE;
-                    }
-                } else if (command === 'CLIENT_INACTIVE') {
-                    if (this.connectState === stateEnum.CONNECTED_ACTIVE || this.connectState === stateEnum.CONNECTED_WAITING) {
-                        this.connectState = stateEnum.CONNECTED_INACTIVE;
-                    }
+                if (this.connected && this.controlActive) {
+                    socketBus.$emit('send', `UPDATE ${newState.button} ${newState.dpad} ${newState.lx} ${newState.ly} ${newState.rx} ${newState.ry}`);
                 }
             }
         },
         computed: {
+            connected: function() {
+                return this.$store.state.connectionState === connectionStateEnum.CONNECTED;
+            },
+            controlActive: function() {
+                return this.$store.state.controlState === controlStateEnum.ACTIVE;
+            },
             isControllerConnected: function() {
                 return this.currentControllerComponent !== 'no-controller';
             },
