@@ -1,4 +1,4 @@
-import {switchButtons} from "./VueConstants";
+import {switchButtons} from "./Common";
 import {baseController} from "./BaseController";
 
 export let switchJoyCons = {

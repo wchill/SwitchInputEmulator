@@ -1,4 +1,4 @@
-import {switchButtons, statusBus} from './VueConstants.js';
+import {switchButtons, statusBus} from './Common.js';
 
 export let noController = {
     template: '<p class="center-text">No controller connected.</p>'

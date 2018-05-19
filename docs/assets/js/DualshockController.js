@@ -1,5 +1,5 @@
 import {baseController} from "./BaseController";
-import {switchButtons} from "./VueConstants";
+import {switchButtons} from "./Common";
 
 let dualShockControllerBase = {
     mixins: [baseController],

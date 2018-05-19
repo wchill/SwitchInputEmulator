@@ -1,4 +1,4 @@
-import {switchButtons} from "./VueConstants.js"
+import {switchButtons} from "./Common.js"
 import {baseController} from "./BaseController.js";
 
 export let switchProControllerStandard = {

@@ -12,6 +12,28 @@
         CONNECTING: 8
     });
 
+    const connectionStateEnum = Object.freeze({
+        NOT_CONNECTED: 1,
+        CONNECTED: 2,
+        ERROR: 3,
+        CONNECTING: 4
+    });
+
+    const controlStateEnum = Object.freeze({
+        NO_CONTROLLER: 1,
+        UNSUPPORTED_CONTROLLER: 2,
+        INACTIVE: 3,
+        WAITING: 4,
+        ACTIVE: 5
+    });
+
+    const controlModeEnum = Object.freeze({
+        SINGLE_CONTROLLER: 1,
+        MULTIPLE_CONTROLLERS: 2,
+        KEYBOARD: 3,
+        TOUCH: 4
+    });
+
     const switchButtons = Object.freeze({
         Y: 1,
         B: 2,
@@ -39,6 +61,19 @@
     });
 
     const statusBus = new Vue();
+
+    const appState = new Vuex.Store({
+        state: {
+            connectionState: connectionStateEnum.NOT_CONNECTED,
+            controlState: controlStateEnum.NO_CONTROLLER,
+            controlMode: controlModeEnum.SINGLE_CONTROLLER
+        },
+        mutations: {
+            increment (state) {
+                state.count++;
+            }
+        }
+    });
 
     Vue.mixin({
         delimiters: ['((', '))']

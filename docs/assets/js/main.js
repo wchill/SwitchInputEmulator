@@ -1,5 +1,5 @@
-import {baseController, xboxController, noController, unsupportedController} from "./BaseController";
-import {stateEnum, statusBus} from "./VueConstants";
+import {xboxController, noController, unsupportedController} from "./BaseController";
+import {stateEnum, statusBus} from "./Common";
 import {powerAWiredControllerStandard, powerAWiredControllerChromeOS, powerAWiredControllerWinChrome, powerAWiredControllerWinFirefox, switchProController, switchProControllerStandard} from "./SwitchProController";
 import {dualShockControllerStandard, dualShockControllerWinFirefox} from "./DualshockController";
 import * as Utils from "./Utils";
