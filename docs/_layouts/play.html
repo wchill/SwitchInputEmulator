@@ -5,8 +5,9 @@ layout: default
 <link rel="stylesheet" type="text/css" href="assets/css/gamepad.css">
 
 <div id="app" v-cloak>
+    <twitch-auth></twitch-auth>
     <control-ws v-bind:endpoint="controlEndpoint"></control-ws>
-    <control-mode-select class="center-text min-padding"></control-mode-select>
+    <!-- <control-mode-select class="center-text min-padding"></control-mode-select> -->
     <controller-select class="center-text min-padding" v-model="currentController" v-bind:gamepads="allControllers"></controller-select>
     <server-status></server-status>
 
@@ -27,6 +28,10 @@ layout: default
     window.vueNotification = window["vue-notification"].default;
     Vue.use(vueNotification);
 </script>
+<script src="//code.jquery.com/jquery-latest.min.js"></script>
 <script src="assets/js/websocket.js"></script>
 <script src="assets/js/stats.js"></script>
+<script src="assets/js/oidc-client.min.js"></script>
+<script src="assets/js/twitch-auth-config.js"></script>
+<script src="assets/js/twitch-auth.js"></script>
 <script src="assets/js/bundle.js"></script>

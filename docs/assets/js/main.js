@@ -1,4 +1,5 @@
-import {ConnectionState, ControlState, ControlMode, StatusBus, store, BusEvents} from "./Common";
+import {ConnectionState, ControlState, ControlMode, PlayerState, StatusBus, store, BusEvents} from "./Common";
+import {ControlModeSelect} from "./InputSource";
 import {SocketBus, ControlWs, SocketEvents} from "./ControlWebSocket";
 import {ControllerRenderer} from "./ControllerRenderer";
 import {xboxController, noController, unsupportedController} from "./BaseController";
@@ -6,7 +7,6 @@ import {SwitchProControllerStandard, SwitchProControllerMacFirefox} from "./Swit
 import {PowerAWiredControllerStandard, PowerAWiredControllerChrome, PowerAWiredControllerChromeOS, PowerAWiredControllerWinFirefox, PowerAWiredControllerMacFirefox} from "./PowerAWiredController"
 import {dualShockControllerStandard, dualShockControllerWinFirefox, dualShockControllerMacFirefox} from "./DualshockController";
 import * as Utils from "./Utils";
-
 
 Vue.component('controller-select', {
     props: ['gamepads', 'gamepadindex'],
@@ -50,8 +50,8 @@ Vue.component('server-status', {
         let that = this;
         this.$nextTick(function() {
             this.$refs.statsContainer.appendChild(this.stats.dom);
-            StatusBus.$on(BusEvents.RENDER_TIME_START, function() {that.stats.begin();});
-            StatusBus.$on(BusEvents.RENDER_TIME_END, function() {that.stats.end();});
+            StatusBus.$on(BusEvents.RENDER_TIME_START, this.stats.begin);
+            StatusBus.$on(BusEvents.RENDER_TIME_END, this.stats.end);
         });
         SocketBus.$on(SocketEvents.PONG, function(time) {
             that.pingPanel.update(time, 1000);
@@ -109,6 +109,7 @@ new Vue({
     components: {
         'control-ws': ControlWs,
         'controller-renderer': ControllerRenderer,
+        'control-mode-select': ControlModeSelect,
         'no-controller': noController,
         'unsupported-controller': unsupportedController,
         'xbox-controller': xboxController,
@@ -182,7 +183,7 @@ new Vue({
         let browser = Utils.detectBrowser();
         let os = Utils.detectOS();
 
-        console.log(`Browser: ${browser} OS: ${os}`);
+        console.log(`Running on ${os}/${browser}`);
 
         StatusBus.$on(BusEvents.INPUT_CHANGED, this.onControllerUpdate);
 

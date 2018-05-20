@@ -8,6 +8,14 @@
         CONNECTING: 4
     });
 
+    const PlayerState = Object.freeze({
+        NOT_CONNECTED: 1,
+        ERROR: 2,
+        CONNECTING: 3,
+        PLAYING: 4,
+        PAUSED: 5
+    });
+
     const ControlState = Object.freeze({
         NO_CONTROLLER: 1,
         UNSUPPORTED_CONTROLLER: 2,
@@ -59,25 +67,37 @@
 
     const StatusBus = new Vue();
 
-    // TODO: use Vuex for centralized state management
+    function enumToName(sourceEnum, val) {
+        let keys = Object.keys(sourceEnum);
+        for (let i = 0; i < keys.length; i++) {
+            if (sourceEnum[keys[i]] === val) return keys[i];
+        }
+        return val;
+    }
+
     const store = new Vuex.Store({
         state: {
             connectionState: ConnectionState.NOT_CONNECTED,
             controlState: ControlState.NO_CONTROLLER,
-            controlMode: ControlMode.SINGLE_CONTROLLER
+            controlMode: ControlMode.SINGLE_CONTROLLER,
+            playerState: PlayerState.NOT_CONNECTED
         },
         mutations: {
             setConnectionState: function(state, newState) {
-                console.log(`Changing connection state to ${newState}`);
+                console.log(`Changing connection state from ${enumToName(ConnectionState, state.connectionState)} to ${enumToName(ConnectionState, newState)}`);
                 state.connectionState = newState;
             },
             setControlState: function(state, newState) {
-                console.log(`Changing control state to ${newState}`);
+                console.log(`Changing control state from ${enumToName(ControlState, state.controlState)} to ${enumToName(ControlState, newState)}`);
                 state.controlState = newState;
             },
             setControlMode: function(state, newMode) {
-                console.log(`Changing control mode to ${newMode}`);
+                console.log(`Changing control mode from ${enumToName(ControlMode, state.controlMode)} to ${enumToName(ControlMode, newMode)}`);
                 state.controlMode = newMode;
+            },
+            setPlayerState: function(state, newState) {
+                console.log(`Changing player state from ${enumToName(PlayerState, state.playerState)} to ${enumToName(PlayerState, newState)}`);
+                state.playerState = newState;
             }
         }
     });
@@ -85,208 +105,6 @@
     Vue.mixin({
         delimiters: ['((', '))']
     });
-
-    const SocketBus = new Vue();
-    const SocketEvents = Object.freeze({
-        SEND_MESSAGE: 'send',
-        PONG: 'pong'
-    });
-
-    // This really shouldn't be a Vue component, but I don't know how I want to structure this. This works for now though
-    const ControlWs = {
-        props: ['endpoint'],
-        data: function() {
-            return {
-                ws: null,
-                pendingPings: {}
-            };
-        },
-        created: function() {
-            let self = this;
-
-            this.ws = new WebSocket(this.endpoint, null, {
-                backoff: 'fibonacci'
-            });
-
-            this.$store.commit('setConnectionState', ConnectionState.CONNECTING);
-
-            this.ws.addEventListener('open', function(e) {
-                console.log('Control websocket connected');
-                self.$store.commit('setConnectionState', ConnectionState.CONNECTED);
-            });
-
-            this.ws.addEventListener('close', function(e) {
-                console.log('Control websocket closed');
-                self.$store.commit('setConnectionState', ConnectionState.NOT_CONNECTED);
-            });
-
-            this.ws.addEventListener('error', function(e) {
-                console.log('Control websocket errored out');
-                self.$store.commit('setConnectionState', ConnectionState.ERROR);
-            });
-
-            this.ws.addEventListener('reconnect', function(e) {
-                console.log('Control websocket reconnecting');
-                self.$store.commit('setConnectionState', ConnectionState.CONNECTING);
-            });
-
-            this.ws.addEventListener('message', function(e) {
-                const wsParseRegex = /(\w+)(?: (.*))?/;
-                let match = wsParseRegex.exec(e.data);
-                if (!match) {
-                    console.warn(`Got invalid message: ${e.data}`);
-                    return;
-                }
-
-                let command = match[1];
-                let args = match[2];
-
-                if (command === 'PONG') {
-                    if (self.pendingPings.hasOwnProperty(args)) {
-                        let time = performance.now();
-                        let duration = (time - self.pendingPings[args]) / 2;
-                        delete self.pendingPings[args];
-                        SocketBus.$emit('pong', duration);
-                    }
-                } else {
-                    SocketBus.$emit(command, args);
-                }
-            });
-
-            SocketBus.$on(SocketEvents.SEND_MESSAGE, this.sendMessage);
-            setInterval(this.ping, 1000);
-        },
-        methods: {
-            sendMessage: function(message) {
-                if (this.ws && this.ws.readyState === this.ws.OPEN) {
-                    this.ws.send(message);
-                    return true;
-                }
-                console.warn('Failed to send message: ' + message);
-                return false;
-            },
-            ping: function() {
-                if (this.ws && this.ws.readyState === this.ws.OPEN) {
-                    let id = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER));
-                    this.pendingPings[id] = performance.now();
-                    this.sendMessage(`PING ${id}`);
-                }
-            }
-        },
-        template: '<div></div>'
-    };
-
-    const ProControllerSprites = {
-        data: function() {
-            return {
-                spriteSheetUrl: 'assets/images/proControllerSpritesheet.png',
-                buttonSprites: {faceRight:{x:838,y:178,w:78,h:79,inactive:{x:5,y:5},active:{x:93,y:5}},faceDown:{x:757,y:249,w:78,h:79,inactive:{x:181,y:5},active:{x:269,y:5}},faceUp:{x:757,y:107,w:78,h:79,inactive:{x:873,y:5},active:{x:961,y:5}},faceLeft:{x:675,y:178,w:78,h:79,inactive:{x:873,y:94},active:{x:961,y:94}},leftTop:{x:114,y:0,w:248,h:85,inactive:{x:357,y:5},active:{x:615,y:5}},rightTop:{x:679,y:0,w:248,h:85,inactive:{x:5,y:100},active:{x:263,y:100}},leftTrigger:{x:300,y:533,w:150,h:150,inactive:{x:521,y:183},active:{x:681,y:183}},rightTrigger:{x:590,y:533,w:150,h:150,inactive:{x:841,y:183},active:{x:5,y:343}},select:{x:370,y:117,w:44,h:44,inactive:{x:225,y:269},active:{x:279,y:269}},start:{x:627,y:117,w:44,h:44,inactive:{x:333,y:269},active:{x:387,y:269}},share:{x:427,y:198,w:39,h:39,inactive:{x:113,y:269},active:{x:440,y:269}},home:{x:572,y:196,w:44,h:44,inactive:{x:5,y:269},active:{x:59,y:269}},dpadUp:{x:335,y:285,w:50,h:76,inactive:{x:1001,y:269},active:{x:165,y:355},opacity:!0},dpadDown:{x:335,y:361,w:50,h:76,inactive:{x:1001,y:183},active:{x:165,y:269},opacity:!0},dpadLeft:{x:284,y:336,w:75,h:50,inactive:{x:225,y:343},active:{x:310,y:343},opacity:!0},dpadRight:{x:360,y:336,w:76,h:51,inactive:{x:395,y:343},active:{x:481,y:343},opacity:!0}},
-                stickSprites: {leftStick:{x:174,y:155,w:120,h:120,travel:40,inactive:{x:5,y:738},active:{x:135,y:738}},rightStick:{x:598,y:299,w:120,h:120,travel:40,inactive:{x:5,y:738},active:{x:135,y:738}}},
-                canvasSize: {
-                    x: 1061,
-                    y: 5,
-                    width: 1040,
-                    height: 723,
-                    scale: 0.75
-                }
-            };
-        }
-    };
-
-    const ControllerRenderer = {
-        mixins: [ProControllerSprites],
-        data: function() {
-            return {
-                spriteSheetReady: false
-            };
-        },
-        methods: {
-            setStylesheet: function(stylesheet) {
-                this.spriteSheetReady = false;
-                this.buttonSprites = stylesheet.buttonSprites;
-                this.stickSprites = stylesheet.stickSprites;
-                this.canvasSize = stylesheet.canvasSize;
-                this.spriteSheetUrl = stylesheet.spriteSheetUrl;
-            },
-            renderImage: function(newState) {
-                if (!this.spriteSheetReady) return;
-
-                let that = this;
-                let canvas = this.$refs.controlCanvas;
-                let context = canvas.getContext('2d');
-                let spriteSheet = this.$refs.spriteSheet;
-
-                StatusBus.$emit(BusEvents.RENDER_TIME_START);
-
-                context.clearRect(0, 0, this.canvasSize.width, this.canvasSize.height);
-                context.drawImage(spriteSheet, this.canvasSize.x, this.canvasSize.y, this.canvasSize.width, this.canvasSize.height, 0, 0, this.canvasSize.width, this.canvasSize.height);
-
-                if (!newState) {
-                    // draw controller with default state
-                    Object.keys(this.buttonSprites).map(function (button) {
-                        that.renderButton(context, spriteSheet, button, false);
-                    });
-
-                    Object.keys(this.stickSprites).map(function (stick) {
-                        that.renderStick(context, spriteSheet, stick, false, 0, 0);
-                    });
-                } else {
-                    let buttons = newState.state.buttons;
-                    let sticks = newState.state.sticks;
-
-                    Object.keys(this.buttonSprites).map(function (button) {
-                        let pressed = buttons[button];
-                        that.renderButton(context, spriteSheet, button, pressed);
-                    });
-
-                    Object.keys(this.stickSprites).map(function (stick) {
-                        let pressed = sticks[stick].pressed;
-                        let x = sticks[stick].x;
-                        let y = sticks[stick].y;
-                        that.renderStick(context, spriteSheet, stick, pressed, x, y);
-                    });
-                }
-                StatusBus.$emit(BusEvents.RENDER_TIME_END);
-            },
-            renderButton: function(context, spriteSheet, name, pressed) {
-                let sprite = this.buttonSprites[name];
-
-                if (!pressed || sprite.opacity) {
-                    let coord = sprite.inactive;
-                    context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, sprite.x, sprite.y, sprite.w, sprite.h);
-                }
-                if (pressed) {
-                    let coord = sprite.active;
-                    context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, sprite.x, sprite.y, sprite.w, sprite.h);
-                }
-            },
-            renderStick: function(context, spriteSheet, name, pressed, x, y) {
-                let sprite = this.stickSprites[name];
-                if (!sprite) return;
-
-                let coord = pressed ? sprite.active : sprite.inactive;
-                context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, sprite.x + x * sprite.travel, sprite.y + y * sprite.travel, sprite.w, sprite.h);
-            },
-            imageLoaded: function() {
-                let canvas = this.$refs.controlCanvas;
-                canvas.width = this.canvasSize.width * this.canvasSize.scale;
-                canvas.height = this.canvasSize.height * this.canvasSize.scale;
-
-                let context = canvas.getContext('2d');
-                context.scale(this.canvasSize.scale, this.canvasSize.scale);
-
-                this.spriteSheetReady = true;
-                this.renderImage();
-            }
-        },
-        mounted: function() {
-            StatusBus.$on(BusEvents.INPUT_CHANGED, this.renderImage);
-        },
-        beforeDestroy: function() {
-            this.spriteSheetReady = false;
-        },
-        template: '<div><canvas class="controlCanvas" ref="controlCanvas"></canvas><img ref="spriteSheet" v-bind:src="spriteSheetUrl" style="display:none;" @load="imageLoaded"/></div>'
-    };
 
     const InputSource = {
         data: function() {
@@ -511,7 +329,7 @@
         }
     };
 
-    Vue.component('control-mode-select', {
+    const ControlModeSelect = {
         data: function() {
             return {
                 selectedMode: ControlMode.SINGLE_CONTROLLER,
@@ -542,7 +360,463 @@
         template: '<select v-model="selectedMode">'+
         '<option v-for="mode in enabledModes" v-bind:value="mode">Use (( getModeText(mode) ))</option>' +
         '</select>'
+    };
+
+    const backoff = {
+        exponential (attempt, delay) {
+            return Math.floor(Math.random() * Math.pow(2, attempt) * delay);
+        },
+
+        fibonacci (attempt, delay) {
+            let current = 1;
+
+            return Math.floor(Math.random() * current * delay);
+        }
+    };
+
+    function Backoff (func, options) {
+        this.func = func;
+        this.attempts = 0;
+        this.delay = (typeof(options.initialDelay) !== "undefined")
+            ? options.initialDelay
+            : 100;
+    }
+
+    Backoff.prototype.backoff = function () {
+        setTimeout(this.onReady, this.func(++this.attempts, this.delay));
+    };
+
+    function createBackoff(type, options) {
+        return new Backoff(backoff[type], options);
+    }
+
+    class WebSocketClient {
+
+        /**
+         * @param url DOMString The URL to which to connect; this should be the URL to which the WebSocket server will respond.
+         * @param protocols DOMString|DOMString[] Either a single protocol string or an array of protocol strings. These strings are used to indicate sub-protocols, so that a single server can implement multiple WebSocket sub-protocols (for example, you might want one server to be able to handle different types of interactions depending on the specified protocol). If you don't specify a protocol string, an empty string is assumed.
+         */
+        constructor (url, protocols, options = {}) {
+            this.url = url;
+            this.protocols = protocols;
+
+            this.reconnectEnabled = true;
+            this.listeners = {};
+
+            this.backoff = createBackoff(options.backoff || 'fibonacci', options);
+            this.backoff.onReady = this.onBackoffReady.bind(this);
+
+            this.open();
+        }
+
+        open (reconnect = false) {
+            this.isReconnect = reconnect;
+
+            // keep binaryType used on previous WebSocket connection
+            let binaryType = this.ws && this.ws.binaryType;
+
+            this.ws = new WebSocket(this.url, this.protocols);
+            this.ws.onclose = this.onCloseCallback.bind(this);
+            this.ws.onerror = this.onErrorCallback.bind(this);
+            this.ws.onmessage = this.onMessageCallback.bind(this);
+            this.ws.onopen = this.onOpenCallback.bind(this);
+
+            if (binaryType) {
+                this.ws.binaryType = binaryType;
+            }
+        }
+
+        /**
+         * @ignore
+         */
+        onBackoffReady (number, delay) {
+            // console.log("onBackoffReady", number + ' ' + delay + 'ms');
+            this.open(true);
+        }
+
+        /**
+         * @ignore
+         */
+        onCloseCallback (e) {
+            if (!this.isReconnect && this.listeners['onclose']) {
+                this.listeners['onclose'].apply(null, arguments);
+            }
+            if (this.reconnectEnabled && e.code < 3000) {
+                this.backoff.backoff();
+            }
+        }
+
+        /**
+         * @ignore
+         */
+        onErrorCallback () {
+            if (this.listeners['onerror']) {
+                this.listeners['onerror'].apply(null, arguments);
+            }
+        }
+
+        /**
+         * @ignore
+         */
+        onMessageCallback () {
+            if (this.listeners['onmessage']) {
+                this.listeners['onmessage'].apply(null, arguments);
+            }
+        }
+
+        /**
+         * @ignore
+         */
+        onOpenCallback () {
+            if (this.listeners['onopen']) {
+                this.listeners['onopen'].apply(null, arguments);
+            }
+
+            if (this.isReconnect && this.listeners['onreconnect']) {
+                this.listeners['onreconnect'].apply(null, arguments);
+            }
+
+            this.isReconnect = false;
+        }
+
+        /**
+         * The number of bytes of data that have been queued using calls to send()
+         * but not yet transmitted to the network. This value does not reset to zero
+         * when the connection is closed; if you keep calling send(), this will
+         * continue to climb.
+         *
+         * @type unsigned long
+         * @readonly
+         */
+        get bufferedAmount () { return this.ws.bufferedAmount; }
+
+        /**
+         * The current state of the connection; this is one of the Ready state constants.
+         * @type unsigned short
+         * @readonly
+         */
+        get readyState () { return this.ws.readyState; }
+
+        /**
+         * A string indicating the type of binary data being transmitted by the
+         * connection. This should be either "blob" if DOM Blob objects are being
+         * used or "arraybuffer" if ArrayBuffer objects are being used.
+         * @type DOMString
+         */
+        get binaryType () { return this.ws.binaryType; }
+        set binaryType (binaryType) { this.ws.binaryType = binaryType; }
+
+        /**
+         * The extensions selected by the server. This is currently only the empty
+         * string or a list of extensions as negotiated by the connection.
+         * @type DOMString
+         */
+        get extensions () { return this.ws.extensions; }
+        set extensions (extensions) { this.ws.extensions = extensions; }
+
+        /**
+         * A string indicating the name of the sub-protocol the server selected;
+         * this will be one of the strings specified in the protocols parameter when
+         * creating the WebSocket object.
+         * @type DOMString
+         */
+        get protocol () { return this.ws.protocol; }
+        set protocol (protocol) { this.ws.protocol = protocol; }
+
+        /**
+         * Closes the WebSocket connection or connection attempt, if any. If the
+         * connection is already CLOSED, this method does nothing.
+         *
+         * @param code A numeric value indicating the status code explaining why the connection is being closed. If this parameter is not specified, a default value of 1000 (indicating a normal "transaction complete" closure) is assumed. See the list of status codes on the CloseEvent page for permitted values.
+         * @param reason A human-readable string explaining why the connection is closing. This string must be no longer than 123 bytes of UTF-8 text (not characters).
+         *
+         * @return void
+         */
+        close (code, reason) {
+            if (typeof code == 'undefined') { code = 1000; }
+
+            this.reconnectEnabled = false;
+
+            this.ws.close(code, reason);
+        }
+
+        /**
+         * Transmits data to the server over the WebSocket connection.
+         * @param data DOMString|ArrayBuffer|Blob
+         * @return void
+         */
+        send (data) { this.ws.send(data); }
+
+        /**
+         * Add an event listener to this WebSocket (this function for backwards compatibiility).
+         * @param event The name of the event.
+         * @param listener EventListener
+         * @return void
+         */
+
+        addEventListener (event, listener) {
+            if (event === 'open') this.onopen = listener;
+            else if (event === 'close') this.onclose = listener;
+            else if (event === 'error') this.onerror = listener;
+            else if (event === 'message') this.onmessage = listener;
+            else if (event === 'reconnect') this.onreconnect = listener;
+            else {
+                console.warn(`Tried to add an event handler for an event that doesn't exist: ${event}`);
+            }
+        }
+
+        /**
+         * An event listener to be called when the WebSocket connection's readyState changes to CLOSED. The listener receives a CloseEvent named "close".
+         * @param listener EventListener
+         */
+        set onclose (listener) { this.listeners['onclose'] = listener; }
+        get onclose () { return this.listeners['onclose']; }
+
+        /**
+         * An event listener to be called when an error occurs. This is a simple event named "error".
+         * @param listener EventListener
+         */
+        set onerror (listener) { this.listeners['onerror'] = listener; }
+        get onerror () { return this.listeners['onerror']; }
+
+        /**
+         * An event listener to be called when a message is received from the server. The listener receives a MessageEvent named "message".
+         * @param listener EventListener
+         */
+        set onmessage (listener) { this.listeners['onmessage'] = listener; }
+        get onmessage () { return this.listeners['onmessage']; }
+
+        /**
+         * An event listener to be called when the WebSocket connection's readyState changes to OPEN; this indicates that the connection is ready to send and receive data. The event is a simple one with the name "open".
+         * @param listener EventListener
+         */
+        set onopen (listener) { this.listeners['onopen'] = listener; }
+        get onopen () { return this.listeners['onopen']; }
+
+        /**
+         * @param listener EventListener
+         */
+        set onreconnect (listener) { this.listeners['onreconnect'] = listener; }
+        get onreconnect () { return this.listeners['onreconnect']; }
+    }
+
+    /**
+     * The connection is not yet open.
+     */
+    WebSocketClient.prototype.CONNECTING = WebSocket.CONNECTING;
+
+    /**
+     * The connection is open and ready to communicate.
+     */
+    WebSocketClient.prototype.OPEN = WebSocket.OPEN;
+
+    /**
+     * The connection is in the process of closing.
+     */
+    WebSocketClient.prototype.CLOSING = WebSocket.CLOSING;
+
+    /**
+     * The connection is closed or couldn't be opened.
+     */
+    WebSocketClient.prototype.CLOSED = WebSocket.CLOSED;
+
+    const SocketBus = new Vue();
+    const SocketEvents = Object.freeze({
+        SEND_MESSAGE: 'send',
+        PONG: 'pong'
     });
+
+    // This really shouldn't be a Vue component, but I don't know how I want to structure this. This works for now though
+    const ControlWs = {
+        props: ['endpoint'],
+        data: function() {
+            return {
+                ws: null,
+                pendingPings: {}
+            };
+        },
+        created: function() {
+            let self = this;
+
+            this.ws = new WebSocketClient(this.endpoint, null, {
+                backoff: 'fibonacci'
+            });
+
+            this.$store.commit('setConnectionState', ConnectionState.CONNECTING);
+
+            this.ws.addEventListener('open', function(e) {
+                self.$store.commit('setConnectionState', ConnectionState.CONNECTED);
+            });
+
+            this.ws.addEventListener('close', function(e) {
+                self.$store.commit('setConnectionState', ConnectionState.NOT_CONNECTED);
+            });
+
+            this.ws.addEventListener('error', function(e) {
+                self.$store.commit('setConnectionState', ConnectionState.ERROR);
+            });
+
+            this.ws.addEventListener('reconnect', function(e) {
+                self.$store.commit('setConnectionState', ConnectionState.CONNECTING);
+            });
+
+            this.ws.addEventListener('message', function(e) {
+                const wsParseRegex = /(\w+)(?: (.*))?/;
+                let match = wsParseRegex.exec(e.data);
+                if (!match) {
+                    console.warn(`Got invalid message: ${e.data}`);
+                    return;
+                }
+
+                let command = match[1];
+                let args = match[2];
+
+                if (command === 'PONG') {
+                    if (self.pendingPings.hasOwnProperty(args)) {
+                        let time = performance.now();
+                        let duration = (time - self.pendingPings[args]) / 2;
+                        delete self.pendingPings[args];
+                        SocketBus.$emit('pong', duration);
+                    }
+                } else {
+                    SocketBus.$emit(command, args);
+                }
+            });
+
+            SocketBus.$on(SocketEvents.SEND_MESSAGE, this.sendMessage);
+            setInterval(this.ping, 1000);
+        },
+        methods: {
+            sendMessage: function(message) {
+                if (this.ws && this.ws.readyState === this.ws.OPEN) {
+                    this.ws.send(message);
+                    return true;
+                }
+                console.warn('Failed to send message: ' + message);
+                return false;
+            },
+            ping: function() {
+                if (this.ws && this.ws.readyState === this.ws.OPEN) {
+                    let id = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER));
+                    this.pendingPings[id] = performance.now();
+                    this.sendMessage(`PING ${id}`);
+                }
+            }
+        },
+        template: '<div></div>'
+    };
+
+    const ProControllerSprites = {
+        data: function() {
+            return {
+                spriteSheetUrl: 'assets/images/proControllerSpritesheet.png',
+                buttonSprites: {faceRight:{x:838,y:178,w:78,h:79,inactive:{x:5,y:5},active:{x:93,y:5}},faceDown:{x:757,y:249,w:78,h:79,inactive:{x:181,y:5},active:{x:269,y:5}},faceUp:{x:757,y:107,w:78,h:79,inactive:{x:873,y:5},active:{x:961,y:5}},faceLeft:{x:675,y:178,w:78,h:79,inactive:{x:873,y:94},active:{x:961,y:94}},leftTop:{x:114,y:0,w:248,h:85,inactive:{x:357,y:5},active:{x:615,y:5}},rightTop:{x:679,y:0,w:248,h:85,inactive:{x:5,y:100},active:{x:263,y:100}},leftTrigger:{x:300,y:533,w:150,h:150,inactive:{x:521,y:183},active:{x:681,y:183}},rightTrigger:{x:590,y:533,w:150,h:150,inactive:{x:841,y:183},active:{x:5,y:343}},select:{x:370,y:117,w:44,h:44,inactive:{x:225,y:269},active:{x:279,y:269}},start:{x:627,y:117,w:44,h:44,inactive:{x:333,y:269},active:{x:387,y:269}},share:{x:427,y:198,w:39,h:39,inactive:{x:113,y:269},active:{x:440,y:269}},home:{x:572,y:196,w:44,h:44,inactive:{x:5,y:269},active:{x:59,y:269}},dpadUp:{x:335,y:285,w:50,h:76,inactive:{x:1001,y:269},active:{x:165,y:355},opacity:!0},dpadDown:{x:335,y:361,w:50,h:76,inactive:{x:1001,y:183},active:{x:165,y:269},opacity:!0},dpadLeft:{x:284,y:336,w:75,h:50,inactive:{x:225,y:343},active:{x:310,y:343},opacity:!0},dpadRight:{x:360,y:336,w:76,h:51,inactive:{x:395,y:343},active:{x:481,y:343},opacity:!0}},
+                stickSprites: {leftStick:{x:174,y:155,w:120,h:120,travel:40,inactive:{x:5,y:738},active:{x:135,y:738}},rightStick:{x:598,y:299,w:120,h:120,travel:40,inactive:{x:5,y:738},active:{x:135,y:738}}},
+                canvasSize: {
+                    x: 1061,
+                    y: 5,
+                    width: 1040,
+                    height: 723,
+                    scale: 0.75
+                }
+            };
+        }
+    };
+
+    const ControllerRenderer = {
+        mixins: [ProControllerSprites],
+        data: function() {
+            return {
+                spriteSheetReady: false
+            };
+        },
+        methods: {
+            setStylesheet: function(stylesheet) {
+                this.spriteSheetReady = false;
+                this.buttonSprites = stylesheet.buttonSprites;
+                this.stickSprites = stylesheet.stickSprites;
+                this.canvasSize = stylesheet.canvasSize;
+                this.spriteSheetUrl = stylesheet.spriteSheetUrl;
+            },
+            renderImage: function(newState) {
+                if (!this.spriteSheetReady) return;
+
+                let that = this;
+                let canvas = this.$refs.controlCanvas;
+                let context = canvas.getContext('2d');
+                let spriteSheet = this.$refs.spriteSheet;
+
+                StatusBus.$emit(BusEvents.RENDER_TIME_START);
+
+                context.clearRect(0, 0, this.canvasSize.width, this.canvasSize.height);
+                context.drawImage(spriteSheet, this.canvasSize.x, this.canvasSize.y, this.canvasSize.width, this.canvasSize.height, 0, 0, this.canvasSize.width, this.canvasSize.height);
+
+                if (!newState) {
+                    // draw controller with default state
+                    Object.keys(this.buttonSprites).map(function (button) {
+                        that.renderButton(context, spriteSheet, button, false);
+                    });
+
+                    Object.keys(this.stickSprites).map(function (stick) {
+                        that.renderStick(context, spriteSheet, stick, false, 0, 0);
+                    });
+                } else {
+                    let buttons = newState.state.buttons;
+                    let sticks = newState.state.sticks;
+
+                    Object.keys(this.buttonSprites).map(function (button) {
+                        let pressed = buttons[button];
+                        that.renderButton(context, spriteSheet, button, pressed);
+                    });
+
+                    Object.keys(this.stickSprites).map(function (stick) {
+                        let pressed = sticks[stick].pressed;
+                        let x = sticks[stick].x;
+                        let y = sticks[stick].y;
+                        that.renderStick(context, spriteSheet, stick, pressed, x, y);
+                    });
+                }
+                StatusBus.$emit(BusEvents.RENDER_TIME_END);
+            },
+            renderButton: function(context, spriteSheet, name, pressed) {
+                let sprite = this.buttonSprites[name];
+
+                if (!pressed || sprite.opacity) {
+                    let coord = sprite.inactive;
+                    context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, sprite.x, sprite.y, sprite.w, sprite.h);
+                }
+                if (pressed) {
+                    let coord = sprite.active;
+                    context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, sprite.x, sprite.y, sprite.w, sprite.h);
+                }
+            },
+            renderStick: function(context, spriteSheet, name, pressed, x, y) {
+                let sprite = this.stickSprites[name];
+                if (!sprite) return;
+
+                let coord = pressed ? sprite.active : sprite.inactive;
+                context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, sprite.x + x * sprite.travel, sprite.y + y * sprite.travel, sprite.w, sprite.h);
+            },
+            imageLoaded: function() {
+                let canvas = this.$refs.controlCanvas;
+                canvas.width = this.canvasSize.width * this.canvasSize.scale;
+                canvas.height = this.canvasSize.height * this.canvasSize.scale;
+
+                let context = canvas.getContext('2d');
+                context.scale(this.canvasSize.scale, this.canvasSize.scale);
+
+                this.spriteSheetReady = true;
+                this.renderImage();
+            }
+        },
+        mounted: function() {
+            StatusBus.$on(BusEvents.INPUT_CHANGED, this.renderImage);
+        },
+        beforeDestroy: function() {
+            this.spriteSheetReady = false;
+        },
+        template: '<div><canvas class="controlCanvas" ref="controlCanvas"></canvas><img ref="spriteSheet" v-bind:src="spriteSheetUrl" style="display:none;" @load="imageLoaded"/></div>'
+    };
 
     let noController = {
         template: '<p class="center-text">No controller connected.</p>'
@@ -1015,8 +1289,8 @@
             let that = this;
             this.$nextTick(function() {
                 this.$refs.statsContainer.appendChild(this.stats.dom);
-                StatusBus.$on(BusEvents.RENDER_TIME_START, function() {that.stats.begin();});
-                StatusBus.$on(BusEvents.RENDER_TIME_END, function() {that.stats.end();});
+                StatusBus.$on(BusEvents.RENDER_TIME_START, this.stats.begin);
+                StatusBus.$on(BusEvents.RENDER_TIME_END, this.stats.end);
             });
             SocketBus.$on(SocketEvents.PONG, function(time) {
                 that.pingPanel.update(time, 1000);
@@ -1074,6 +1348,7 @@
         components: {
             'control-ws': ControlWs,
             'controller-renderer': ControllerRenderer,
+            'control-mode-select': ControlModeSelect,
             'no-controller': noController,
             'unsupported-controller': unsupportedController,
             'xbox-controller': xboxController,
@@ -1147,7 +1422,7 @@
             let browser = detectBrowser();
             let os = detectOS();
 
-            console.log(`Browser: ${browser} OS: ${os}`);
+            console.log(`Running on ${os}/${browser}`);
 
             StatusBus.$on(BusEvents.INPUT_CHANGED, this.onControllerUpdate);
 

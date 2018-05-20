@@ -223,7 +223,7 @@ export const InputSource = {
     }
 };
 
-export const  {
+export const ControlModeSelect = {
     data: function() {
         return {
             selectedMode: ControlMode.SINGLE_CONTROLLER,
@@ -254,4 +254,4 @@ export const  {
     template: '<select v-model="selectedMode">'+
     '<option v-for="mode in enabledModes" v-bind:value="mode">Use (( getModeText(mode) ))</option>' +
     '</select>'
-});
+};
