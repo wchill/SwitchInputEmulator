@@ -12,6 +12,7 @@ layout: default
     <server-status></server-status>
 
     <component v-bind:is="currentControllerComponent" v-bind:gamepadindex="currentController" v-bind:gamepadname="gamepadName" v-bind:axes="axes" v-bind:buttons="buttons"></component>
+    <h264-ws-player v-bind:endpoint="streamEndpoint"></h264-ws-player>
     <controller-renderer></controller-renderer>
 
     <div id="help">{{content}}</div>
@@ -29,7 +30,7 @@ layout: default
     Vue.use(vueNotification);
 </script>
 <script src="//code.jquery.com/jquery-latest.min.js"></script>
-<script src="assets/js/websocket.js"></script>
+<script src="assets/js/lib/h264-websocket.js"></script>
 <script src="assets/js/stats.js"></script>
 <script src="assets/js/oidc-client.min.js"></script>
 <script src="assets/js/twitch-auth-config.js"></script>

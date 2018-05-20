@@ -5,6 +5,14 @@ export const ConnectionState = Object.freeze({
     CONNECTING: 4
 });
 
+export const PlayerState = Object.freeze({
+    NOT_CONNECTED: 1,
+    ERROR: 2,
+    CONNECTING: 3,
+    PLAYING: 4,
+    PAUSED: 5
+});
+
 export const ControlState = Object.freeze({
     NO_CONTROLLER: 1,
     UNSUPPORTED_CONTROLLER: 2,
@@ -56,25 +64,37 @@ export const BusEvents = Object.freeze({
 
 export const StatusBus = new Vue();
 
-// TODO: use Vuex for centralized state management
+function enumToName(sourceEnum, val) {
+    let keys = Object.keys(sourceEnum);
+    for (let i = 0; i < keys.length; i++) {
+        if (sourceEnum[keys[i]] === val) return keys[i];
+    }
+    return val;
+}
+
 export const store = new Vuex.Store({
     state: {
         connectionState: ConnectionState.NOT_CONNECTED,
         controlState: ControlState.NO_CONTROLLER,
-        controlMode: ControlMode.SINGLE_CONTROLLER
+        controlMode: ControlMode.SINGLE_CONTROLLER,
+        playerState: PlayerState.NOT_CONNECTED
     },
     mutations: {
         setConnectionState: function(state, newState) {
-            console.log(`Changing connection state to ${newState}`);
+            console.log(`Changing connection state from ${enumToName(ConnectionState, state.connectionState)} to ${enumToName(ConnectionState, newState)}`);
             state.connectionState = newState;
         },
         setControlState: function(state, newState) {
-            console.log(`Changing control state to ${newState}`);
+            console.log(`Changing control state from ${enumToName(ControlState, state.controlState)} to ${enumToName(ControlState, newState)}`);
             state.controlState = newState;
         },
         setControlMode: function(state, newMode) {
-            console.log(`Changing control mode to ${newMode}`);
+            console.log(`Changing control mode from ${enumToName(ControlMode, state.controlMode)} to ${enumToName(ControlMode, newMode)}`);
             state.controlMode = newMode;
+        },
+        setPlayerState: function(state, newState) {
+            console.log(`Changing player state from ${enumToName(PlayerState, state.playerState)} to ${enumToName(PlayerState, newState)}`);
+            state.playerState = newState;
         }
     }
 });

@@ -1,4 +1,5 @@
 import {ConnectionState} from "./Common"
+import {WebSocketClient} from "./lib/WebSocketClient";
 
 export const SocketBus = new Vue();
 export const SocketEvents = Object.freeze({
@@ -18,29 +19,25 @@ export const ControlWs = {
     created: function() {
         let self = this;
 
-        this.ws = new WebSocket(this.endpoint, null, {
+        this.ws = new WebSocketClient(this.endpoint, null, {
             backoff: 'fibonacci'
         });
 
         this.$store.commit('setConnectionState', ConnectionState.CONNECTING);
 
         this.ws.addEventListener('open', function(e) {
-            console.log('Control websocket connected');
             self.$store.commit('setConnectionState', ConnectionState.CONNECTED);
         });
 
         this.ws.addEventListener('close', function(e) {
-            console.log('Control websocket closed');
             self.$store.commit('setConnectionState', ConnectionState.NOT_CONNECTED);
         });
 
         this.ws.addEventListener('error', function(e) {
-            console.log('Control websocket errored out');
             self.$store.commit('setConnectionState', ConnectionState.ERROR);
         });
 
         this.ws.addEventListener('reconnect', function(e) {
-            console.log('Control websocket reconnecting');
             self.$store.commit('setConnectionState', ConnectionState.CONNECTING);
         });
 

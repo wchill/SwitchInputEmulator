@@ -45,3 +45,29 @@
 .stats {
     float: right;
 }
+.warning {
+    color: red;
+}
+.debug-watch {
+    text-align: center;
+    width: 40%;
+    margin: 0 25%;
+}
+    .debug-watch > div {
+        text-align: left;
+    }
+    .debug-watch label {
+        display: inline-block;
+        width: 150px;
+        background-color: gray;
+        padding: 1pt 4pt;
+        border: 1pt solid transparent;
+        margin-right: 2pt;
+    }
+    .debug-watch span {
+        display: inline-block;
+        width: 150px;
+        padding: 1pt 4pt;
+        border: 1pt solid gray;
+        margin-left: 2pt;
+    }
