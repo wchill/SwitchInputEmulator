@@ -1,4 +1,4 @@
-import {BusEvents, StatusBus, SwitchButtons} from "./Common";
+import {BusEvents, ControlMode, StatusBus, SwitchButtons} from "./Common";
 
 export const InputSource = {
     data: function() {
@@ -222,3 +222,36 @@ export const InputSource = {
         },
     }
 };
+
+export const  {
+    data: function() {
+        return {
+            selectedMode: ControlMode.SINGLE_CONTROLLER,
+            enabledModes: [
+                ControlMode.SINGLE_CONTROLLER,
+                ControlMode.MULTIPLE_CONTROLLERS
+            ]
+        }
+    },
+    watch: {
+        selectedMode: function() {
+            this.$store.commit('setControlMode', parseInt(this.selectedMode));
+        }
+    },
+    methods: {
+        getModeText: function(mode){
+            if (mode === ControlMode.SINGLE_CONTROLLER) {
+                return 'Controller';
+            } else if (mode === ControlMode.MULTIPLE_CONTROLLERS) {
+                return 'Joycons';
+            } else if (mode === ControlMode.TOUCH) {
+                return 'Touch controls';
+            }
+
+            return 'Keyboard';
+        }
+    },
+    template: '<select v-model="selectedMode">'+
+    '<option v-for="mode in enabledModes" v-bind:value="mode">Use (( getModeText(mode) ))</option>' +
+    '</select>'
+});

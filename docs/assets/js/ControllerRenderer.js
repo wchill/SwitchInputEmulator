@@ -63,6 +63,7 @@ export const ControllerRenderer = {
             context.drawImage(spriteSheet, this.canvasSize.x, this.canvasSize.y, this.canvasSize.width, this.canvasSize.height, 0, 0, this.canvasSize.width, this.canvasSize.height);
 
             if (!newState) {
+                // draw controller with default state
                 Object.keys(this.buttonSprites).map(function (button) {
                     that.renderButton(context, spriteSheet, button, false);
                 });

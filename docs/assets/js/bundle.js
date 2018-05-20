@@ -222,6 +222,7 @@
                 context.drawImage(spriteSheet, this.canvasSize.x, this.canvasSize.y, this.canvasSize.width, this.canvasSize.height, 0, 0, this.canvasSize.width, this.canvasSize.height);
 
                 if (!newState) {
+                    // draw controller with default state
                     Object.keys(this.buttonSprites).map(function (button) {
                         that.renderButton(context, spriteSheet, button, false);
                     });
@@ -509,6 +510,39 @@
             },
         }
     };
+
+    Vue.component('control-mode-select', {
+        data: function() {
+            return {
+                selectedMode: ControlMode.SINGLE_CONTROLLER,
+                enabledModes: [
+                    ControlMode.SINGLE_CONTROLLER,
+                    ControlMode.MULTIPLE_CONTROLLERS
+                ]
+            }
+        },
+        watch: {
+            selectedMode: function() {
+                this.$store.commit('setControlMode', parseInt(this.selectedMode));
+            }
+        },
+        methods: {
+            getModeText: function(mode){
+                if (mode === ControlMode.SINGLE_CONTROLLER) {
+                    return 'Controller';
+                } else if (mode === ControlMode.MULTIPLE_CONTROLLERS) {
+                    return 'Joycons';
+                } else if (mode === ControlMode.TOUCH) {
+                    return 'Touch controls';
+                }
+
+                return 'Keyboard';
+            }
+        },
+        template: '<select v-model="selectedMode">'+
+        '<option v-for="mode in enabledModes" v-bind:value="mode">Use (( getModeText(mode) ))</option>' +
+        '</select>'
+    });
 
     let noController = {
         template: '<p class="center-text">No controller connected.</p>'
@@ -882,39 +916,62 @@
     let checkVidPid = function(id, vid, pid) {
         return id.indexOf(vid) > -1 && id.indexOf(pid) > -1;
     };
+    let getControllerProfile = function(browser, os, id, mapping) {
+        if (mapping === 'standard') {
+            // Check for Pro Controller (2009) or Joycon Grip (200e) connected via cable (won't work)
+            if (id.indexOf('Nintendo Co., Ltd.') > -1) {
+                return 'unsupported-controller';
+            }
 
-    Vue.component('control-mode-select', {
-        data: function() {
-            return {
-                selectedMode: ControlMode.SINGLE_CONTROLLER,
-                enabledModes: [
-                    ControlMode.SINGLE_CONTROLLER,
-                    ControlMode.MULTIPLE_CONTROLLERS
-                ]
+            // Pro Controller reported as standard on Chrome OS only
+            if (checkVidPid(id, '57e', '2009')) {
+                return 'switch-pro-controller-standard';
             }
-        },
-        watch: {
-            selectedMode: function() {
-                this.$store.commit('setControlMode', parseInt(this.selectedMode));
-            }
-        },
-        methods: {
-            getModeText: function(mode){
-                if (mode === ControlMode.SINGLE_CONTROLLER) {
-                    return 'Controller';
-                } else if (mode === ControlMode.MULTIPLE_CONTROLLERS) {
-                    return 'Joycons';
-                } else if (mode === ControlMode.TOUCH) {
-                    return 'Touch controls';
-                }
 
-                return 'Keyboard';
+            // DualShock 4 reported as standard by Chrome on all OSes
+            if (checkVidPid(id, '54c', '9cc')) {
+                return 'dualshock-controller-standard';
             }
-        },
-        template: '<select v-model="selectedMode">'+
-        '<option v-for="mode in enabledModes" v-bind:value="mode">Use (( getModeText(mode) ))</option>' +
-        '</select>'
-    });
+
+            // Not reported as standard mappings on any tested OS/browser, but here just in case
+            if (checkVidPid(id, '20d6', 'a711')) {
+                return 'powera-wired-controller-standard';
+            }
+
+            // Xbox controller works on Windows and Chrome on Mac OS only
+            return 'xbox-controller';
+        }
+
+        // Pro Controller uses standard mappings (but not reported as standard) on Mac OS/Firefox
+        if (checkVidPid(id, '57e', '2009')) {
+            if (os === 'Mac OS' && browser === 'Firefox') {
+                return 'switch-pro-controller-mac-firefox';
+            }
+        }
+
+        // DualShock 4 D-Pad doesn't work properly on Windows/Firefox. On Mac OS/Firefox it works fine but needs remapping.
+        if (checkVidPid(id, '54c', '9cc')) {
+            if (os === 'Windows' && browser === 'Firefox') return 'dualshock-controller-win-firefox';
+            if (os === 'Mac OS' && browser === 'Firefox') return 'dualshock-controller-mac-firefox';
+        }
+
+        // PowerA Wired Controller Plus works fine on every OS (Windows/Firefox needs D-Pad fix), but needs remapping.
+        if (checkVidPid(id, '20d6', 'a711')) {
+            if (os === 'Chrome OS') {
+                return 'powera-wired-controller-chromeos';
+            }
+            if (browser === 'Chrome') {
+                return 'powera-wired-controller-chrome';
+            }
+            if (browser === 'Firefox') {
+                if (os === 'Windows') return 'powera-wired-controller-win-firefox';
+                if (os === 'Mac OS') return 'powera-wired-controller-mac-firefox';
+            }
+        }
+
+        // No supported profile found
+        return 'unsupported-controller';
+    };
 
     Vue.component('controller-select', {
         props: ['gamepads', 'gamepadindex'],
@@ -1175,60 +1232,7 @@
                 let id = gamepad.id;
                 let mapping = gamepad.mapping;
 
-                if (mapping === 'standard') {
-                    // Check for Pro Controller (2009) or Joycon Grip (200e) connected via cable (won't work)
-                    if (id.indexOf('Nintendo Co., Ltd.') > -1) {
-                        return 'unsupported-controller';
-                    }
-
-                    // Pro Controller reported as standard on Chrome OS only
-                    if (checkVidPid(id, '57e', '2009')) {
-                        return 'switch-pro-controller-standard';
-                    }
-
-                    // DualShock 4 reported as standard by Chrome on all OSes
-                    if (checkVidPid(id, '54c', '9cc')) {
-                        return 'dualshock-controller-standard';
-                    }
-
-                    // Not reported as standard mappings on any tested OS/browser, but here just in case
-                    if (checkVidPid(id, '20d6', 'a711')) {
-                        return 'powera-wired-controller-standard';
-                    }
-
-                    // Xbox controller works on Windows and Chrome on Mac OS only
-                    return 'xbox-controller';
-                }
-
-                // Pro Controller uses standard mappings (but not reported as standard) on Mac OS/Firefox
-                if (checkVidPid(id, '57e', '2009')) {
-                    if (os === 'Mac OS' && browser === 'Firefox') {
-                        return 'switch-pro-controller-mac-firefox';
-                    }
-                }
-
-                // DualShock 4 D-Pad doesn't work properly on Windows/Firefox. On Mac OS/Firefox it works fine but needs remapping.
-                if (checkVidPid(id, '54c', '9cc')) {
-                    if (os === 'Windows' && browser === 'Firefox') return 'dualshock-controller-win-firefox';
-                    if (os === 'Mac OS' && browser === 'Firefox') return 'dualshock-controller-mac-firefox';
-                }
-
-                // PowerA Wired Controller Plus works fine on every OS (Windows/Firefox needs D-Pad fix), but needs remapping.
-                if (checkVidPid(id, '20d6', 'a711')) {
-                    if (os === 'Chrome OS') {
-                        return 'powera-wired-controller-chromeos';
-                    }
-                    if (browser === 'Chrome') {
-                        return 'powera-wired-controller-chrome';
-                    }
-                    if (browser === 'Firefox') {
-                        if (os === 'Windows') return 'powera-wired-controller-win-firefox';
-                        if (os === 'Mac OS') return 'powera-wired-controller-mac-firefox';
-                    }
-                }
-
-                // No supported profile found
-                return 'unsupported-controller';
+                return getControllerProfile(browser, os, id, mapping);
             },
             gamepadName: function() {
                 if (this.currentController < 0) {
