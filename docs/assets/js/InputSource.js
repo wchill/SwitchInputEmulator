@@ -147,6 +147,7 @@ export const InputSource = {
                     state: this.gamepadState,
                     stateStr: this.generateStateStr()
                 });
+                this.$store.commit('setGamepadState', this.gamepadState);
             }
         },
         isButtonPressed: function(name) {

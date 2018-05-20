@@ -4,30 +4,40 @@ import {WebSocketClient} from "./lib/WebSocketClient";
 export const PlayerBus = new Vue();
 export const PlayerEvents = Object.freeze({
     PLAY: 'play',
-    PAUSE: 'pause'
+    PAUSE: 'pause',
+    READY: 'ready'
 });
 
 export const H264Player = {
-    props: ['endpoint'],
+    props: ['endpoint', 'canvas'],
     data: function() {
         return {
             player: null,
             ws: null
         };
     },
+    computed: {
+        internalCanvas: function() {
+            if (this.canvas) return this.canvas;
+            return this.$refs.playercanvas;
+        },
+        displayPlayer: function() {
+            return !this.canvas;
+        }
+    },
     mounted: function() {
         let self = this;
 
         document.addEventListener('visibilitychange', function(e) {
             if (self.player) {
-                if (document.hidden) {
-                    console.log('Pausing stream because page lost focus');
-                    self.player.stopStream();
-                    self.$store.commit('setPlayerState', PlayerState.PAUSED);
-                } else {
+                if (document.visibilityState ==='visible') {
                     console.log('Resuming stream because page received focus');
                     self.player.playStream();
                     self.$store.commit('setPlayerState', PlayerState.PLAYING);
+                } else {
+                    console.log('Pausing stream because page lost focus');
+                    self.player.stopStream();
+                    self.$store.commit('setPlayerState', PlayerState.PAUSED);
                 }
             }
         }, false);
@@ -54,10 +64,15 @@ export const H264Player = {
             self.$store.commit('setPlayerState', PlayerState.CONNECTING);
         });
 
-        this.player = new WSAvcPlayer(this.$refs.playercanvas, "webgl", 1, 35);
+        this.player = new WSAvcPlayer(this.internalCanvas, "webgl", 1, 35);
+        this.player.on('canvasReady', function(w, h){
+            console.log('Player canvas is ready');
+            PlayerBus.$emit(PlayerEvents.READY, {
+                width: w,
+                height: h
+            });
+        });
         this.player.connect(this.ws);
     },
-    methods: {
-    },
-    template: '<canvas ref="playercanvas"></canvas>'
+    template: "<canvas ref='playercanvas' v-show='this.displayPlayer'></canvas>"
 };

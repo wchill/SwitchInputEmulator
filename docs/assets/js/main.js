@@ -1,7 +1,7 @@
 import {ConnectionState, ControlState, ControlMode, PlayerState, StatusBus, store, BusEvents} from "./Common";
 import {ControlModeSelect} from "./InputSource";
 import {SocketBus, ControlWs, SocketEvents} from "./ControlWebSocket";
-import {ControllerRenderer} from "./ControllerRenderer";
+import {ControllerRenderer, JoyconStreamRenderer} from "./ControllerRenderer";
 import {xboxController, noController, unsupportedController} from "./BaseController";
 import {SwitchProControllerStandard, SwitchProControllerMacFirefox} from "./SwitchProController";
 import {PowerAWiredControllerStandard, PowerAWiredControllerChrome, PowerAWiredControllerChromeOS, PowerAWiredControllerWinFirefox, PowerAWiredControllerMacFirefox} from "./PowerAWiredController"
@@ -109,6 +109,7 @@ new Vue({
     components: {
         'control-ws': ControlWs,
         'controller-renderer': ControllerRenderer,
+        'joycon-stream-renderer': JoyconStreamRenderer,
         'control-mode-select': ControlModeSelect,
         'no-controller': noController,
         'unsupported-controller': unsupportedController,
@@ -131,7 +132,8 @@ new Vue({
             buttons: [],
             deadzone: 0.15,
             allControllers: [],
-            controlEndpoint: 'wss://api.chilly.codes/switch/ws'
+            controlEndpoint: 'wss://api.chilly.codes/switch/ws',
+            streamEndpoint: 'wss://api.chilly.codes/switch/stream'
         };
     },
     created: function() {

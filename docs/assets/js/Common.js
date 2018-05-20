@@ -77,7 +77,41 @@ export const store = new Vuex.Store({
         connectionState: ConnectionState.NOT_CONNECTED,
         controlState: ControlState.NO_CONTROLLER,
         controlMode: ControlMode.SINGLE_CONTROLLER,
-        playerState: PlayerState.NOT_CONNECTED
+        playerState: PlayerState.NOT_CONNECTED,
+        gamepadState: {
+            buttons: {
+                faceDown: false,
+                    faceRight: false,
+                    faceLeft: false,
+                    faceUp: false,
+                    leftTop: false,
+                    rightTop: false,
+                    leftTrigger: false,
+                    rightTrigger: false,
+                    select: false,
+                    start: false,
+                    leftStick: false,
+                    rightStick: false,
+                    home: false,
+                    share: false,
+                    dpadUp: false,
+                    dpadDown: false,
+                    dpadLeft: false,
+                    dpadRight: false
+            },
+            sticks: {
+                leftStick: {
+                    x: 0.0,
+                        y: 0.0,
+                        pressed: false
+                },
+                rightStick: {
+                    x: 0.0,
+                        y: 0.0,
+                        pressed: false
+                }
+            }
+        },
     },
     mutations: {
         setConnectionState: function(state, newState) {
@@ -95,6 +129,11 @@ export const store = new Vuex.Store({
         setPlayerState: function(state, newState) {
             console.log(`Changing player state from ${enumToName(PlayerState, state.playerState)} to ${enumToName(PlayerState, newState)}`);
             state.playerState = newState;
+        },
+        setGamepadState: function(state, newState) {
+            if (newState) {
+                state.gamepadState = newState;
+            }
         }
     }
 });

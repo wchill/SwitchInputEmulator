@@ -12,8 +12,7 @@ layout: default
     <server-status></server-status>
 
     <component v-bind:is="currentControllerComponent" v-bind:gamepadindex="currentController" v-bind:gamepadname="gamepadName" v-bind:axes="axes" v-bind:buttons="buttons"></component>
-    <h264-ws-player v-bind:endpoint="streamEndpoint"></h264-ws-player>
-    <controller-renderer></controller-renderer>
+    <joycon-stream-renderer v-bind:endpoint="streamEndpoint"></joycon-stream-renderer>
 
     <div id="help">{{content}}</div>
     <notifications position="top center"/>
