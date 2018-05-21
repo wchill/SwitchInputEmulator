@@ -7,13 +7,19 @@ layout: default
 <div id="app" v-cloak>
     <twitch-auth></twitch-auth>
     <control-ws v-bind:endpoint="controlEndpoint"></control-ws>
-    <!-- <control-mode-select class="center-text min-padding"></control-mode-select> -->
-    <controller-select class="center-text min-padding" v-model="currentController" v-bind:gamepads="allControllers"></controller-select>
-    <server-status></server-status>
-
-    <component v-bind:is="currentControllerComponent" v-bind:gamepadindex="currentController" v-bind:gamepadname="gamepadName" v-bind:axes="axes" v-bind:buttons="buttons"></component>
+    <control-mode-select class="center-text min-padding"></control-mode-select>
     <joycon-stream-renderer v-bind:endpoint="streamEndpoint"></joycon-stream-renderer>
-
+    <server-status></server-status>
+    <!--
+    <iframe frameborder="0"
+            scrolling="yes"
+            id="wchill"
+            src="https://www.twitch.tv/embed/wchill/chat?darkpopout"
+            height="800"
+            width="500"
+    style="float:right">
+    </iframe>
+    -->
     <div id="help">{{content}}</div>
     <notifications position="top center"/>
 </div>
@@ -29,9 +35,12 @@ layout: default
     Vue.use(vueNotification);
 </script>
 <script src="//code.jquery.com/jquery-latest.min.js"></script>
-<script src="assets/js/lib/h264-websocket.js"></script>
+<script src="https://embed.twitch.tv/embed/v1.js"></script>
+<script src="assets/js/lib/keymaster.js"></script>
+<script src="assets/js/lib/h264-websocket.min.js"></script>
 <script src="assets/js/stats.js"></script>
 <script src="assets/js/oidc-client.min.js"></script>
 <script src="assets/js/twitch-auth-config.js"></script>
 <script src="assets/js/twitch-auth.js"></script>
 <script src="assets/js/bundle.js"></script>
+</script>

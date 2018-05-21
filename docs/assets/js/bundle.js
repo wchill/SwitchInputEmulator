@@ -24,13 +24,6 @@
         ACTIVE: 5
     });
 
-    const ControlMode = Object.freeze({
-        SINGLE_CONTROLLER: 1,
-        MULTIPLE_CONTROLLERS: 2,
-        KEYBOARD: 3,
-        TOUCH: 4
-    });
-
     const SwitchButtons = Object.freeze({
         Y: 1,
         B: 2,
@@ -60,6 +53,7 @@
     const BusEvents = Object.freeze({
         RENDER_TIME_START: 'start-render',
         RENDER_TIME_END: 'finish-render',
+        BEFORE_UPDATE_INPUT: 'before-update-input',
         UPDATE_INPUT: 'update-input',
         INPUT_CHANGED: 'input-changed',
         SEND_MESSAGE: 'send'
@@ -79,7 +73,6 @@
         state: {
             connectionState: ConnectionState.NOT_CONNECTED,
             controlState: ControlState.NO_CONTROLLER,
-            controlMode: ControlMode.SINGLE_CONTROLLER,
             playerState: PlayerState.NOT_CONNECTED,
             gamepadState: {
                 buttons: {
@@ -124,10 +117,6 @@
             setControlState: function(state, newState) {
                 console.log(`Changing control state from ${enumToName(ControlState, state.controlState)} to ${enumToName(ControlState, newState)}`);
                 state.controlState = newState;
-            },
-            setControlMode: function(state, newMode) {
-                console.log(`Changing control mode from ${enumToName(ControlMode, state.controlMode)} to ${enumToName(ControlMode, newMode)}`);
-                state.controlMode = newMode;
             },
             setPlayerState: function(state, newState) {
                 console.log(`Changing player state from ${enumToName(PlayerState, state.playerState)} to ${enumToName(PlayerState, newState)}`);
@@ -369,19 +358,681 @@
         }
     };
 
+    const KeyboardInputSource = {
+        mixins: [InputSource],
+        data: function() {
+            return {
+                keyMapping: {
+                    faceDown: 'down',
+                    faceRight: 'right',
+                    faceLeft: 'left',
+                    faceUp: 'up',
+                    leftTop: 'q',
+                    rightTop: 'o',
+                    leftTrigger: 'e',
+                    rightTrigger: 'u',
+                    select: '-',
+                    start: '=',
+                    leftStick: 'r',
+                    rightStick: 'y',
+                    dpadUp: 't',
+                    dpadDown: 'g',
+                    dpadLeft: 'f',
+                    dpadRight: 'h'
+                },
+                stickMapping: {
+                    leftStick: {
+                        up: 'w',
+                        down: 's',
+                        left: 'a',
+                        right: 'd',
+                        slow: 'shift'
+                    },
+                    rightStick: {
+                        up: 'i',
+                        down: 'k',
+                        left: 'j',
+                        right: 'l',
+                        slow: '/'
+                    }
+                }
+            };
+        },
+        mounted: function() {
+            let controlState = this.$store.state.controlState;
+            if (controlState === ControlState.UNSUPPORTED_CONTROLLER || controlState === ControlState.NO_CONTROLLER) {
+                this.$store.commit('setControlState', ControlState.INACTIVE);
+            }
+        },
+        methods: {
+            isButtonPressed: function(name) {
+                if (!this.keyMapping[name]) return false;
+                return key.isPressed(this.keyMapping[name]);
+            },
+            getStickX: function(stick) {
+                if (!this.stickMapping[stick]) return false;
+                let val = 0;
+                if (key.isPressed(this.stickMapping[stick].left)) val -= 1;
+                if (key.isPressed(this.stickMapping[stick].right)) val += 1;
+                if (key.isPressed(this.stickMapping[stick].slow)) val *= 0.5;
+                return val;
+            },
+            getStickY: function(stick) {
+                if (!this.stickMapping[stick]) return false;
+                let val = 0;
+                if (key.isPressed(this.stickMapping[stick].up)) val -= 1;
+                if (key.isPressed(this.stickMapping[stick].down)) val += 1;
+                if (key.isPressed(this.stickMapping[stick].slow)) val *= 0.5;
+                return val;
+            }
+        },
+        template: '<div><span class="center-text">Using keyboard</span></div>'
+    };
+
+    let StandardMappings = {
+        data: function() {
+            return {
+                buttonMapping: {
+                    faceDown: 0,
+                    faceRight: 1,
+                    faceLeft: 2,
+                    faceUp: 3,
+                    leftTop: 4,
+                    rightTop: 5,
+                    leftTrigger: 6,
+                    rightTrigger: 7,
+                    select: 8,
+                    start: 9,
+                    leftStick: 10,
+                    rightStick: 11,
+                    dpadUp: 12,
+                    dpadDown: 13,
+                    dpadLeft: 14,
+                    dpadRight: 15
+                },
+                stickMapping: {
+                    leftStick: {axisX: 0, axisY: 1},
+                    rightStick: {axisX: 2, axisY: 3}
+                }
+            };
+        }
+    };
+
+    let BaseController = {
+        mixins: [InputSource],
+        props: ['gamepadindex', 'gamepadname', 'axes', 'buttons'],
+        data: function() {
+            return {
+                experimental: false
+            };
+        },
+        methods: {
+            isButtonPressed: function(name) {
+                // May need to override for certain controllers due to dpad
+                let index = this.buttonMapping[name];
+                if (index === null || index === undefined || index < 0) return false;
+                return !!this.buttons[index];
+            },
+            getStickX: function(name) {
+                return this.axes[this.stickMapping[name].axisX];
+            },
+            getStickY: function(name) {
+                return this.axes[this.stickMapping[name].axisY];
+            }
+        },
+        mounted: function() {
+            if (this.experimental) {
+                this.$notify({
+                    title: 'Experimental controller support',
+                    text: `Please note that support for this controller (${this.canonicalName}) is experimental and may have issues or limitations. Please check the help documentation for details.`,
+                    duration: 10000
+                });
+            }
+            if (this.notifyMessage) {
+                this.$notify({
+                    type: 'warn',
+                    title: 'Warning',
+                    text: this.notifyMessage,
+                    duration: 10000
+                });
+            }
+        },
+        template: '<p class="center-text">Controller (( gamepadindex )): (( gamepadname ))<br>Detected as: (( canonicalName ))</p>'
+    };
+
+    let XboxController = {
+        mixins: [BaseController, StandardMappings],
+        data: function() {
+            return {
+                canonicalName: 'Xbox/XInput controller'
+            };
+        }
+    };
+
+    let powerAWiredControllerBase = {
+        mixins: [BaseController],
+        data: function() {
+            return {
+                canonicalName: 'PowerA Wired Controller'
+            };
+        }
+    };
+
+    let PowerAWiredControllerStandard = {
+        mixins: [powerAWiredControllerBase, StandardMappings]
+    };
+
+    let PowerAWiredControllerMacFirefox = {
+        mixins: [powerAWiredControllerBase],
+        data: function() {
+            return {
+                buttonMapping: {
+                    faceLeft: 0,
+                    faceDown: 1,
+                    faceRight: 2,
+                    faceUp: 3,
+                    leftTop: 4,
+                    rightTop: 5,
+                    leftTrigger: 6,
+                    rightTrigger: 7,
+                    select: 8,
+                    start: 9,
+                    leftStick: 10,
+                    rightStick: 11,
+                    dpadUp: 14,
+                    dpadDown: 15,
+                    dpadLeft: 16,
+                    dpadRight: 17
+                }
+            };
+        }
+    };
+
+    let PowerAWiredControllerChromeOS = {
+        mixins: [powerAWiredControllerBase],
+        data: function() {
+            return {
+                buttonMapping: {
+                    faceLeft: 0,
+                    faceDown: 1,
+                    faceRight: 2,
+                    faceUp: 3,
+                    leftTop: 4,
+                    rightTop: 5,
+                    leftTrigger: 6,
+                    rightTrigger: 7,
+                    select: 8,
+                    start: 9,
+                    leftStick: 10,
+                    rightStick: 11
+                },
+                dpadMapping: {
+                    dpadUp: {axis: 5, sign: -1},
+                    dpadDown: {axis: 5, sign: 1},
+                    dpadLeft: {axis: 4, sign: -1},
+                    dpadRight: {axis: 4, sign: 1}
+                }
+            };
+        },
+        methods: {
+            isButtonPressed: function(name) {
+                if (this.dpadMapping.hasOwnProperty(name)) {
+                    let mapping = this.dpadMapping[name];
+                    return mapping && mapping.hasOwnProperty('axis') && mapping.hasOwnProperty('sign') && this.axes[mapping.axis] * mapping.sign > this.deadzone;
+                } else {
+                    let index = this.buttonMapping[name];
+                    if (index === null || index === undefined || index < 0) return false;
+                    return this.buttons[index];
+                }
+            }
+        }
+    };
+
+    let PowerAWiredControllerChrome = {
+        mixins: [powerAWiredControllerBase],
+        data: function() {
+            return {
+                buttonMapping: {
+                    faceLeft: 0,
+                    faceDown: 1,
+                    faceRight: 2,
+                    faceUp: 3,
+                    leftTop: 4,
+                    rightTop: 5,
+                    leftTrigger: 6,
+                    rightTrigger: 7,
+                    select: 8,
+                    start: 9,
+                    leftStick: 10,
+                    rightStick: 11
+                },
+                dpadMapping: {
+                    dpadUp: {axis: 9, axisVals: [-7, -5, 7]},
+                    dpadDown: {axis: 9, axisVals: [-1, 1, 3]},
+                    dpadLeft: {axis: 9, axisVals: [3, 5, 7]},
+                    dpadRight: {axis: 9, axisVals: [-5, -3, -1]},
+                },
+                stickMapping: {
+                    leftStick: {axisX: 0, axisY: 1},
+                    rightStick: {axisX: 2, axisY: 5}
+                }
+            }
+        },
+        methods: {
+            isButtonPressed: function(name) {
+                if (this.dpadMapping.hasOwnProperty(name)) {
+                    let mapping = this.dpadMapping[name];
+                    if (!(mapping && mapping.hasOwnProperty('axis') && mapping.hasOwnProperty('axisVals'))) return false;
+                    let axisValNormalized = this.axes[mapping.axis] * 7;
+                    for (let i = 0; i < mapping.axisVals.length; i++) {
+                        if (Math.abs(mapping.axisVals[i] - axisValNormalized) < 0.1) return true;
+                    }
+                    return false;
+                } else {
+                    let index = this.buttonMapping[name];
+                    if (index === null || index === undefined || index < 0) return false;
+                    return this.buttons[index];
+                }
+            }
+        }
+    };
+
+    let PowerAWiredControllerWinFirefox = {
+        mixins: [powerAWiredControllerBase],
+        data: function() {
+            return {
+                buttonMapping: {
+                    faceLeft: 0,
+                    faceDown: 1,
+                    faceRight: 2,
+                    faceUp: 3,
+                    leftTop: 4,
+                    rightTop: 5,
+                    leftTrigger: 6,
+                    rightTrigger: 7,
+                    select: 8,
+                    start: 9,
+                    leftStick: 10,
+                    rightStick: 11,
+                    // DPad Up is mapped to share, DPad down is mapped to home
+                    dpadUp: 13,
+                    dpadDown: 12,
+                    dpadLeft: null,
+                    dpadRight: null
+                },
+                notifyMessage: 'The D-Pad does not work properly in Firefox on Windows. The Share button has been mapped to D-Pad Up. If this doesn\'t work for you, try using Chrome.'
+            }
+        }
+    };
+
+    let dualShockControllerBase = {
+        mixins: [BaseController],
+        data: function() {
+            return {
+                canonicalName: 'DualShock Controller'
+            };
+        }
+    };
+
+    let dualShockControllerStandard = {
+        mixins: [dualShockControllerBase, StandardMappings]
+    };
+
+    let dualShockControllerWinFirefox = {
+        mixins: [dualShockControllerBase],
+        data: function() {
+            return {
+                buttonMapping: {
+                    faceLeft: 0,
+                    faceDown: 1,
+                    faceRight: 2,
+                    faceUp: 3,
+                    leftTop: 4,
+                    rightTop: 5,
+                    leftTrigger: 6,
+                    rightTrigger: 7,
+                    select: 8,
+                    start: 9,
+                    leftStick: 10,
+                    rightStick: 11,
+                    // Remap the guide button to index 12
+                    // The other buttons don't seem to work, so leave them blank.
+                    dpadUp: 13,
+                    dpadDown: 12,
+                    dpadLeft: null,
+                    dpadRight: null
+                },
+                stickMapping: {
+                    leftStick: {axisX: 0, axisY: 1},
+                    rightStick: {axisX: 2, axisY: 5}
+                },
+                notifyMessage: 'The D-Pad does not work properly in Firefox on Windows. The touchpad has been mapped to D-Pad Up. If this doesn\'t work for you, try using Chrome.'
+            };
+        }
+    };
+
+    let dualShockControllerMacFirefox = {
+        mixins: [dualShockControllerBase],
+        data: function() {
+            return {
+                buttonMapping: {
+                    faceLeft: 0,
+                    faceDown: 1,
+                    faceRight: 2,
+                    faceUp: 3,
+                    leftTop: 4,
+                    rightTop: 5,
+                    leftTrigger: 6,
+                    rightTrigger: 7,
+                    select: 8,
+                    start: 9,
+                    leftStick: 10,
+                    rightStick: 11,
+                    dpadUp: 14,
+                    dpadDown: 15,
+                    dpadLeft: 16,
+                    dpadRight: 17
+                },
+                stickMapping: {
+                    leftStick: {axisX: 0, axisY: 1},
+                    rightStick: {axisX: 2, axisY: 5}
+                }
+            };
+        }
+    };
+
+    let SwitchProControllerBase = {
+        mixins: [BaseController],
+        data: function() {
+            return {
+                canonicalName: 'Switch Pro Controller'
+            };
+        }
+    };
+
+    let SwitchProControllerStandard = {
+        mixins: [SwitchProControllerBase, StandardMappings]
+    };
+
+    let SwitchProControllerMacFirefox = {
+        mixins: [SwitchProControllerBase, StandardMappings]
+    };
+
+    let detectBrowser = function() {
+        if(navigator.userAgent.indexOf("Chrome") !== -1 ) {
+            return 'Chrome';
+        } else if(navigator.userAgent.indexOf("Firefox") !== -1 ) {
+            return 'Firefox';
+        } else {
+            return 'unknown';
+        }
+    };
+    let detectOS = function() {
+        let userAgent = window.navigator.userAgent,
+            platform = window.navigator.platform,
+            macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'],
+            windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE'],
+            iosPlatforms = ['iPhone', 'iPad', 'iPod'];
+
+        if (macosPlatforms.indexOf(platform) !== -1) {
+            return 'Mac OS';
+        } else if (iosPlatforms.indexOf(platform) !== -1) {
+            return 'iOS';
+        } else if (windowsPlatforms.indexOf(platform) !== -1) {
+            return 'Windows';
+        } else if (/Android/.test(userAgent)) {
+            return 'Android';
+        } else if (/CrOS/.test(userAgent)) {
+            return 'Chrome OS';
+        } else if (/Linux/.test(platform)) {
+            return 'Linux';
+        }
+
+        return 'unknown';
+    };
+    let checkVidPid = function(id, vid, pid) {
+        return id.indexOf(vid) > -1 && id.indexOf(pid) > -1;
+    };
+    let getControllerProfile = function(browser, os, id, mapping) {
+        if (mapping === 'standard') {
+            // Check for Pro Controller (2009) or Joycon Grip (200e) connected via cable (won't work)
+            if (id.indexOf('Nintendo Co., Ltd.') > -1) {
+                return 'unsupported-controller';
+            }
+
+            // Pro Controller reported as standard on Chrome OS only
+            if (checkVidPid(id, '57e', '2009')) {
+                return 'switch-pro-controller-standard';
+            }
+
+            // DualShock 4 reported as standard by Chrome on all OSes
+            if (checkVidPid(id, '54c', '9cc')) {
+                return 'dualshock-controller-standard';
+            }
+
+            // Not reported as standard mappings on any tested OS/browser, but here just in case
+            if (checkVidPid(id, '20d6', 'a711')) {
+                return 'powera-wired-controller-standard';
+            }
+
+            // Xbox controller works on Windows and Chrome on Mac OS only
+            return 'xbox-controller';
+        }
+
+        // Pro Controller uses standard mappings (but not reported as standard) on Mac OS/Firefox
+        if (checkVidPid(id, '57e', '2009')) {
+            if (os === 'Mac OS' && browser === 'Firefox') {
+                return 'switch-pro-controller-mac-firefox';
+            }
+        }
+
+        // DualShock 4 D-Pad doesn't work properly on Windows/Firefox. On Mac OS/Firefox it works fine but needs remapping.
+        if (checkVidPid(id, '54c', '9cc')) {
+            if (os === 'Windows' && browser === 'Firefox') return 'dualshock-controller-win-firefox';
+            if (os === 'Mac OS' && browser === 'Firefox') return 'dualshock-controller-mac-firefox';
+        }
+
+        // PowerA Wired Controller Plus works fine on every OS (Windows/Firefox needs D-Pad fix), but needs remapping.
+        if (checkVidPid(id, '20d6', 'a711')) {
+            if (os === 'Chrome OS') {
+                return 'powera-wired-controller-chromeos';
+            }
+            if (browser === 'Chrome') {
+                return 'powera-wired-controller-chrome';
+            }
+            if (browser === 'Firefox') {
+                if (os === 'Windows') return 'powera-wired-controller-win-firefox';
+                if (os === 'Mac OS') return 'powera-wired-controller-mac-firefox';
+            }
+        }
+
+        // No supported profile found
+        return 'unsupported-controller';
+    };
+
+    let NoController = {
+        template: '<p class="center-text">No controller connected.<br>Please connect a controller.</p>'
+    };
+
+    let UnsupportedController = {
+        template: '<p class="center-text">This isn\'t a supported controller.<br>Select another controller or check the help documentation for details.</p>'
+    };
+
+    const ControllerInputSource = {
+        components: {
+            'no-controller': NoController,
+            'unsupported-controller': UnsupportedController,
+            'xbox-controller': XboxController,
+            'switch-pro-controller-standard': SwitchProControllerStandard,
+            'switch-pro-controller-mac-firefox': SwitchProControllerMacFirefox,
+            'powera-wired-controller-standard': PowerAWiredControllerStandard,
+            'powera-wired-controller-chromeos': PowerAWiredControllerChromeOS,
+            'powera-wired-controller-chrome': PowerAWiredControllerChrome,
+            'powera-wired-controller-win-firefox': PowerAWiredControllerWinFirefox,
+            'powera-wired-controller-mac-firefox': PowerAWiredControllerMacFirefox,
+            'dualshock-controller-standard': dualShockControllerStandard,
+            'dualshock-controller-win-firefox': dualShockControllerWinFirefox,
+            'dualshock-controller-mac-firefox': dualShockControllerMacFirefox,
+        },
+        data: function() {
+            return {
+                currentController: -1,
+                axes: [],
+                buttons: []
+            }
+        },
+        computed: {
+            isControllerConnected: function() {
+                return this.currentControllerComponent !== 'no-controller';
+            },
+            isControllerSupported: function() {
+                return this.currentControllerComponent !== 'unsupported-controller';
+            },
+            currentControllerComponent: function() {
+                // TODO: make this code less unwieldy.
+                if (this.currentController < 0) return 'no-controller';
+                let gamepad = this.getGamepad();
+                if (!gamepad) {
+                    return 'no-controller';
+                }
+
+                let browser = detectBrowser();
+                let os = detectOS();
+                let id = gamepad.id;
+                let mapping = gamepad.mapping;
+
+                return getControllerProfile(browser, os, id, mapping);
+            },
+            gamepadName: function() {
+                if (this.currentController < 0) {
+                    return '';
+                }
+                let gamepad = this.getGamepad();
+                if (!gamepad) return '';
+                return gamepad.id;
+            }
+        },
+        watch: {
+            currentController: function() {
+                let controlState = this.$store.state.controlState;
+
+                if (!this.isControllerConnected) {
+                    this.$store.commit('setControlState', ControlState.NO_CONTROLLER);
+                } else if (!this.isControllerSupported) {
+                    this.$store.commit('setControlState', ControlState.UNSUPPORTED_CONTROLLER);
+                } else if (controlState === ControlState.NO_CONTROLLER || ControlState.UNSUPPORTED_CONTROLLER) {
+                    this.$store.commit('setControlState', ControlState.INACTIVE);
+                }
+
+                StatusBus.$emit(BusEvents.UPDATE_INPUT);
+            },
+            currentControllerComponent: function() {
+                console.log(`Loading controller component ${this.currentControllerComponent}`);
+            }
+        },
+        methods: {
+            getGamepads: function() {
+                let gamepads;
+                if (navigator.getGamepads()) {
+                    gamepads = navigator.getGamepads();
+                } else if (navigator.webkitGetGamepads) {
+                    gamepads = navigator.webkitGetGamepads();
+                }
+                return gamepads;
+            },
+            getGamepad: function() {
+                let gamepads = this.getGamepads();
+                if (this.currentController >= 0) {
+                    let gamepad = gamepads[this.currentController];
+                    if (gamepad && gamepad.connected) return gamepad;
+                }
+                for (let i = 0; i < gamepads.length; i++) {
+                    if (gamepads[i] && gamepads[i].connected) {
+                        this.currentController = gamepads[i].index;
+                        return gamepads[i];
+                    }
+                }
+                return null;
+            },
+            updateGamepad: function() {
+                let gamepad = this.getGamepad();
+                if (!gamepad) return;
+
+                let newButtons = [];
+                let newAxes = [];
+
+                for (let i = 0; i < gamepad.buttons.length; i++) {
+                    newButtons.push(gamepad.buttons[i].value);
+                }
+                for (let i = 0; i < gamepad.axes.length; i++) {
+                    newAxes.push(gamepad.axes[i]);
+                }
+                this.axes = newAxes;
+                this.buttons = newButtons;
+            }
+        },
+        created: function() {
+            let self = this;
+            window.addEventListener('gamepadconnected', function(e) {
+                console.log('Detected gamepad: ' + e.gamepad.id);
+                if (self.currentController < 0 || self.currentControllerComponent === 'unsupported-controller') {
+                    self.currentController = e.gamepad.index;
+                }
+                self.allControllers = self.getGamepads();
+            });
+
+            window.addEventListener('gamepaddisconnected', function(e) {
+                console.log('Gamepad disconnected: ' + e.gamepad.id);
+                if (self.currentController.index === e.gamepad.index) {
+                    self.currentController = self.getGamepad().index;
+                }
+                self.allControllers = self.getGamepads();
+            });
+        },
+        mounted: function() {
+            StatusBus.$on(BusEvents.BEFORE_UPDATE_INPUT, this.updateGamepad);
+        },
+        template: '<div class="center-text"><select v-model="currentController"><option disabled value="">Please select a controller</option><option v-for="gamepad in this.getGamepads()" v-bind:value="gamepad.index" v-if="gamepad !== null">#(( gamepad.index )): (( gamepad.id ))</option></select><component v-bind:is="currentControllerComponent" v-bind:gamepadindex="currentController" v-bind:gamepadname="gamepadName" v-bind:axes="axes" v-bind:buttons="buttons"></component></div>'
+    };
+
+    const ControlMode = Object.freeze({
+        SINGLE_CONTROLLER: 1,
+        MULTIPLE_CONTROLLERS: 2,
+        KEYBOARD: 3,
+        TOUCH: 4
+    });
+
     const ControlModeSelect = {
+        components: {
+            'keyboard-input': KeyboardInputSource,
+            'controller-input': ControllerInputSource
+        },
         data: function() {
             return {
                 selectedMode: ControlMode.SINGLE_CONTROLLER,
                 enabledModes: [
                     ControlMode.SINGLE_CONTROLLER,
-                    ControlMode.MULTIPLE_CONTROLLERS
+                    //ControlMode.MULTIPLE_CONTROLLERS,
+                    ControlMode.KEYBOARD
                 ]
+            }
+        },
+        computed: {
+            currentControlModeComponent: function() {
+                if (this.selectedMode === ControlMode.SINGLE_CONTROLLER) {
+                    return 'controller-input';
+                } else if (this.selectedMode === ControlMode.MULTIPLE_CONTROLLERS) {
+                    return 'multiple-controller-input';
+                } else if (this.selectedMode === ControlMode.TOUCH) {
+                    return 'touch-input';
+                }
+
+                return 'keyboard-input';
             }
         },
         watch: {
             selectedMode: function() {
-                this.$store.commit('setControlMode', parseInt(this.selectedMode));
+                this.$refs.select.blur();
             }
         },
         methods: {
@@ -397,9 +1048,8 @@
                 return 'Keyboard';
             }
         },
-        template: '<select v-model="selectedMode">'+
-        '<option v-for="mode in enabledModes" v-bind:value="mode">Use (( getModeText(mode) ))</option>' +
-        '</select>'
+        template: '<div><select ref="select" v-model="selectedMode"><option v-for="mode in this.enabledModes" v-bind:value="mode" v-text="getModeText(mode)"></option></select>' +
+        '<component v-bind:is="currentControlModeComponent"></component></div>'
     };
 
     const backoff = {
@@ -844,7 +1494,7 @@
             return {
                 spriteSheetUrl: 'assets/images/joyconSpritesheet2.png',
                 buttonSprites: {faceRight:{controller:'right',x:154,y:179,w:58,h:58,inactive:{x:5,y:5},active:{x:73,y:5}},faceDown:{controller:'right',x:92,y:238,w:58,h:58,inactive:{x:141,y:5},active:{x:209,y:5}},faceUp:{controller:'right',x:92,y:120,w:58,h:58,inactive:{x:709,y:5},active:{x:777,y:5}},faceLeft:{controller:'right',x:31,y:179,w:58,h:58,inactive:{x:709,y:73},active:{x:777,y:73}},leftTop:{controller:'left',x:7,y:1,w:206,h:110,inactive:{x:277,y:5},active:{x:493,y:5}},rightTop:{controller:'right',x:47,y:1,w:207,h:110,inactive:{x:5,y:125},active:{x:222,y:125}},leftTrigger:{controller:'left',x:79,y:10,w:150,h:150,scale:0.75,inactive:{x:439,y:141},active:{x:599,y:141}},rightTrigger:{controller:'right',x:61,y:10,w:150,h:150,scale:0.75,inactive:{x:5,y:301},active:{x:165,y:301}},select:{controller:'left',x:196,y:80,w:42,h:14,inactive:{x:845,y:5},active:{x:845,y:29}},start:{controller:'right',x:21,y:65,w:44,h:44,inactive:{x:845,y:53},active:{x:827,y:282}},share:{controller:'left',x:157,y:550,w:49,h:49,inactive:{x:529,y:336},active:{x:588,y:336}},home:{controller:'right',x:47,y:543,w:63,h:63,inactive:{x:759,y:209},active:{x:832,y:209}},dpadUp:{controller:'left',x:110,y:339,w:58,h:58,inactive:{x:647,y:336},active:{x:827,y:336}},dpadDown:{controller:'left',x:110,y:456,w:58,h:58,inactive:{x:759,y:141},active:{x:827,y:141}},dpadLeft:{controller:'left',x:48,y:398,w:58,h:58,inactive:{x:325,y:282},active:{x:759,y:282}},dpadRight:{controller:'left',x:171,y:398,w:58,h:58,inactive:{x:393,y:336},active:{x:461,y:336}}},
-                stickSprites: {leftStick:{controller:'left',x:79,y:148,w:120,h:120,travel:25,inactive:{x:5,y:813},active:{x:135,y:813}},rightStick:{controller:'right',x:61,y:367,w:120,h:120,travel:25,inactive:{x:535,y:813},active:{x:665,y:813}}},
+                stickSprites: {leftStick:{controller:'left',x:79,y:148,w:120,h:120,travel:30,inactive:{x:5,y:813},active:{x:135,y:813}},rightStick:{controller:'right',x:61,y:367,w:120,h:120,travel:30,inactive:{x:535,y:813},active:{x:665,y:813}}},
                 controllers: {
                     left: {
                         x: 905,
@@ -1127,456 +1777,6 @@
         template: '<div><h264-ws-player v-bind:endpoint="endpoint" v-bind:canvas="streamCanvas"></h264-ws-player><canvas class="controlCanvas" ref="controlCanvas"></canvas><img ref="spriteSheet" v-bind:src="spriteSheetUrl" style="display:none;" @load="imageLoaded"/></div>'
     };
 
-    let noController = {
-        template: '<p class="center-text">No controller connected.</p>'
-    };
-
-    let unsupportedController = {
-        template: '<div><p class="center-text">This isn\'t a supported controller. Select another controller or check the help documentation for details.</p></div>'
-    };
-
-    let StandardMappings = {
-        data: function() {
-            return {
-                buttonMapping: {
-                    faceDown: 0,
-                    faceRight: 1,
-                    faceLeft: 2,
-                    faceUp: 3,
-                    leftTop: 4,
-                    rightTop: 5,
-                    leftTrigger: 6,
-                    rightTrigger: 7,
-                    select: 8,
-                    start: 9,
-                    leftStick: 10,
-                    rightStick: 11,
-                    dpadUp: 12,
-                    dpadDown: 13,
-                    dpadLeft: 14,
-                    dpadRight: 15
-                },
-                stickMapping: {
-                    leftStick: {axisX: 0, axisY: 1},
-                    rightStick: {axisX: 2, axisY: 3}
-                }
-            };
-        }
-    };
-
-    let BaseController = {
-        mixins: [InputSource],
-        props: ['gamepadindex', 'gamepadname', 'axes', 'buttons'],
-        data: function() {
-            return {
-                experimental: false
-            };
-        },
-        methods: {
-            isButtonPressed: function(name) {
-                // May need to override for certain controllers due to dpad
-                let index = this.buttonMapping[name];
-                if (index === null || index === undefined || index < 0) return false;
-                return !!this.buttons[index];
-            },
-            getStickX: function(name) {
-                return this.axes[this.stickMapping[name].axisX];
-            },
-            getStickY: function(name) {
-                return this.axes[this.stickMapping[name].axisY];
-            }
-        },
-        mounted: function() {
-            if (this.experimental) {
-                this.$notify({
-                    title: 'Experimental controller support',
-                    text: `Please note that support for this controller (${this.canonicalName}) is experimental and may have issues or limitations. Please check the help documentation for details.`,
-                    duration: 10000
-                });
-            }
-            if (this.notifyMessage) {
-                this.$notify({
-                    type: 'warn',
-                    title: 'Warning',
-                    text: this.notifyMessage,
-                    duration: 10000
-                });
-            }
-        },
-        template: '<div><span class="center-text">Controller (( gamepadindex )): (( gamepadname ))</span><span class="center-text">Detected as: (( canonicalName ))</span></div>'
-    };
-
-    let xboxController = {
-        mixins: [BaseController, StandardMappings],
-        data: function() {
-            return {
-                canonicalName: 'Xbox/XInput controller'
-            };
-        }
-    };
-
-    let SwitchProControllerBase = {
-        mixins: [BaseController],
-        data: function() {
-            return {
-                canonicalName: 'Switch Pro Controller'
-            };
-        }
-    };
-
-    let SwitchProControllerStandard = {
-        mixins: [SwitchProControllerBase, StandardMappings]
-    };
-
-    let SwitchProControllerMacFirefox = {
-        mixins: [SwitchProControllerBase, StandardMappings]
-    };
-
-    let powerAWiredControllerBase = {
-        mixins: [BaseController],
-        data: function() {
-            return {
-                canonicalName: 'PowerA Wired Controller'
-            };
-        }
-    };
-
-    let PowerAWiredControllerStandard = {
-        mixins: [powerAWiredControllerBase, StandardMappings]
-    };
-
-    let PowerAWiredControllerMacFirefox = {
-        mixins: [powerAWiredControllerBase],
-        data: function() {
-            return {
-                buttonMapping: {
-                    faceLeft: 0,
-                    faceDown: 1,
-                    faceRight: 2,
-                    faceUp: 3,
-                    leftTop: 4,
-                    rightTop: 5,
-                    leftTrigger: 6,
-                    rightTrigger: 7,
-                    select: 8,
-                    start: 9,
-                    leftStick: 10,
-                    rightStick: 11,
-                    dpadUp: 14,
-                    dpadDown: 15,
-                    dpadLeft: 16,
-                    dpadRight: 17
-                }
-            };
-        }
-    };
-
-    let PowerAWiredControllerChromeOS = {
-        mixins: [powerAWiredControllerBase],
-        data: function() {
-            return {
-                buttonMapping: {
-                    faceLeft: 0,
-                    faceDown: 1,
-                    faceRight: 2,
-                    faceUp: 3,
-                    leftTop: 4,
-                    rightTop: 5,
-                    leftTrigger: 6,
-                    rightTrigger: 7,
-                    select: 8,
-                    start: 9,
-                    leftStick: 10,
-                    rightStick: 11
-                },
-                dpadMapping: {
-                    dpadUp: {axis: 5, sign: -1},
-                    dpadDown: {axis: 5, sign: 1},
-                    dpadLeft: {axis: 4, sign: -1},
-                    dpadRight: {axis: 4, sign: 1}
-                }
-            };
-        },
-        methods: {
-            isButtonPressed: function(name) {
-                if (this.dpadMapping.hasOwnProperty(name)) {
-                    let mapping = this.dpadMapping[name];
-                    return mapping && mapping.hasOwnProperty('axis') && mapping.hasOwnProperty('sign') && this.axes[mapping.axis] * mapping.sign > this.deadzone;
-                } else {
-                    let index = this.buttonMapping[name];
-                    if (index === null || index === undefined || index < 0) return false;
-                    return this.buttons[index];
-                }
-            }
-        }
-    };
-
-    let PowerAWiredControllerChrome = {
-        mixins: [powerAWiredControllerBase],
-        data: function() {
-            return {
-                buttonMapping: {
-                    faceLeft: 0,
-                    faceDown: 1,
-                    faceRight: 2,
-                    faceUp: 3,
-                    leftTop: 4,
-                    rightTop: 5,
-                    leftTrigger: 6,
-                    rightTrigger: 7,
-                    select: 8,
-                    start: 9,
-                    leftStick: 10,
-                    rightStick: 11
-                },
-                dpadMapping: {
-                    dpadUp: {axis: 9, axisVals: [-7, -5, 7]},
-                    dpadDown: {axis: 9, axisVals: [-1, 1, 3]},
-                    dpadLeft: {axis: 9, axisVals: [3, 5, 7]},
-                    dpadRight: {axis: 9, axisVals: [-5, -3, -1]},
-                },
-                stickMapping: {
-                    leftStick: {axisX: 0, axisY: 1},
-                    rightStick: {axisX: 2, axisY: 5}
-                }
-            }
-        },
-        methods: {
-            isButtonPressed: function(name) {
-                if (this.dpadMapping.hasOwnProperty(name)) {
-                    let mapping = this.dpadMapping[name];
-                    if (!(mapping && mapping.hasOwnProperty('axis') && mapping.hasOwnProperty('axisVals'))) return false;
-                    let axisValNormalized = this.axes[mapping.axis] * 7;
-                    for (let i = 0; i < mapping.axisVals.length; i++) {
-                        if (Math.abs(mapping.axisVals[i] - axisValNormalized) < 0.1) return true;
-                    }
-                    return false;
-                } else {
-                    let index = this.buttonMapping[name];
-                    if (index === null || index === undefined || index < 0) return false;
-                    return this.buttons[index];
-                }
-            }
-        }
-    };
-
-    let PowerAWiredControllerWinFirefox = {
-        mixins: [powerAWiredControllerBase],
-        data: function() {
-            return {
-                buttonMapping: {
-                    faceLeft: 0,
-                    faceDown: 1,
-                    faceRight: 2,
-                    faceUp: 3,
-                    leftTop: 4,
-                    rightTop: 5,
-                    leftTrigger: 6,
-                    rightTrigger: 7,
-                    select: 8,
-                    start: 9,
-                    leftStick: 10,
-                    rightStick: 11,
-                    // DPad Up is mapped to share, DPad down is mapped to home
-                    dpadUp: 13,
-                    dpadDown: 12,
-                    dpadLeft: null,
-                    dpadRight: null
-                },
-                notifyMessage: 'The D-Pad does not work properly in Firefox on Windows. The Share button has been mapped to D-Pad Up. If this doesn\'t work for you, try using Chrome.'
-            }
-        }
-    };
-
-    let dualShockControllerBase = {
-        mixins: [BaseController],
-        data: function() {
-            return {
-                canonicalName: 'DualShock Controller'
-            };
-        }
-    };
-
-    let dualShockControllerStandard = {
-        mixins: [dualShockControllerBase, StandardMappings]
-    };
-
-    let dualShockControllerWinFirefox = {
-        mixins: [dualShockControllerBase],
-        data: function() {
-            return {
-                buttonMapping: {
-                    faceLeft: 0,
-                    faceDown: 1,
-                    faceRight: 2,
-                    faceUp: 3,
-                    leftTop: 4,
-                    rightTop: 5,
-                    leftTrigger: 6,
-                    rightTrigger: 7,
-                    select: 8,
-                    start: 9,
-                    leftStick: 10,
-                    rightStick: 11,
-                    // Remap the guide button to index 12
-                    // The other buttons don't seem to work, so leave them blank.
-                    dpadUp: 13,
-                    dpadDown: 12,
-                    dpadLeft: null,
-                    dpadRight: null
-                },
-                stickMapping: {
-                    leftStick: {axisX: 0, axisY: 1},
-                    rightStick: {axisX: 2, axisY: 5}
-                },
-                notifyMessage: 'The D-Pad does not work properly in Firefox on Windows. The touchpad has been mapped to D-Pad Up. If this doesn\'t work for you, try using Chrome.'
-            };
-        }
-    };
-
-    let dualShockControllerMacFirefox = {
-        mixins: [dualShockControllerBase],
-        data: function() {
-            return {
-                buttonMapping: {
-                    faceLeft: 0,
-                    faceDown: 1,
-                    faceRight: 2,
-                    faceUp: 3,
-                    leftTop: 4,
-                    rightTop: 5,
-                    leftTrigger: 6,
-                    rightTrigger: 7,
-                    select: 8,
-                    start: 9,
-                    leftStick: 10,
-                    rightStick: 11,
-                    dpadUp: 14,
-                    dpadDown: 15,
-                    dpadLeft: 16,
-                    dpadRight: 17
-                },
-                stickMapping: {
-                    leftStick: {axisX: 0, axisY: 1},
-                    rightStick: {axisX: 2, axisY: 5}
-                }
-            };
-        }
-    };
-
-    let detectBrowser = function() {
-        if(navigator.userAgent.indexOf("Chrome") !== -1 ) {
-            return 'Chrome';
-        } else if(navigator.userAgent.indexOf("Firefox") !== -1 ) {
-            return 'Firefox';
-        } else {
-            return 'unknown';
-        }
-    };
-    let detectOS = function() {
-        let userAgent = window.navigator.userAgent,
-            platform = window.navigator.platform,
-            macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'],
-            windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE'],
-            iosPlatforms = ['iPhone', 'iPad', 'iPod'];
-
-        if (macosPlatforms.indexOf(platform) !== -1) {
-            return 'Mac OS';
-        } else if (iosPlatforms.indexOf(platform) !== -1) {
-            return 'iOS';
-        } else if (windowsPlatforms.indexOf(platform) !== -1) {
-            return 'Windows';
-        } else if (/Android/.test(userAgent)) {
-            return 'Android';
-        } else if (/CrOS/.test(userAgent)) {
-            return 'Chrome OS';
-        } else if (/Linux/.test(platform)) {
-            return 'Linux';
-        }
-
-        return 'unknown';
-    };
-    let checkVidPid = function(id, vid, pid) {
-        return id.indexOf(vid) > -1 && id.indexOf(pid) > -1;
-    };
-    let getControllerProfile = function(browser, os, id, mapping) {
-        if (mapping === 'standard') {
-            // Check for Pro Controller (2009) or Joycon Grip (200e) connected via cable (won't work)
-            if (id.indexOf('Nintendo Co., Ltd.') > -1) {
-                return 'unsupported-controller';
-            }
-
-            // Pro Controller reported as standard on Chrome OS only
-            if (checkVidPid(id, '57e', '2009')) {
-                return 'switch-pro-controller-standard';
-            }
-
-            // DualShock 4 reported as standard by Chrome on all OSes
-            if (checkVidPid(id, '54c', '9cc')) {
-                return 'dualshock-controller-standard';
-            }
-
-            // Not reported as standard mappings on any tested OS/browser, but here just in case
-            if (checkVidPid(id, '20d6', 'a711')) {
-                return 'powera-wired-controller-standard';
-            }
-
-            // Xbox controller works on Windows and Chrome on Mac OS only
-            return 'xbox-controller';
-        }
-
-        // Pro Controller uses standard mappings (but not reported as standard) on Mac OS/Firefox
-        if (checkVidPid(id, '57e', '2009')) {
-            if (os === 'Mac OS' && browser === 'Firefox') {
-                return 'switch-pro-controller-mac-firefox';
-            }
-        }
-
-        // DualShock 4 D-Pad doesn't work properly on Windows/Firefox. On Mac OS/Firefox it works fine but needs remapping.
-        if (checkVidPid(id, '54c', '9cc')) {
-            if (os === 'Windows' && browser === 'Firefox') return 'dualshock-controller-win-firefox';
-            if (os === 'Mac OS' && browser === 'Firefox') return 'dualshock-controller-mac-firefox';
-        }
-
-        // PowerA Wired Controller Plus works fine on every OS (Windows/Firefox needs D-Pad fix), but needs remapping.
-        if (checkVidPid(id, '20d6', 'a711')) {
-            if (os === 'Chrome OS') {
-                return 'powera-wired-controller-chromeos';
-            }
-            if (browser === 'Chrome') {
-                return 'powera-wired-controller-chrome';
-            }
-            if (browser === 'Firefox') {
-                if (os === 'Windows') return 'powera-wired-controller-win-firefox';
-                if (os === 'Mac OS') return 'powera-wired-controller-mac-firefox';
-            }
-        }
-
-        // No supported profile found
-        return 'unsupported-controller';
-    };
-
-    Vue.component('controller-select', {
-        props: ['gamepads', 'gamepadindex'],
-        model: {
-            prop: 'gamepadindex',
-            event: 'change'
-        },
-        computed: {
-            selectedindex: {
-                get() {
-                    return this.gamepadindex;
-                },
-                set(val) {
-                    this.$emit('change', val);
-                }
-            }
-        },
-        template: '<select v-model="selectedindex"><option disabled value="">Please select a controller</option>' +
-        '<option v-for="gamepad in gamepads" v-bind:value="gamepad.index" v-if="gamepad !== null">#(( gamepad.index )): (( gamepad.id ))</option>' +
-        '</select>'
-    });
-
     Vue.component('server-status', {
         props: ['state'],
         data: function() {
@@ -1658,50 +1858,16 @@
             'control-ws': ControlWs,
             'controller-renderer': ControllerRenderer,
             'joycon-stream-renderer': JoyconStreamRenderer,
-            'control-mode-select': ControlModeSelect,
-            'no-controller': noController,
-            'unsupported-controller': unsupportedController,
-            'xbox-controller': xboxController,
-            'switch-pro-controller-standard': SwitchProControllerStandard,
-            'switch-pro-controller-mac-firefox': SwitchProControllerMacFirefox,
-            'powera-wired-controller-standard': PowerAWiredControllerStandard,
-            'powera-wired-controller-chromeos': PowerAWiredControllerChromeOS,
-            'powera-wired-controller-chrome': PowerAWiredControllerChrome,
-            'powera-wired-controller-win-firefox': PowerAWiredControllerWinFirefox,
-            'powera-wired-controller-mac-firefox': PowerAWiredControllerMacFirefox,
-            'dualshock-controller-standard': dualShockControllerStandard,
-            'dualshock-controller-win-firefox': dualShockControllerWinFirefox,
-            'dualshock-controller-mac-firefox': dualShockControllerMacFirefox,
+            'control-mode-select': ControlModeSelect
         },
         data: function() {
             return {
-                currentController: -1,
-                axes: [],
-                buttons: [],
-                deadzone: 0.15,
-                allControllers: [],
                 controlEndpoint: 'wss://api.chilly.codes/switch/ws',
                 streamEndpoint: 'wss://api.chilly.codes/switch/stream'
             };
         },
         created: function() {
             let that = this;
-
-            window.addEventListener('gamepadconnected', function(e) {
-                console.log('Detected gamepad: ' + e.gamepad.id);
-                if (that.currentController < 0 || that.currentControllerComponent === 'unsupported-controller') {
-                    that.currentController = e.gamepad.index;
-                }
-                that.allControllers = that.getGamepads();
-            });
-
-            window.addEventListener('gamepaddisconnected', function(e) {
-                console.log('Gamepad disconnected: ' + e.gamepad.id);
-                if (that.currentController.index === e.gamepad.index) {
-                    that.currentController = that.getGamepad().index;
-                }
-                that.allControllers = that.getGamepads();
-            });
 
             SocketBus.$on('CLIENT_ACTIVE', function() {
                 that.$store.commit('setControlState', ControlState.ACTIVE);
@@ -1711,62 +1877,21 @@
                 that.$store.commit('setControlState', ControlState.INACTIVE);
             });
         },
-        watch: {
-            currentController: function() {
-                let controlState = this.$store.state.controlState;
-
-                if (!this.isControllerConnected) {
-                    this.$store.commit('setControlState', ControlState.NO_CONTROLLER);
-                } else if (!this.isControllerSupported) {
-                    this.$store.commit('setControlState', ControlState.UNSUPPORTED_CONTROLLER);
-                } else if (controlState === ControlState.NO_CONTROLLER || ControlState.UNSUPPORTED_CONTROLLER) {
-                    this.$store.commit('setControlState', ControlState.INACTIVE);
-                }
-
-                requestAnimationFrame(this.update);
-            },
-            currentControllerComponent: function() {
-                console.log(`Loading controller component ${this.currentControllerComponent}`);
-            }
-        },
         mounted: function() {
             let browser = detectBrowser();
             let os = detectOS();
 
             console.log(`Running on ${os}/${browser}`);
 
-            StatusBus.$on(BusEvents.INPUT_CHANGED, this.onControllerUpdate);
+            StatusBus.$on(BusEvents.INPUT_CHANGED, this.onInputUpdate);
 
             this.$nextTick(function() {
                 requestAnimationFrame(this.update);
             });
         },
         methods: {
-            getGamepads: function() {
-                let gamepads;
-                if (navigator.getGamepads()) {
-                    gamepads = navigator.getGamepads();
-                } else if (navigator.webkitGetGamepads) {
-                    gamepads = navigator.webkitGetGamepads();
-                }
-                return gamepads;
-            },
-            getGamepad: function() {
-                // TODO: Support Joycons.
-                let gamepads = this.getGamepads();
-                if (this.currentController >= 0) {
-                    let gamepad = gamepads[this.currentController];
-                    if (gamepad && gamepad.connected) return gamepad;
-                }
-                for (let i = 0; i < gamepads.length; i++) {
-                    if (gamepads[i] && gamepads[i].connected) {
-                        this.currentController = gamepads[i].index;
-                        return gamepads[i];
-                    }
-                }
-                return null;
-            },
             update: function() {
+                /*
                 let gamepad = this.getGamepad();
                 if (!gamepad) return;
 
@@ -1781,12 +1906,14 @@
                 }
                 this.axes = newAxes;
                 this.buttons = newButtons;
+                */
 
+                StatusBus.$emit(BusEvents.BEFORE_UPDATE_INPUT);
                 StatusBus.$emit(BusEvents.UPDATE_INPUT);
 
                 requestAnimationFrame(this.update);
             },
-            onControllerUpdate: function(newState) {
+            onInputUpdate: function(newState) {
                 if (this.connected && this.controlActive) {
                     SocketBus.$emit(SocketEvents.SEND_MESSAGE, `UPDATE ${newState.stateStr}`);
                 }
@@ -1798,35 +1925,6 @@
             },
             controlActive: function() {
                 return this.$store.state.controlState === ControlState.ACTIVE;
-            },
-            isControllerConnected: function() {
-                return this.currentControllerComponent !== 'no-controller';
-            },
-            isControllerSupported: function() {
-                return this.currentControllerComponent !== 'unsupported-controller';
-            },
-            currentControllerComponent: function() {
-                // TODO: make this code less unwieldy.
-                if (this.currentController < 0) return 'no-controller';
-                let gamepad = this.getGamepad();
-                if (!gamepad) {
-                    return 'no-controller';
-                }
-
-                let browser = detectBrowser();
-                let os = detectOS();
-                let id = gamepad.id;
-                let mapping = gamepad.mapping;
-
-                return getControllerProfile(browser, os, id, mapping);
-            },
-            gamepadName: function() {
-                if (this.currentController < 0) {
-                    return '';
-                }
-                let gamepad = this.getGamepad();
-                if (!gamepad) return '';
-                return gamepad.id;
             }
         }
     });

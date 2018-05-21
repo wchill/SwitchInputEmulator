@@ -21,13 +21,6 @@ export const ControlState = Object.freeze({
     ACTIVE: 5
 });
 
-export const ControlMode = Object.freeze({
-    SINGLE_CONTROLLER: 1,
-    MULTIPLE_CONTROLLERS: 2,
-    KEYBOARD: 3,
-    TOUCH: 4
-});
-
 export const SwitchButtons = Object.freeze({
     Y: 1,
     B: 2,
@@ -57,6 +50,7 @@ export const SwitchButtons = Object.freeze({
 export const BusEvents = Object.freeze({
     RENDER_TIME_START: 'start-render',
     RENDER_TIME_END: 'finish-render',
+    BEFORE_UPDATE_INPUT: 'before-update-input',
     UPDATE_INPUT: 'update-input',
     INPUT_CHANGED: 'input-changed',
     SEND_MESSAGE: 'send'
@@ -76,7 +70,6 @@ export const store = new Vuex.Store({
     state: {
         connectionState: ConnectionState.NOT_CONNECTED,
         controlState: ControlState.NO_CONTROLLER,
-        controlMode: ControlMode.SINGLE_CONTROLLER,
         playerState: PlayerState.NOT_CONNECTED,
         gamepadState: {
             buttons: {
@@ -121,10 +114,6 @@ export const store = new Vuex.Store({
         setControlState: function(state, newState) {
             console.log(`Changing control state from ${enumToName(ControlState, state.controlState)} to ${enumToName(ControlState, newState)}`);
             state.controlState = newState;
-        },
-        setControlMode: function(state, newMode) {
-            console.log(`Changing control mode from ${enumToName(ControlMode, state.controlMode)} to ${enumToName(ControlMode, newMode)}`);
-            state.controlMode = newMode;
         },
         setPlayerState: function(state, newState) {
             console.log(`Changing player state from ${enumToName(PlayerState, state.playerState)} to ${enumToName(PlayerState, newState)}`);

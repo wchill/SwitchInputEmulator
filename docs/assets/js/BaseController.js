@@ -1,13 +1,5 @@
 import {InputSource} from "./InputSource";
 
-export let noController = {
-    template: '<p class="center-text">No controller connected.</p>'
-};
-
-export let unsupportedController = {
-    template: '<div><p class="center-text">This isn\'t a supported controller. Select another controller or check the help documentation for details.</p></div>'
-};
-
 export let StandardMappings = {
     data: function() {
         return {
@@ -76,10 +68,10 @@ export let BaseController = {
             });
         }
     },
-    template: '<div><span class="center-text">Controller (( gamepadindex )): (( gamepadname ))</span><span class="center-text">Detected as: (( canonicalName ))</span></div>'
+    template: '<p class="center-text">Controller (( gamepadindex )): (( gamepadname ))<br>Detected as: (( canonicalName ))</p>'
 };
 
-export let xboxController = {
+export let XboxController = {
     mixins: [BaseController, StandardMappings],
     data: function() {
         return {
