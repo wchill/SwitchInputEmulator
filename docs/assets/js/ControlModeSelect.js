@@ -54,6 +54,6 @@ export const ControlModeSelect = {
             return 'Keyboard';
         }
     },
-    template: '<div><select ref="select" v-model="selectedMode"><option v-for="mode in this.enabledModes" v-bind:value="mode" v-text="getModeText(mode)"></option></select>' +
+    template: '<div><select ref="select" v-model="selectedMode"><option v-for="mode in enabledModes" v-bind:value="mode" v-text="getModeText(mode)"></option></select>' +
     '<component v-bind:is="currentControlModeComponent"></component></div>'
 };

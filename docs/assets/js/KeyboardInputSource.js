@@ -50,10 +50,12 @@ export const KeyboardInputSource = {
     methods: {
         isButtonPressed: function(name) {
             if (!this.keyMapping[name]) return false;
+            if (key.ctrl || key.alt) return false;
             return key.isPressed(this.keyMapping[name]);
         },
         getStickX: function(stick) {
             if (!this.stickMapping[stick]) return false;
+            if (key.ctrl || key.alt) return false;
             let val = 0;
             if (key.isPressed(this.stickMapping[stick].left)) val -= 1;
             if (key.isPressed(this.stickMapping[stick].right)) val += 1;
@@ -62,6 +64,7 @@ export const KeyboardInputSource = {
         },
         getStickY: function(stick) {
             if (!this.stickMapping[stick]) return false;
+            if (key.ctrl || key.alt) return false;
             let val = 0;
             if (key.isPressed(this.stickMapping[stick].up)) val -= 1;
             if (key.isPressed(this.stickMapping[stick].down)) val += 1;

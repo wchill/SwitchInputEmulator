@@ -1,6 +1,6 @@
 import {InputSource} from "./InputSource";
 
-export let StandardMappings = {
+export const StandardMappings = {
     data: function() {
         return {
             buttonMapping: {
@@ -29,7 +29,7 @@ export let StandardMappings = {
     }
 };
 
-export let BaseController = {
+export const BaseController = {
     mixins: [InputSource],
     props: ['gamepadindex', 'gamepadname', 'axes', 'buttons'],
     data: function() {
@@ -67,11 +67,16 @@ export let BaseController = {
                 duration: 10000
             });
         }
+        document.addEventListener('keydown', function(e) {
+            if (e.key.startsWith('Gamepad')) {
+                e.preventDefault();
+            }
+        });
     },
     template: '<p class="center-text">Controller (( gamepadindex )): (( gamepadname ))<br>Detected as: (( canonicalName ))</p>'
 };
 
-export let XboxController = {
+export const XboxController = {
     mixins: [BaseController, StandardMappings],
     data: function() {
         return {

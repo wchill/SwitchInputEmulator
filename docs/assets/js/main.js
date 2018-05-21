@@ -118,23 +118,7 @@ new Vue({
     },
     methods: {
         update: function() {
-            /*
-            let gamepad = this.getGamepad();
-            if (!gamepad) return;
-
-            let newButtons = [];
-            let newAxes = [];
-
-            for (let i = 0; i < gamepad.buttons.length; i++) {
-                newButtons.push(gamepad.buttons[i].value);
-            }
-            for (let i = 0; i < gamepad.axes.length; i++) {
-                newAxes.push(gamepad.axes[i]);
-            }
-            this.axes = newAxes;
-            this.buttons = newButtons;
-            */
-
+            // Give input sources a chance to perform operations before actually updating
             StatusBus.$emit(BusEvents.BEFORE_UPDATE_INPUT);
             StatusBus.$emit(BusEvents.UPDATE_INPUT);
 

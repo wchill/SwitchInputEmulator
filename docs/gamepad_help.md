@@ -59,9 +59,9 @@ layout: help
   <tr>
     <td>Pro Controller</td>
     <td>❗ (4)</td>
-    <td>❗ (4)</td>
-    <td>❔</td>
-    <td>❌ (5)</td>
+    <td>✔️ (5)</td>
+    <td>✔️ (5)</td>
+    <td>❌ (6)</td>
     <td>✔️ (4)</td>
     <td>❔</td>
     <td>✔️ (4)</td>
@@ -79,7 +79,7 @@ layout: help
   <tr>
     <td>PowerA Wired Controller Plus</td>
     <td>✔️</td>
-    <td>✔️ (6)</td>
+    <td>✔️ (7)</td>
     <td>❔</td>
     <td>✔️</td>
     <td>✔️</td>
@@ -91,9 +91,10 @@ layout: help
 (1) Technically works, but sometimes Edge does weird things like making the controller control the browser itself. Not recommended.  
 (2) Crashed my Asus C302 Chromebook when plugged in.  
 (3) The D-Pad does not work fully in Firefox. The touchpad button on a DualShock 4 has been mapped to D-Pad Up. You can perform additional setup to make it be recognized as an Xbox controller, see below.  
-(4) You must use Bluetooth unless you are using a 3rd party driver, even on MacOS and Chrome OS. Will not work at all on Windows without a 3rd party driver.  
-(5) Technically works, but the left analog stick is not detected properly by Chrome. Not recommended.  
-(6) The D-Pad does not work fully in Firefox. The share and home buttons have been mapped to D-Pad Up and D-Pad down, respectively.
+(4) You must use Bluetooth unless you are using a 3rd party driver, even on MacOS and Chrome OS. On Windows, Chrome requires a 3rd party driver as it does not pick up the left analog stick.  
+(5) Works out of the box, but you cannot be running Steam as it will take over the controller.  
+(6) Technically works, but the left analog stick is not detected properly by Chrome. Not recommended.  
+(7) The D-Pad does not work fully in Firefox. The share and home buttons have been mapped to D-Pad Up and D-Pad down, respectively.
 
 ## Q: My inputs are being overridden/aren't showing up!
 ### A: In the current iteration, controller input and chat input happens simultaneously and they can override each other. If your input gets overridden, this is completely intentional.

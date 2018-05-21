@@ -74,5 +74,5 @@ export const H264Player = {
         });
         this.player.connect(this.ws);
     },
-    template: "<canvas ref='playercanvas' v-show='this.displayPlayer'></canvas>"
+    template: "<canvas ref='playercanvas' v-show='displayPlayer'></canvas>"
 };

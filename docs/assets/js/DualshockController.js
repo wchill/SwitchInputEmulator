@@ -1,7 +1,7 @@
 import {BaseController, StandardMappings} from "./BaseController";
 import {SwitchButtons} from "./Common";
 
-let dualShockControllerBase = {
+const dualShockControllerBase = {
     mixins: [BaseController],
     data: function() {
         return {
@@ -10,11 +10,11 @@ let dualShockControllerBase = {
     }
 };
 
-export let dualShockControllerStandard = {
+export const dualShockControllerStandard = {
     mixins: [dualShockControllerBase, StandardMappings]
 };
 
-export let dualShockControllerWinFirefox = {
+export const dualShockControllerWinFirefox = {
     mixins: [dualShockControllerBase],
     data: function() {
         return {
@@ -47,7 +47,7 @@ export let dualShockControllerWinFirefox = {
     }
 };
 
-export let dualShockControllerMacFirefox = {
+export const dualShockControllerMacFirefox = {
     mixins: [dualShockControllerBase],
     data: function() {
         return {

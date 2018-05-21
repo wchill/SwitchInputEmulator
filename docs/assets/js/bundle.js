@@ -407,10 +407,12 @@
         methods: {
             isButtonPressed: function(name) {
                 if (!this.keyMapping[name]) return false;
+                if (key.ctrl || key.alt) return false;
                 return key.isPressed(this.keyMapping[name]);
             },
             getStickX: function(stick) {
                 if (!this.stickMapping[stick]) return false;
+                if (key.ctrl || key.alt) return false;
                 let val = 0;
                 if (key.isPressed(this.stickMapping[stick].left)) val -= 1;
                 if (key.isPressed(this.stickMapping[stick].right)) val += 1;
@@ -419,6 +421,7 @@
             },
             getStickY: function(stick) {
                 if (!this.stickMapping[stick]) return false;
+                if (key.ctrl || key.alt) return false;
                 let val = 0;
                 if (key.isPressed(this.stickMapping[stick].up)) val -= 1;
                 if (key.isPressed(this.stickMapping[stick].down)) val += 1;
@@ -429,7 +432,7 @@
         template: '<div><span class="center-text">Using keyboard</span></div>'
     };
 
-    let StandardMappings = {
+    const StandardMappings = {
         data: function() {
             return {
                 buttonMapping: {
@@ -458,7 +461,7 @@
         }
     };
 
-    let BaseController = {
+    const BaseController = {
         mixins: [InputSource],
         props: ['gamepadindex', 'gamepadname', 'axes', 'buttons'],
         data: function() {
@@ -496,11 +499,16 @@
                     duration: 10000
                 });
             }
+            document.addEventListener('keydown', function(e) {
+                if (e.key.startsWith('Gamepad')) {
+                    e.preventDefault();
+                }
+            });
         },
         template: '<p class="center-text">Controller (( gamepadindex )): (( gamepadname ))<br>Detected as: (( canonicalName ))</p>'
     };
 
-    let XboxController = {
+    const XboxController = {
         mixins: [BaseController, StandardMappings],
         data: function() {
             return {
@@ -509,7 +517,7 @@
         }
     };
 
-    let powerAWiredControllerBase = {
+    const powerAWiredControllerBase = {
         mixins: [BaseController],
         data: function() {
             return {
@@ -518,11 +526,11 @@
         }
     };
 
-    let PowerAWiredControllerStandard = {
+    const PowerAWiredControllerStandard = {
         mixins: [powerAWiredControllerBase, StandardMappings]
     };
 
-    let PowerAWiredControllerMacFirefox = {
+    const PowerAWiredControllerMacFirefox = {
         mixins: [powerAWiredControllerBase],
         data: function() {
             return {
@@ -548,7 +556,7 @@
         }
     };
 
-    let PowerAWiredControllerChromeOS = {
+    const PowerAWiredControllerChromeOS = {
         mixins: [powerAWiredControllerBase],
         data: function() {
             return {
@@ -588,7 +596,7 @@
         }
     };
 
-    let PowerAWiredControllerChrome = {
+    const PowerAWiredControllerChrome = {
         mixins: [powerAWiredControllerBase],
         data: function() {
             return {
@@ -637,7 +645,7 @@
         }
     };
 
-    let PowerAWiredControllerWinFirefox = {
+    const PowerAWiredControllerWinFirefox = {
         mixins: [powerAWiredControllerBase],
         data: function() {
             return {
@@ -665,7 +673,7 @@
         }
     };
 
-    let dualShockControllerBase = {
+    const dualShockControllerBase = {
         mixins: [BaseController],
         data: function() {
             return {
@@ -674,11 +682,11 @@
         }
     };
 
-    let dualShockControllerStandard = {
+    const dualShockControllerStandard = {
         mixins: [dualShockControllerBase, StandardMappings]
     };
 
-    let dualShockControllerWinFirefox = {
+    const dualShockControllerWinFirefox = {
         mixins: [dualShockControllerBase],
         data: function() {
             return {
@@ -711,7 +719,7 @@
         }
     };
 
-    let dualShockControllerMacFirefox = {
+    const dualShockControllerMacFirefox = {
         mixins: [dualShockControllerBase],
         data: function() {
             return {
@@ -741,7 +749,7 @@
         }
     };
 
-    let SwitchProControllerBase = {
+    const SwitchProControllerBase = {
         mixins: [BaseController],
         data: function() {
             return {
@@ -750,19 +758,63 @@
         }
     };
 
-    let SwitchProControllerStandard = {
+    const SwitchProControllerStandard = {
         mixins: [SwitchProControllerBase, StandardMappings]
     };
 
-    let SwitchProControllerMacFirefox = {
+    const SwitchProControllerEdge = {
+        mixins: [SwitchProControllerBase],
+        data: function() {
+            return {
+                buttonMapping: {
+                    faceDown: 1,
+                    faceRight: 0,
+                    faceLeft: 3,
+                    faceUp: 2,
+                    leftTop: 4,
+                    rightTop: 5,
+                    leftTrigger: 6,
+                    rightTrigger: 7,
+                    // Share/Home, no way to read Minus/Plus directly
+                    select: 8,
+                    start: 9,
+                    leftStick: 10,
+                    rightStick: 11,
+                    dpadUp: 12,
+                    dpadDown: 13,
+                    dpadLeft: 14,
+                    dpadRight: 15
+                },
+                stickMapping: {
+                    leftStick: {axisX: 0, axisY: 1},
+                    rightStick: {axisX: 2, axisY: 3}
+                }
+            };
+        }
+    };
+
+    const SwitchProControllerMacFirefox = {
         mixins: [SwitchProControllerBase, StandardMappings]
+    };
+
+    const SwitchProControllerWinFirefox = {
+        mixins: [SwitchProControllerBase, StandardMappings],
+        data: function() {
+            return {
+                notifyMessage: 'The D-Pad does not work properly in Firefox on Windows. Share has been mapped to D-Pad Down and Home has been mapped to D-Pad Up. If this doesn\'t work for you, read the help documentation.'
+            }
+        }
     };
 
     let detectBrowser = function() {
-        if(navigator.userAgent.indexOf("Chrome") !== -1 ) {
+        if(navigator.userAgent.indexOf('Edge') !== -1 ) {
+            return 'Edge';
+        } else if(navigator.userAgent.indexOf('Chrome') !== -1 ) {
             return 'Chrome';
-        } else if(navigator.userAgent.indexOf("Firefox") !== -1 ) {
+        } else if(navigator.userAgent.indexOf('Firefox') !== -1 ) {
             return 'Firefox';
+        } else if(navigator.userAgent.indexOf('Safari') !== -1 ) {
+            return 'Safari';
         } else {
             return 'unknown';
         }
@@ -793,62 +845,6 @@
     let checkVidPid = function(id, vid, pid) {
         return id.indexOf(vid) > -1 && id.indexOf(pid) > -1;
     };
-    let getControllerProfile = function(browser, os, id, mapping) {
-        if (mapping === 'standard') {
-            // Check for Pro Controller (2009) or Joycon Grip (200e) connected via cable (won't work)
-            if (id.indexOf('Nintendo Co., Ltd.') > -1) {
-                return 'unsupported-controller';
-            }
-
-            // Pro Controller reported as standard on Chrome OS only
-            if (checkVidPid(id, '57e', '2009')) {
-                return 'switch-pro-controller-standard';
-            }
-
-            // DualShock 4 reported as standard by Chrome on all OSes
-            if (checkVidPid(id, '54c', '9cc')) {
-                return 'dualshock-controller-standard';
-            }
-
-            // Not reported as standard mappings on any tested OS/browser, but here just in case
-            if (checkVidPid(id, '20d6', 'a711')) {
-                return 'powera-wired-controller-standard';
-            }
-
-            // Xbox controller works on Windows and Chrome on Mac OS only
-            return 'xbox-controller';
-        }
-
-        // Pro Controller uses standard mappings (but not reported as standard) on Mac OS/Firefox
-        if (checkVidPid(id, '57e', '2009')) {
-            if (os === 'Mac OS' && browser === 'Firefox') {
-                return 'switch-pro-controller-mac-firefox';
-            }
-        }
-
-        // DualShock 4 D-Pad doesn't work properly on Windows/Firefox. On Mac OS/Firefox it works fine but needs remapping.
-        if (checkVidPid(id, '54c', '9cc')) {
-            if (os === 'Windows' && browser === 'Firefox') return 'dualshock-controller-win-firefox';
-            if (os === 'Mac OS' && browser === 'Firefox') return 'dualshock-controller-mac-firefox';
-        }
-
-        // PowerA Wired Controller Plus works fine on every OS (Windows/Firefox needs D-Pad fix), but needs remapping.
-        if (checkVidPid(id, '20d6', 'a711')) {
-            if (os === 'Chrome OS') {
-                return 'powera-wired-controller-chromeos';
-            }
-            if (browser === 'Chrome') {
-                return 'powera-wired-controller-chrome';
-            }
-            if (browser === 'Firefox') {
-                if (os === 'Windows') return 'powera-wired-controller-win-firefox';
-                if (os === 'Mac OS') return 'powera-wired-controller-mac-firefox';
-            }
-        }
-
-        // No supported profile found
-        return 'unsupported-controller';
-    };
 
     let NoController = {
         template: '<p class="center-text">No controller connected.<br>Please connect a controller.</p>'
@@ -858,12 +854,30 @@
         template: '<p class="center-text">This isn\'t a supported controller.<br>Select another controller or check the help documentation for details.</p>'
     };
 
+    const ControllerSelect = {
+        props: ['gamepads', 'value'],
+        data: function() {
+            return {
+                currentController: this.value
+            };
+        },
+        watch: {
+            currentController (val) {
+                this.$emit('input', val);
+            }
+        },
+        template: '<select v-model="currentController"><option disabled value="">Please select a controller</option><option v-for="gamepad in gamepads" v-bind:value="gamepad.index" v-if="gamepad !== null">#(( gamepad.index )): (( gamepad.id ))</option></select>'
+    };
+
     const ControllerInputSource = {
         components: {
+            'controller-select': ControllerSelect,
             'no-controller': NoController,
             'unsupported-controller': UnsupportedController,
             'xbox-controller': XboxController,
             'switch-pro-controller-standard': SwitchProControllerStandard,
+            'switch-pro-controller-edge': SwitchProControllerEdge,
+            'switch-pro-controller-win-firefox': SwitchProControllerWinFirefox,
             'switch-pro-controller-mac-firefox': SwitchProControllerMacFirefox,
             'powera-wired-controller-standard': PowerAWiredControllerStandard,
             'powera-wired-controller-chromeos': PowerAWiredControllerChromeOS,
@@ -878,7 +892,11 @@
             return {
                 currentController: -1,
                 axes: [],
-                buttons: []
+                buttons: [],
+                edgeDetectionHackTimestamp: {},
+                isEdgeDetectionHackActive: {},
+                forceRecompute: Date.now(),
+                allControllers: []
             }
         },
         computed: {
@@ -896,12 +914,16 @@
                     return 'no-controller';
                 }
 
+                // This looks useless, but we actually need it for pro controller detection on Edge.
+                const t = this.forceRecompute;
+
                 let browser = detectBrowser();
                 let os = detectOS();
+                let index = gamepad.index;
                 let id = gamepad.id;
                 let mapping = gamepad.mapping;
 
-                return getControllerProfile(browser, os, id, mapping);
+                return this.getControllerProfile(browser, os, index, id, mapping);
             },
             gamepadName: function() {
                 if (this.currentController < 0) {
@@ -969,6 +991,72 @@
                 }
                 this.axes = newAxes;
                 this.buttons = newButtons;
+            },
+            getControllerProfile: function(browser, os, index, id, mapping) {
+                if (mapping === 'standard') {
+                    // Check for Pro Controller (2009) or Joycon Grip (200e) connected via cable (won't work)
+                    if (id.indexOf('Nintendo Co., Ltd.') > -1) {
+                        return 'unsupported-controller';
+                    }
+
+                    // Pro Controller reported as standard on Chrome OS and Edge
+                    if (checkVidPid(id, '57e', '2009')) {
+                        return 'switch-pro-controller-standard';
+                    }
+
+                    // DualShock 4 reported as standard by Chrome on all OSes
+                    if (checkVidPid(id, '54c', '9cc')) {
+                        return 'dualshock-controller-standard';
+                    }
+
+                    // Not reported as standard mappings on any tested OS/browser, but here just in case
+                    if (checkVidPid(id, '20d6', 'a711')) {
+                        return 'powera-wired-controller-standard';
+                    }
+
+                    if (browser === 'Edge') {
+                        if (this.isEdgeDetectionHackActive[index]) {
+                            return 'switch-pro-controller-edge';
+                        }
+                    }
+
+                    // Xbox controller works on Windows and Chrome on Mac OS only
+                    return 'xbox-controller';
+                }
+
+                // Pro Controller uses standard mappings (but not reported as standard) on Firefox
+                if (checkVidPid(id, '57e', '2009')) {
+                    if (browser === 'Firefox') {
+                        if (os === 'Windows') {
+                            return 'switch-pro-controller-win-firefox';
+                        } else if (os === 'Mac OS') {
+                            return 'switch-pro-controller-mac-firefox';
+                        }
+                    }
+                }
+
+                // DualShock 4 D-Pad doesn't work properly on Windows/Firefox. On Mac OS/Firefox it works fine but needs remapping.
+                if (checkVidPid(id, '54c', '9cc')) {
+                    if (os === 'Windows' && browser === 'Firefox') return 'dualshock-controller-win-firefox';
+                    if (os === 'Mac OS' && browser === 'Firefox') return 'dualshock-controller-mac-firefox';
+                }
+
+                // PowerA Wired Controller Plus works fine on every OS (Windows/Firefox needs D-Pad fix), but needs remapping.
+                if (checkVidPid(id, '20d6', 'a711')) {
+                    if (os === 'Chrome OS') {
+                        return 'powera-wired-controller-chromeos';
+                    }
+                    if (browser === 'Chrome') {
+                        return 'powera-wired-controller-chrome';
+                    }
+                    if (browser === 'Firefox') {
+                        if (os === 'Windows') return 'powera-wired-controller-win-firefox';
+                        if (os === 'Mac OS') return 'powera-wired-controller-mac-firefox';
+                    }
+                }
+
+                // No supported profile found
+                return 'unsupported-controller';
             }
         },
         created: function() {
@@ -979,6 +1067,17 @@
                     self.currentController = e.gamepad.index;
                 }
                 self.allControllers = self.getGamepads();
+                if (detectBrowser() === 'Edge') {
+                    // better not steal this too bro
+                    self.edgeDetectionHackTimestamp[e.gamepad.index] = self.getGamepads()[e.gamepad.index].timestamp;
+                    requestAnimationFrame(function() {
+                        let newTs = self.getGamepads()[e.gamepad.index].timestamp;
+                        if (self.edgeDetectionHackTimestamp[e.gamepad.index] !== newTs) {
+                            self.isEdgeDetectionHackActive[e.gamepad.index] = true;
+                            self.forceRecompute = Date.now();
+                        }
+                    });
+                }
             });
 
             window.addEventListener('gamepaddisconnected', function(e) {
@@ -986,13 +1085,14 @@
                 if (self.currentController.index === e.gamepad.index) {
                     self.currentController = self.getGamepad().index;
                 }
+                self.isEdgeDetectionHackActive[e.gamepad.index] = false;
                 self.allControllers = self.getGamepads();
             });
         },
         mounted: function() {
             StatusBus.$on(BusEvents.BEFORE_UPDATE_INPUT, this.updateGamepad);
         },
-        template: '<div class="center-text"><select v-model="currentController"><option disabled value="">Please select a controller</option><option v-for="gamepad in this.getGamepads()" v-bind:value="gamepad.index" v-if="gamepad !== null">#(( gamepad.index )): (( gamepad.id ))</option></select><component v-bind:is="currentControllerComponent" v-bind:gamepadindex="currentController" v-bind:gamepadname="gamepadName" v-bind:axes="axes" v-bind:buttons="buttons"></component></div>'
+        template: '<div class="center-text"><controller-select v-bind:gamepads="allControllers" v-model="currentController"></controller-select><component v-bind:is="currentControllerComponent" v-bind:gamepadindex="currentController" v-bind:gamepadname="gamepadName" v-bind:axes="axes" v-bind:buttons="buttons"></component></div>'
     };
 
     const ControlMode = Object.freeze({
@@ -1048,7 +1148,7 @@
                 return 'Keyboard';
             }
         },
-        template: '<div><select ref="select" v-model="selectedMode"><option v-for="mode in this.enabledModes" v-bind:value="mode" v-text="getModeText(mode)"></option></select>' +
+        template: '<div><select ref="select" v-model="selectedMode"><option v-for="mode in enabledModes" v-bind:value="mode" v-text="getModeText(mode)"></option></select>' +
         '<component v-bind:is="currentControlModeComponent"></component></div>'
     };
 
@@ -1469,7 +1569,7 @@
             });
             this.player.connect(this.ws);
         },
-        template: "<canvas ref='playercanvas' v-show='this.displayPlayer'></canvas>"
+        template: "<canvas ref='playercanvas' v-show='displayPlayer'></canvas>"
     };
 
     const ProControllerSprites = {
@@ -1891,23 +1991,7 @@
         },
         methods: {
             update: function() {
-                /*
-                let gamepad = this.getGamepad();
-                if (!gamepad) return;
-
-                let newButtons = [];
-                let newAxes = [];
-
-                for (let i = 0; i < gamepad.buttons.length; i++) {
-                    newButtons.push(gamepad.buttons[i].value);
-                }
-                for (let i = 0; i < gamepad.axes.length; i++) {
-                    newAxes.push(gamepad.axes[i]);
-                }
-                this.axes = newAxes;
-                this.buttons = newButtons;
-                */
-
+                // Give input sources a chance to perform operations before actually updating
                 StatusBus.$emit(BusEvents.BEFORE_UPDATE_INPUT);
                 StatusBus.$emit(BusEvents.UPDATE_INPUT);
 

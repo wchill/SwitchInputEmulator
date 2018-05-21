@@ -1,6 +1,6 @@
 import {BaseController, StandardMappings} from "./BaseController";
 
-let powerAWiredControllerBase = {
+const powerAWiredControllerBase = {
     mixins: [BaseController],
     data: function() {
         return {
@@ -9,11 +9,11 @@ let powerAWiredControllerBase = {
     }
 };
 
-export let PowerAWiredControllerStandard = {
+export const PowerAWiredControllerStandard = {
     mixins: [powerAWiredControllerBase, StandardMappings]
 };
 
-export let PowerAWiredControllerMacFirefox = {
+export const PowerAWiredControllerMacFirefox = {
     mixins: [powerAWiredControllerBase],
     data: function() {
         return {
@@ -39,7 +39,7 @@ export let PowerAWiredControllerMacFirefox = {
     }
 };
 
-export let PowerAWiredControllerChromeOS = {
+export const PowerAWiredControllerChromeOS = {
     mixins: [powerAWiredControllerBase],
     data: function() {
         return {
@@ -79,7 +79,7 @@ export let PowerAWiredControllerChromeOS = {
     }
 };
 
-export let PowerAWiredControllerChrome = {
+export const PowerAWiredControllerChrome = {
     mixins: [powerAWiredControllerBase],
     data: function() {
         return {
@@ -128,7 +128,7 @@ export let PowerAWiredControllerChrome = {
     }
 };
 
-export let PowerAWiredControllerWinFirefox = {
+export const PowerAWiredControllerWinFirefox = {
     mixins: [powerAWiredControllerBase],
     data: function() {
         return {
