@@ -29,7 +29,7 @@ export const KeyboardInputSource = {
                     down: 's',
                     left: 'a',
                     right: 'd',
-                    slow: 'shift'
+                    slow: function() {return key.shift;}
                 },
                 rightStick: {
                     up: 'i',
@@ -51,6 +51,9 @@ export const KeyboardInputSource = {
         isButtonPressed: function(name) {
             if (!this.keyMapping[name]) return false;
             if (key.ctrl || key.alt) return false;
+            if (typeof this.keyMapping[name] === 'function') {
+                return this.keyMapping[name]();
+            }
             return key.isPressed(this.keyMapping[name]);
         },
         getStickX: function(stick) {

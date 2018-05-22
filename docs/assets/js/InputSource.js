@@ -19,16 +19,20 @@ export const InputSource = {
                 home: 0,
                 share: 0
             },
-            dpadValues: {
-                'dpadUp dpadRight': SwitchButtons.DPAD_UPRIGHT,
-                'dpadDown dpadRight': SwitchButtons.DPAD_DOWNRIGHT,
-                'dpadDown dpadLeft': SwitchButtons.DPAD_DOWNLEFT,
-                'dpadUp dpadLeft': SwitchButtons.DPAD_UPLEFT,
-                'dpadUp': SwitchButtons.DPAD_UP,
-                'dpadRight': SwitchButtons.DPAD_RIGHT,
-                'dpadDown': SwitchButtons.DPAD_DOWN,
-                'dpadLeft': SwitchButtons.DPAD_LEFT
-            },
+            dpadValues: [
+                // x === 0
+                [
+                    SwitchButtons.DPAD_UPLEFT, SwitchButtons.DPAD_UP, SwitchButtons.DPAD_UPRIGHT
+                ],
+                // x === 1
+                [
+                    SwitchButtons.DPAD_LEFT, SwitchButtons.DPAD_NONE, SwitchButtons.DPAD_RIGHT
+                ],
+                // x === 2
+                [
+                    SwitchButtons.DPAD_DOWNLEFT, SwitchButtons.DPAD_DOWN, SwitchButtons.DPAD_DOWNRIGHT
+                ]
+            ],
             deadzone: 0.15,
             gamepadState: {
                 buttons: {
@@ -202,15 +206,21 @@ export const InputSource = {
             return res;
         },
         calculateDpad: function() {
-            let accumulator = '';
-            let dpadButtons = ['dpadUp', 'dpadDown', 'dpadLeft', 'dpadRight'];
-            for (let i = 0; i < dpadButtons.length; i++) {
-                if (this.isButtonPressed(dpadButtons[i])) {
-                    accumulator += dpadButtons[i];
-                }
-            }
+            let pressed = {
+                up: this.isButtonPressed('dpadUp'),
+                down: this.isButtonPressed('dpadDown'),
+                left: this.isButtonPressed('dpadLeft'),
+                right: this.isButtonPressed('dpadRight')
+            };
 
-            return this.dpadValues[accumulator] || SwitchButtons.DPAD_NONE;
+            let x = 1;
+            let y = 1;
+            if (pressed.up) x -= 1;
+            if (pressed.down) x += 1;
+            if (pressed.left) y -= 1;
+            if (pressed.right) y += 1;
+
+            return this.dpadValues[x][y];
         },
         calculateButton: function() {
             let that = this;
