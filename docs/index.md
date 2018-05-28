@@ -1,13 +1,5 @@
 ---
-layout: default
+layout: play
 ---
 
-Documentation is a work in progress...
-
-[Chat commands](chat_help.md)
-
-[Gamepad control](gamepad.md)
-
-[Gamepad help](gamepad_help.md)
-
-[General help](help.md)
+[Controller not responding or not showing up, or just need help?](gamepad_help.md)
