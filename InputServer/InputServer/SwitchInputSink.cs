@@ -32,6 +32,7 @@ namespace InputServer
         private SwitchInputState _state;
         private SerialPort _serialPort;
         private readonly ConcurrentQueue<InputFrame> _queuedFrames;
+        private OnUpdateCallback _callback;
         private readonly object _lock = new object();
 
         public SwitchInputSink(string portName)
@@ -94,6 +95,7 @@ namespace InputServer
                     {
                         newFrame = queuedFrame;
                         ApplyFrameToState(newFrame);
+                        _callback?.Invoke(GetStateStr());
                         var packet = TranslateState(_state);
                         _serialPort.Write(packet, 0, packet.Length);
                     }
@@ -147,6 +149,17 @@ namespace InputServer
             {
                 Wait = numFrames - 1
             });
+        }
+
+        public string GetStateStr()
+        {
+            return
+                $"{(int) _state.Buttons} {(int) _state.DPad} {_state.LeftX} {_state.LeftY} {_state.RightX} {_state.RightY}";
+        }
+
+        public void AddStateListener(OnUpdateCallback cb)
+        {
+            _callback = cb;
         }
 
         private bool Sync()

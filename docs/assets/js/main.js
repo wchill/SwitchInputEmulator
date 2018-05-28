@@ -19,8 +19,8 @@ new Vue({
     },
     data: function() {
         return {
-            controlEndpoint: 'wss://api.chilly.codes/switch/ws',
-            streamEndpoint: 'wss://api.chilly.codes/switch/stream'
+            controlEndpoint: 'wss://api.twitchplays.gg/switch/ws',
+            streamEndpoint: 'wss://api.twitchplays.gg/switch/stream'
         };
     },
     mounted: function() {

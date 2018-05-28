@@ -95,7 +95,8 @@ export const store = new Vuex.Store({
             id: null,
             name: null,
             picture: null,
-            expire: -1
+            expire: -1,
+            turnLength: -1
         },
         serverClockSkew: null,
         gamepadState: {

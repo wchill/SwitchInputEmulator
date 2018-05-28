@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stream Overlay</title>
+</head>
+<body>
+<link rel="stylesheet" type="text/css" href="assets/css/general.css">
+<div id="app" v-cloak>
+    <joycon-stream-renderer v-bind:endpoint="controlEndpoint"></joycon-stream-renderer>
+</div>
+<script src="https://unpkg.com/vue@2.5.16/dist/vue.js"></script>
+<style>
+    body {
+        font-family: Monaco, "Bitstream Vera Sans Mono", "Lucida Console", Terminal, monospace;
+        font-size: 16px;
+    }
+</style>
+<script>
+    const SwitchButtons = Object.freeze({
+        faceLeft: 1,
+        faceDown: 2,
+        faceRight: 4,
+        faceUp: 8,
+        leftTop: 16,
+        rightTop: 32,
+        leftTrigger: 64,
+        rightTrigger: 128,
+        select: 256,
+        start: 512,
+        leftStick: 1024,
+        rightStick: 2048,
+        home: 4096,
+        share: 8192
+    });
+
+    const JoyconSprites = {
+        data: function() {
+            return {
+                spriteSheetUrl: 'assets/images/joyconSpritesheet2.png',
+                buttonSprites: {faceRight:{controller:'right',x:154,y:179,w:58,h:58,inactive:{x:5,y:5},active:{x:73,y:5}},faceDown:{controller:'right',x:92,y:238,w:58,h:58,inactive:{x:141,y:5},active:{x:209,y:5}},faceUp:{controller:'right',x:92,y:120,w:58,h:58,inactive:{x:709,y:5},active:{x:777,y:5}},faceLeft:{controller:'right',x:31,y:179,w:58,h:58,inactive:{x:709,y:73},active:{x:777,y:73}},leftTop:{controller:'left',x:7,y:1,w:206,h:110,inactive:{x:277,y:5},active:{x:493,y:5}},rightTop:{controller:'right',x:47,y:1,w:207,h:110,inactive:{x:5,y:125},active:{x:222,y:125}},leftTrigger:{controller:'left',x:79,y:10,w:150,h:150,scale:0.75,inactive:{x:439,y:141},active:{x:599,y:141}},rightTrigger:{controller:'right',x:61,y:10,w:150,h:150,scale:0.75,inactive:{x:5,y:301},active:{x:165,y:301}},select:{controller:'left',x:196,y:80,w:42,h:14,inactive:{x:845,y:5},active:{x:845,y:29}},start:{controller:'right',x:21,y:65,w:44,h:44,inactive:{x:845,y:53},active:{x:827,y:282}},share:{controller:'left',x:157,y:550,w:49,h:49,inactive:{x:529,y:336},active:{x:588,y:336}},home:{controller:'right',x:47,y:543,w:63,h:63,inactive:{x:759,y:209},active:{x:832,y:209}},dpadUp:{controller:'left',x:110,y:339,w:58,h:58,inactive:{x:647,y:336},active:{x:827,y:336}},dpadDown:{controller:'left',x:110,y:456,w:58,h:58,inactive:{x:759,y:141},active:{x:827,y:141}},dpadLeft:{controller:'left',x:48,y:398,w:58,h:58,inactive:{x:325,y:282},active:{x:759,y:282}},dpadRight:{controller:'left',x:171,y:398,w:58,h:58,inactive:{x:393,y:336},active:{x:461,y:336}}},
+                stickSprites: {leftStick:{controller:'left',x:79,y:148,w:120,h:120,travel:30,inactive:{x:5,y:813},active:{x:135,y:813}},rightStick:{controller:'right',x:61,y:367,w:120,h:120,travel:30,inactive:{x:535,y:813},active:{x:665,y:813}}},
+                controllers: {
+                    left: {
+                        x: 905,
+                        y: 5
+                    },
+                    right: {
+                        x: 265,
+                        y: 813
+                    },
+                    w: 260,
+                    h: 798
+                },
+                console: {
+                    body: {
+                        x: 792,
+                        y: 816,
+                        w: 1349,
+                        h: 792
+                    },
+                    screen: {
+                        x: 922,
+                        y: 908,
+                        w: 1088,
+                        h: 612
+                    }
+                }
+            };
+        }
+    };
+    const OverlayRenderer = {
+        mixins: [JoyconSprites],
+        props: ['endpoint'],
+        data: function() {
+            return {
+                spriteSheetReady: false,
+                gamepadState: {
+                    buttons: {
+                        faceDown: false,
+                        faceRight: false,
+                        faceLeft: false,
+                        faceUp: false,
+                        leftTop: false,
+                        rightTop: false,
+                        leftTrigger: false,
+                        rightTrigger: false,
+                        select: false,
+                        start: false,
+                        leftStick: false,
+                        rightStick: false,
+                        home: false,
+                        share: false,
+                        dpadUp: false,
+                        dpadDown: false,
+                        dpadLeft: false,
+                        dpadRight: false
+                    },
+                    sticks: {
+                        leftStick: {
+                            x: 0.0,
+                            y: 0.0
+                        },
+                        rightStick: {
+                            x: 0.0,
+                            y: 0.0
+                        }
+                    }
+                },
+                picture: null,
+                name: null,
+                expire: -1,
+                progressBarWidth: 0,
+                progressBarText: ''
+            };
+        },
+        computed: {
+            progressBarStyle: function() {
+                let width = `${this.progressBarWidth}%`;
+                return {
+                    width: width
+                }
+            },
+            rightControllerX: function() {
+                return this.canvasWidth - this.controllers.w;
+            },
+            leftControllerX: function() {
+                return 0;
+            },
+            canvasWidth: function() {
+                return this.controllers.w * 2 + this.console.body.w;
+            },
+            canvasHeight: function() {
+                return this.controllers.h;
+            },
+            consoleYOffset: function() {
+                return this.controllers.h - this.console.body.h;
+            }
+        },
+        methods: {
+            getAbsoluteX: function(controller, relX) {
+                if (controller === 'left') return this.leftControllerX + relX;
+                else return this.rightControllerX + relX;
+            },
+            getAbsoluteY: function(controller, relY) {
+                return relY;
+            },
+            renderImage: function() {
+                if (!this.spriteSheetReady) return;
+
+                let self = this;
+                let canvas = this.$refs.controlCanvas;
+                let context = canvas.getContext('2d');
+                let spriteSheet = this.$refs.spriteSheet;
+
+                context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+                // draw body
+                context.drawImage(spriteSheet, this.console.body.x, this.console.body.y, this.console.body.w, this.console.body.h, this.controllers.w, this.consoleYOffset, this.console.body.w, this.console.body.h);
+                // draw left controller
+                context.drawImage(spriteSheet, this.controllers.left.x, this.controllers.left.y, this.controllers.w, this.controllers.h, this.leftControllerX, 0, this.controllers.w, this.controllers.h);
+                // draw right controller
+                context.drawImage(spriteSheet, this.controllers.right.x, this.controllers.right.y, this.controllers.w, this.controllers.h, this.rightControllerX, 0, this.controllers.w, this.controllers.h);
+
+                let myState = this.gamepadState;
+                let buttons = myState.buttons;
+                let sticks = myState.sticks;
+
+                Object.keys(this.buttonSprites).map(function (button) {
+                    let pressed = buttons[button];
+                    self.renderButton(context, spriteSheet, button, pressed);
+                });
+
+                Object.keys(this.stickSprites).map(function (stick) {
+                    let pressed = buttons[stick];
+                    let x = sticks[stick].x;
+                    let y = sticks[stick].y;
+                    self.renderStick(context, spriteSheet, stick, pressed, x, y);
+                });
+            },
+            renderButton: function(context, spriteSheet, name, pressed) {
+                let sprite = this.buttonSprites[name];
+
+                let dstX = this.getAbsoluteX(sprite.controller, sprite.x);
+                let dstY = this.getAbsoluteY(sprite.controller, sprite.y);
+
+                let scale = sprite.scale || 1;
+
+                if (!pressed || sprite.opacity) {
+                    let coord = sprite.inactive;
+                    context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, dstX, dstY, sprite.w * scale, sprite.h * scale);
+                }
+                if (pressed) {
+                    let coord = sprite.active;
+                    context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, dstX, dstY, sprite.w * scale, sprite.h * scale);
+                }
+            },
+            renderStick: function(context, spriteSheet, name, pressed, x, y) {
+                let sprite = this.stickSprites[name];
+                if (!sprite) return;
+
+                let relX = sprite.x + x * sprite.travel;
+                let relY = sprite.y + y * sprite.travel;
+
+                let dstX = this.getAbsoluteX(sprite.controller, relX);
+                let dstY = this.getAbsoluteY(sprite.controller, relY);
+
+                let coord = pressed ? sprite.active : sprite.inactive;
+                context.drawImage(spriteSheet, coord.x, coord.y, sprite.w, sprite.h, dstX, dstY, sprite.w, sprite.h);
+            },
+            imageLoaded: function() {
+                this.spriteSheetReady = true;
+                this.renderImage();
+            },
+            updateState: function(buttons, dpad, lx, ly, rx, ry) {
+                let newState = {
+                    buttons: {
+                        faceDown: false,
+                        faceRight: false,
+                        faceLeft: false,
+                        faceUp: false,
+                        leftTop: false,
+                        rightTop: false,
+                        leftTrigger: false,
+                        rightTrigger: false,
+                        select: false,
+                        start: false,
+                        leftStick: false,
+                        rightStick: false,
+                        home: false,
+                        share: false,
+                        dpadUp: false,
+                        dpadDown: false,
+                        dpadLeft: false,
+                        dpadRight: false
+                    },
+                    sticks: {
+                        leftStick: {
+                            x: 0.0,
+                            y: 0.0
+                        },
+                        rightStick: {
+                            x: 0.0,
+                            y: 0.0
+                        }
+                    }
+                };
+
+                let buttonNames = Object.keys(SwitchButtons);
+                for(let i = 0; i < buttonNames.length; i++) {
+                    if (buttons & SwitchButtons[buttonNames[i]]) {
+                        buttons -= SwitchButtons[buttonNames[i]];
+                        newState.buttons[buttonNames[i]] = true;
+                    }
+                }
+                if (dpad === 0 || dpad === 1 || dpad === 7) {
+                    newState.dpadUp = true;
+                }
+                if (dpad === 1 || dpad === 2 || dpad === 3) {
+                    newState.dpadRight = true;
+                }
+                if (dpad === 3 || dpad === 4 || dpad === 5) {
+                    newState.dpadDown = true;
+                }
+                if (dpad === 5 || dpad === 6 || dpad === 7) {
+                    newState.dpadLeft = true;
+                }
+                newState.sticks.leftStick.x = (lx - 128) / 128;
+                newState.sticks.leftStick.y = (ly - 128) / 128;
+                newState.sticks.rightStick.x = (rx - 128) / 128;
+                newState.sticks.rightStick.y = (ry - 128) / 128;
+
+                this.gamepadState = newState;
+                this.renderImage();
+            },
+            updateProgressBar: function() {
+                if (!this.name) {
+                    this.progressBarWidth = 0;
+                    this.progressBarText = 'No one is controlling right now';
+                }
+                else if (this.expire < 0) {
+                    this.progressBarWidth = 100;
+                    this.progressBarText = `${this.name} is controlling`;
+                }
+                else {
+                    let time = this.expire - performance.timing.navigationStart - performance.now();
+                    this.progressBarWidth = time / (this.turnLength / 100);
+                    if (this.progressBarWidth > 100) {
+                        this.progressBarWidth = 100;
+                    } else if (this.progressBarWidth < 0) {
+                        this.progressBarWidth = 0;
+                    }
+                    this.progressBarText = `${this.name} is controlling (${Math.round(time / 1000)} seconds remaining)`
+                }
+                requestAnimationFrame(this.updateProgressBar);
+            }
+        },
+        mounted: function() {
+            let canvas = this.$refs.controlCanvas;
+            let rect = canvas.parentNode.getBoundingClientRect();
+            let scale = rect.width / this.canvasWidth;
+            canvas.width = this.canvasWidth * scale;
+            canvas.height = this.canvasHeight * scale;
+            let context = canvas.getContext('2d');
+            context.scale(scale, scale);
+            this.renderImage();
+
+            let self = this;
+
+            this.ws = new WebSocket(this.endpoint);
+            this.ws.addEventListener('open', function() {
+                self.ws.send('LISTENER');
+            });
+            this.ws.addEventListener('message', function(e) {
+                const wsParseRegex = /UPDATE (\d+) (\d+) (\d+) (\d+) (\d+) (\d+)/;
+                const playerInfoRegex = /CLIENT_ACTIVE (\S+) (\S+) (\S+) (\S+) (\S+)/;
+                let match = wsParseRegex.exec(e.data);
+                let match2 = playerInfoRegex.exec(e.data);
+                console.log(e.data);
+                if (match) {
+                    self.updateState(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]), parseInt(match[4]), parseInt(match[5]), parseInt(match[6]));
+                } else if (match2) {
+                    self.name = match2[2];
+                    self.picture = match2[3];
+                    self.expire = parseInt(match2[4]);
+                    self.turnLength = parseInt(match2[5]);
+                    requestAnimationFrame(self.updateProgressBar);
+                } else if (e.data === 'NO_CLIENTS') {
+                    self.name = null;
+                    self.picture = null;
+                    self.expire = -1;
+                    self.turnLength = -1;
+                    requestAnimationFrame(self.updateProgressBar);
+                }
+            });
+        },
+        beforeDestroy: function() {
+            this.spriteSheetReady = false;
+        },
+        template: '<div><canvas class="controlCanvas" ref="controlCanvas"></canvas><img ref="spriteSheet" v-bind:src="spriteSheetUrl" style="display:none;" @load="imageLoaded"/><div class="meter animate purple"><div class="text-overlay"><img v-bind:src="picture" v-show="picture !== null"><span v-text="progressBarText"></span></div><span v-bind:style="progressBarStyle"><span></span></span></div></div>'
+    };
+
+    new Vue({
+        el: '#app',
+        components: {
+            'joycon-stream-renderer': OverlayRenderer,
+        },
+        data: function() {
+            return {
+                controlEndpoint: 'wss://api.chilly.codes/switch/ws'
+            };
+        }
+    });
+
+</script>
+</body>
+</html>

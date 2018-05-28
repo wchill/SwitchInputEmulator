@@ -12,4 +12,8 @@ namespace InputServer
     public delegate void OnTurnRequestCallback(TwitchUser user);
 
     public delegate void OnTurnCancelCallback(TwitchUser user);
+
+    public delegate void OnAddListenerCallback(WebSocketBehavior client);
+
+    public delegate void OnUpdateCallback(string stateStr);
 }

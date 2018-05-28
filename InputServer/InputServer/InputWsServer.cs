@@ -3,7 +3,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Timers;
+using WebSocketSharp;
 using WebSocketSharp.Server;
 
 namespace InputServer
@@ -22,13 +24,18 @@ namespace InputServer
         private TwitchUser _activeUser;
         private readonly Timer _turnExpirationTimer;
         private long _expirationTime = -1;
+        private long _turnLength = 30000;
+
+        private readonly ConcurrentDictionary<WebSocketBehavior, bool> _listenerClients;
 
         public InputWsServer(int port, IInputSink sink)
         {
             _lock = new object();
             _sink = sink;
+            _sink.AddStateListener(OnUpdate);
             _userQueue = new ConcurrentQueue<TwitchUser>();
             _queuedUsers = new HashSet<TwitchUser>();
+            _listenerClients = new ConcurrentDictionary<WebSocketBehavior, bool>();
 
             _turnExpirationTimer = new Timer(timeout)
             {
@@ -45,7 +52,8 @@ namespace InputServer
                     InputCallback = OnInputFrame,
                     TurnRequestCallback = OnTurnRequest,
                     TurnCancelCallback = OnTurnCancel,
-                    OnNewConnectionCallback = OnNewConnection
+                    OnNewConnectionCallback = OnNewConnection,
+                    OnListenerAddedCallback = OnNewListener
                 };
                 return client;
             });
@@ -56,17 +64,42 @@ namespace InputServer
             _server.Start();
         }
 
+        private void OnUpdate(string stateStr)
+        {
+            var updateStr = $"UPDATE {stateStr}";
+            Task.Run(() =>
+            {
+                foreach (var kvp in _listenerClients)
+                {
+                    var client = kvp.Key;
+                    if (client.State == WebSocketState.Open)
+                    {
+                        client.Context.WebSocket.Send(updateStr);
+                    }
+                    else
+                    {
+                        _listenerClients.Remove(client, out var value);
+                    }
+                }
+            });
+        }
+
         private void OnNewConnection(string id)
         {
             if (_activeUser != null)
             {
                 SendToId(id,
-                    $"CLIENT_ACTIVE {_activeUser.UserId} {_activeUser.UserName} {_activeUser.Picture} {_expirationTime}");
+                    $"CLIENT_ACTIVE {_activeUser.UserId} {_activeUser.UserName} {_activeUser.Picture} {_expirationTime} {_turnLength}");
             }
             else
             {
                 SendToId(id, "NO_CLIENTS");
             }
+        }
+
+        private void OnNewListener(WebSocketBehavior client)
+        {
+            _listenerClients[client] = true;
         }
 
         private void OnInputFrame(TwitchUser user, string frame)
@@ -94,9 +127,11 @@ namespace InputServer
                 {
                     // If there were no other waiting users, we need to restart timer
                     Console.WriteLine("Restarting timer since it was stopped");
+                    _turnLength = 30000;
+                    _turnExpirationTimer.Interval = _turnLength;
                     _turnExpirationTimer.Start();
-                    _expirationTime = DateTimeOffset.UtcNow.AddSeconds(30).ToUnixTimeMilliseconds();
-                    Broadcast($"CLIENT_ACTIVE {_activeUser.UserId} {_activeUser.UserName} {_activeUser.Picture} {_expirationTime}");
+                    _expirationTime = DateTimeOffset.UtcNow.AddMilliseconds(_turnLength).ToUnixTimeMilliseconds();
+                    Broadcast($"CLIENT_ACTIVE {_activeUser.UserId} {_activeUser.UserName} {_activeUser.Picture} {_expirationTime} {_turnLength}");
                 }
             }
             else
@@ -116,7 +151,8 @@ namespace InputServer
                 {
                     // No other users, user gets unlimited time
                     _expirationTime = -1;
-                    Broadcast($"CLIENT_ACTIVE {_activeUser.UserId} {_activeUser.UserName} {_activeUser.Picture} {_expirationTime}");
+                    _turnLength = -1;
+                    Broadcast($"CLIENT_ACTIVE {_activeUser.UserId} {_activeUser.UserName} {_activeUser.Picture} {_expirationTime} {_turnLength}");
                 }
             }
             else if (user.Equals(_activeUser))
@@ -141,11 +177,13 @@ namespace InputServer
                         if (_userQueue.Count > 0)
                         {
                             // More clients in the queue
+                            _turnLength = 30000;
+                            _turnExpirationTimer.Interval = _turnLength;
                             _turnExpirationTimer.Start();
-                            _expirationTime = DateTimeOffset.UtcNow.AddSeconds(30).ToUnixTimeMilliseconds();
+                            _expirationTime = DateTimeOffset.UtcNow.AddSeconds(_turnLength).ToUnixTimeMilliseconds();
                             Console.WriteLine($"{_activeUser.UserName} is now playing, turn expires in 30 seconds");
                             Broadcast(
-                                $"CLIENT_ACTIVE {_activeUser.UserId} {_activeUser.UserName} {_activeUser.Picture} {_expirationTime}");
+                                $"CLIENT_ACTIVE {_activeUser.UserId} {_activeUser.UserName} {_activeUser.Picture} {_expirationTime} {_turnLength}");
                             break;
                         }
                         else
@@ -153,8 +191,9 @@ namespace InputServer
                             // No more clients, user's turn lasts forever
                             Console.WriteLine($"{_activeUser.UserName} is now playing forever");
                             _expirationTime = -1;
+                            _turnLength = -1;
                             Broadcast(
-                                $"CLIENT_ACTIVE {_activeUser.UserId} {_activeUser.UserName} {_activeUser.Picture} {_expirationTime}");
+                                $"CLIENT_ACTIVE {_activeUser.UserId} {_activeUser.UserName} {_activeUser.Picture} {_expirationTime} {_turnLength}");
                             break;
                         }
                     }

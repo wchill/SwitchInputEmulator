@@ -30,6 +30,7 @@ export const ServerStatus = {
             let name = args[1];
             let picture = args[2];
             let expire = parseInt(args[3]);
+            let turnLength = parseInt(args[4]);
             if (name !== self.currentPlayerInfo.name) {
                 self.animateFrameCount = self.totalAnimateFrames;
             }
@@ -37,7 +38,8 @@ export const ServerStatus = {
                 id: id,
                 name: name,
                 picture: picture,
-                expire: expire
+                expire: expire,
+                turnLength: turnLength
             });
         });
 
@@ -46,7 +48,8 @@ export const ServerStatus = {
                 id: null,
                 name: null,
                 picture: null,
-                expire: -1
+                expire: -1,
+                turnLength: -1
             });
         });
     },
@@ -67,10 +70,9 @@ export const ServerStatus = {
         });
         StatusBus.$on(BusEvents.BEFORE_UPDATE_INPUT, function() {
             if (self.currentPlayerInfo.id === null) {
-
                 self.progressBarWidth = 0;
                 self.timeRemaining = -1;
-            } else if (self.currentPlayerInfo.expire < 0) {
+            } else if (self.currentPlayerInfo.turnLength < 0) {
                 if (self.animateFrameCount >= 0) {
                     self.progressBarWidth = (100/self.totalAnimateFrames) * (self.totalAnimateFrames - self.animateFrameCount--);
                     if (self.animateFrameCount <= 0) {
@@ -84,7 +86,7 @@ export const ServerStatus = {
                 if (self.animateFrameCount <= 0) {
                     scaleFactor = 1;
                 }
-                self.progressBarWidth = ((self.timeRemaining) / 300) * (scaleFactor);
+                self.progressBarWidth = (self.timeRemaining / self.currentPlayerInfo.turnLength * 100) * (scaleFactor);
             }
         });
     },

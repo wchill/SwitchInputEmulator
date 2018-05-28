@@ -10,9 +10,7 @@
 
     let Stats = function () {
         let container = document.createElement( 'div' );
-        container.style.cssText = 'position:fixed;opacity:0.9;z-index:10000';
-
-        //
+        container.style.cssText = 'position:absolute;top:0;right:0;opacity:0.9;z-index:10000';
 
         function addPanel( panel ) {
 

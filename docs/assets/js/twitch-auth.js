@@ -92,7 +92,7 @@ export const TwitchAuth = {
             me.lastErrorObject = null;
             logger.info('event: userUnloaded');
 
-            me.$store.commit(StoreMutations.AUTH_STATE, null);
+            me.$store.commit(StoreMutations.AUTH_STATE, AuthState.NOT_SIGNED_IN);
             SocketBus.$emit(SocketEvents.QUEUE_MESSAGE, 'TWITCH_LOGOUT');
         }
 

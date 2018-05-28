@@ -11,11 +11,13 @@ namespace InputServer
 {
     class InputWsClient : WebSocketBehavior
     {
+        public bool IsListener { get; private set; }
         public TwitchUser MyUser { get; private set; }
         public OnInputCallback InputCallback { get; set; }
         public OnTurnRequestCallback TurnRequestCallback { get; set; }
         public OnTurnCancelCallback TurnCancelCallback { get; set; }
         public OnOpenCallback OnNewConnectionCallback { get; set; }
+        public OnAddListenerCallback OnListenerAddedCallback { get; set; }
 
         protected override void OnOpen()
         {
@@ -67,6 +69,11 @@ namespace InputServer
             else if (cmd == "CANCEL_TURN")
             {
                 TurnCancelCallback(MyUser);
+            }
+            else if (cmd == "LISTENER")
+            {
+                IsListener = true;
+                OnListenerAddedCallback(this);
             }
         }
     }
