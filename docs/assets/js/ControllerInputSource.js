@@ -112,7 +112,7 @@ export const ControllerInputSource = {
     methods: {
         getGamepads: function() {
             let gamepads;
-            if (navigator.getGamepads()) {
+            if (navigator.getGamepads) {
                 gamepads = navigator.getGamepads();
             } else if (navigator.webkitGetGamepads) {
                 gamepads = navigator.webkitGetGamepads();
