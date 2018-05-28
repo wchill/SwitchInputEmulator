@@ -1,4 +1,5 @@
-import {BusEvents, ControlMode, StatusBus, SwitchButtons} from "./Common";
+import {BusEvents, StatusBus, StoreMutations, SwitchButtons} from "./Common";
+import {SocketBus, SocketEvents} from "./ControlWebSocket";
 
 export const InputSource = {
     data: function() {
@@ -30,7 +31,7 @@ export const InputSource = {
                 'dpadLeft': SwitchButtons.DPAD_LEFT
             },
             deadzone: 0.15,
-            gamepadState: {
+            prevState: {
                 buttons: {
                     faceDown: false,
                     faceRight: false,
@@ -62,36 +63,14 @@ export const InputSource = {
                         y: 0.0,
                         pressed: false
                     }
-                }
-            },
-            prevState: {
-                buttons: {
-                    faceDown: false,
-                    faceRight: false,
-                    faceLeft: false,
-                    faceUp: false,
-                    leftTop: false,
-                    rightTop: false,
-                    leftTrigger: false,
-                    rightTrigger: false,
-                    select: false,
-                    start: false,
-                    leftStick: false,
-                    rightStick: false,
-                    home: false,
-                    share: false
                 },
-                sticks: {
-                    leftStick: {
-                        x: 0.0,
-                        y: 0.0,
-                        pressed: false
-                    },
-                    rightStick: {
-                        x: 0.0,
-                        y: 0.0,
-                        pressed: false
-                    }
+                stateObj: {
+                    buttons: 0,
+                    dpad: 8,
+                    lx: 0,
+                    ly: 0,
+                    rx: 0,
+                    ry: 0
                 }
             }
         };
@@ -99,55 +78,72 @@ export const InputSource = {
     mounted: function() {
         StatusBus.$on(BusEvents.UPDATE_INPUT, this.updateState);
     },
+    computed: {
+        ...Vuex.mapGetters([
+            'canControl',
+            'gamepadState'
+        ])
+    },
     methods: {
-        compareState: function() {
-            // Returns true on change
-            let buttons = Object.keys(this.gamepadState.buttons);
+        compareState: function(newState) {
+            let buttons = Object.keys(this.prevState.buttons);
             for (let i = 0; i < buttons.length; i++) {
                 let button = buttons[i];
-                if (this.gamepadState.buttons[button] !== this.prevState.buttons[button]) return true;
+                if (newState.buttons[button] !== this.prevState.buttons[button]) {
+                    return true;
+                }
             }
 
-            let sticks = Object.keys(this.gamepadState.sticks);
+            let sticks = Object.keys(this.prevState.sticks);
             for (let i = 0; i < sticks.length; i++) {
                 let stick = sticks[i];
-                if (this.gamepadState.sticks[stick].x !== this.prevState.sticks[stick].x) return true;
-                if (this.gamepadState.sticks[stick].y !== this.prevState.sticks[stick].y) return true;
-                if (this.gamepadState.sticks[stick].pressed !== this.prevState.sticks[stick].pressed) return true;
+                if (newState.sticks[stick].x !== this.prevState.sticks[stick].x) {
+                    return true;
+                }
+                if (newState.sticks[stick].y !== this.prevState.sticks[stick].y) {
+                    return true;
+                }
+                if (newState.sticks[stick].pressed !== this.prevState.sticks[stick].pressed) {
+                    return true;
+                }
             }
 
             return false;
         },
         updateState: function() {
-            let buttons = Object.keys(this.gamepadState.buttons);
-            let sticks = Object.keys(this.gamepadState.sticks);
+            let buttons = Object.keys(this.prevState.buttons);
+            let sticks = Object.keys(this.prevState.sticks);
 
             this.prevState = this.gamepadState;
-            this.gamepadState = {
+            let gamepadState = {
                 buttons: {},
-                sticks: {}
+                sticks: {},
+                stateObj: this.generateStateObj()
             };
 
             for (let i = 0; i < buttons.length; i++) {
                 let button = buttons[i];
-                this.gamepadState.buttons[button] = this.isButtonPressed(button);
+                gamepadState.buttons[button] = this.isButtonPressed(button);
             }
 
             for (let i = 0; i < sticks.length; i++) {
                 let stick = sticks[i];
-                this.gamepadState.sticks[stick] = {
+                gamepadState.sticks[stick] = {
                     x: this.getStickX(stick),
                     y: this.getStickY(stick),
                     pressed: this.isButtonPressed(stick)
                 };
             }
 
-            if (this.compareState()) {
-                StatusBus.$emit(BusEvents.INPUT_CHANGED, {
-                    state: this.gamepadState,
-                    stateStr: this.generateStateStr()
-                });
-                this.$store.commit('setGamepadState', this.gamepadState);
+            if (this.compareState(gamepadState)) {
+                let stateStr = this.generateStateStr(this.prevState.stateObj, gamepadState.stateObj);
+                if (stateStr.length > 0) {
+                    this.$store.commit(StoreMutations.GAMEPAD_STATE, gamepadState);
+
+                    if (this.canControl) {
+                        SocketBus.$emit(SocketEvents.SEND_MESSAGE, `UPDATE ${stateStr}`);
+                    }
+                }
             }
         },
         isButtonPressed: function(name) {
@@ -165,12 +161,52 @@ export const InputSource = {
             console.warn(`Tried calling default getStickY!`);
             return 0.0;
         },
-        generateStateStr: function() {
+        generateStateStr: function(prevState, currState) {
+            let pressed = currState.buttons & ~(prevState.buttons);
+            let released = prevState.buttons & ~(currState.buttons);
+            let dpadChanged = currState.dpad !== prevState.dpad;
+            let lxChanged = currState.lx !== prevState.lx;
+            let lyChanged = currState.ly !== prevState.ly;
+            let rxChanged = currState.rx !== prevState.rx;
+            let ryChanged = currState.ry !== prevState.ry;
+
+            let stateStrs = [];
+            if (pressed > 0) {
+                stateStrs.push(`P=${pressed}`);
+            }
+            if (released > 0) {
+                stateStrs.push(`R=${released}`);
+            }
+            if (dpadChanged) {
+                stateStrs.push(`D=${currState.dpad}`);
+            }
+            if (lxChanged) {
+                stateStrs.push(`LX=${currState.lx}`);
+            }
+            if (lyChanged) {
+                stateStrs.push(`LY=${currState.ly}`);
+            }
+            if (rxChanged) {
+                stateStrs.push(`RX=${currState.rx}`);
+            }
+            if (ryChanged) {
+                stateStrs.push(`RY=${currState.ry}`);
+            }
+            return stateStrs.join(' ');
+        },
+        generateStateObj: function() {
             let button = this.calculateButton();
             let dpad = this.calculateDpad();
             let ls = this.calculateStick('leftStick');
             let rs = this.calculateStick('rightStick');
-            return `${button} ${dpad} ${ls[0]} ${ls[1]} ${rs[0]} ${rs[1]}`;
+            return {
+                buttons: button,
+                dpad: dpad,
+                lx: ls[0],
+                ly: ls[1],
+                rx: rs[0],
+                ry: rs[1]
+            };
         },
         calculateStick: function(stick) {
             // Applies dead zone calculations and then maps the range [-1.0, 1.0] to [0, 255]

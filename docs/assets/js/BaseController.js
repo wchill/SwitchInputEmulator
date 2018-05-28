@@ -45,10 +45,10 @@ export const BaseController = {
             return !!this.buttons[index];
         },
         getStickX: function(name) {
-            return this.axes[this.stickMapping[name].axisX];
+            return this.axes[this.stickMapping[name].axisX] || 0.0;
         },
         getStickY: function(name) {
-            return this.axes[this.stickMapping[name].axisY];
+            return this.axes[this.stickMapping[name].axisY] || 0.0;
         }
     },
     mounted: function() {

@@ -1,4 +1,4 @@
-import {StatusBus, BusEvents} from "./Common";
+import {StatusBus, BusEvents, PlayerState} from "./Common";
 import {H264Player, PlayerEvents, PlayerBus} from "./H264WebSocketPlayer";
 
 export const ProControllerSprites = {
@@ -176,8 +176,7 @@ export const JoyconStreamRenderer = {
         return {
             spriteSheetReady: false,
             streamCanvas: document.createElement('canvas'),
-            streamReady: false,
-            renderScale: 0.75
+            streamReady: false
         };
     },
     computed: {
@@ -213,7 +212,11 @@ export const JoyconStreamRenderer = {
         playerHeight: function() {
             if (this.streamReady) return this.streamCanvas.height * this.playerScale;
             return 540 * this.playerScale;
-        }
+        },
+        ...Vuex.mapGetters([
+            'gamepadState',
+            'playerState'
+        ])
     },
     methods: {
         getAbsoluteX: function(controller, relX) {
@@ -222,6 +225,23 @@ export const JoyconStreamRenderer = {
         },
         getAbsoluteY: function(controller, relY) {
             return relY;
+        },
+        drawText: function(context, text, x, y, w, h) {
+            context.save();
+
+            let measure = context.measureText(text);
+            let textW = measure.width;
+            let textH = measure.height;
+
+            context.fillStyle = '#000';
+            context.fillRect(x + (w - textW) / 2, y + (h - textH) / 2, textW, textH);
+
+            context.textAlign = 'center';
+            context.font = '48px Arial';
+            context.fillStyle = '#fff';
+
+            context.fillText(text, x + w/2, y + h/2);
+            context.restore();
         },
         renderImage: function() {
             if (!this.spriteSheetReady) return;
@@ -240,12 +260,20 @@ export const JoyconStreamRenderer = {
             context.drawImage(spriteSheet, this.controllers.left.x, this.controllers.left.y, this.controllers.w, this.controllers.h, this.leftControllerX, 0, this.controllers.w, this.controllers.h);
             // draw right controller
             context.drawImage(spriteSheet, this.controllers.right.x, this.controllers.right.y, this.controllers.w, this.controllers.h, this.rightControllerX, 0, this.controllers.w, this.controllers.h);
-            if (this.streamReady) {
-                context.drawImage(this.streamCanvas, this.playerX, this.playerY, this.playerWidth, this.playerHeight);
+            context.drawImage(this.streamCanvas, this.playerX, this.playerY, this.playerWidth, this.playerHeight);
+            if (this.playerState !== PlayerState.PLAYING && this.playerState !== PlayerState.PAUSED) {
+                let text;
+                if (this.playerState === PlayerState.NOT_CONNECTED) {
+                    text = 'Not connected';
+                } else if (this.playerState === PlayerState.CONNECTING) {
+                    text = 'Connecting to stream';
+                } else {
+                    text = 'Error playing stream';
+                }
+                this.drawText(context, text, this.playerX, this.playerY, this.playerWidth, this.playerHeight);
             }
-            //context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
 
-            let myState = this.$store.state.gamepadState;
+            let myState = this.gamepadState;
             let buttons = myState.buttons;
             let sticks = myState.sticks;
 
@@ -302,18 +330,20 @@ export const JoyconStreamRenderer = {
     },
     created: function() {
         let self = this;
+
         PlayerBus.$on(PlayerEvents.READY, function(size) {
             self.streamReady = true;
-
-            let canvas = self.$refs.controlCanvas;
-            canvas.width = self.canvasWidth * self.renderScale;
-            canvas.height = self.canvasHeight * self.renderScale;
-            let context = canvas.getContext('2d');
-            context.scale(self.renderScale, self.renderScale);
         });
     },
     mounted: function() {
         //StatusBus.$on(BusEvents.INPUT_CHANGED, this.renderImage);
+        let canvas = this.$refs.controlCanvas;
+        let rect = canvas.parentNode.getBoundingClientRect();
+        let scale = rect.width * 0.75 / this.canvasWidth;
+        canvas.width = this.canvasWidth * scale;
+        canvas.height = this.canvasHeight * scale;
+        let context = canvas.getContext('2d');
+        context.scale(scale, scale);
         this.renderImage();
     },
     beforeDestroy: function() {

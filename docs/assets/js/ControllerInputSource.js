@@ -1,4 +1,4 @@
-import {BusEvents, ControlState, StatusBus} from "./Common";
+import {BusEvents, ControlState, InputState, StatusBus, StoreMutations} from "./Common";
 import {XboxController} from "./BaseController";
 import {PowerAWiredControllerChrome, PowerAWiredControllerChromeOS, PowerAWiredControllerMacFirefox, PowerAWiredControllerStandard, PowerAWiredControllerWinFirefox} from "./PowerAWiredController";
 import {dualShockControllerMacFirefox, dualShockControllerStandard, dualShockControllerWinFirefox} from "./DualshockController";
@@ -95,14 +95,12 @@ export const ControllerInputSource = {
     },
     watch: {
         currentController: function() {
-            let controlState = this.$store.state.controlState;
-
             if (!this.isControllerConnected) {
-                this.$store.commit('setControlState', ControlState.NO_CONTROLLER);
+                this.$store.commit(StoreMutations.INPUT_STATE, InputState.NOT_CONNECTED);
             } else if (!this.isControllerSupported) {
-                this.$store.commit('setControlState', ControlState.UNSUPPORTED_CONTROLLER);
-            } else if (controlState === ControlState.NO_CONTROLLER || ControlState.UNSUPPORTED_CONTROLLER) {
-                this.$store.commit('setControlState', ControlState.INACTIVE);
+                this.$store.commit(StoreMutations.INPUT_STATE, InputState.UNSUPPORTED);
+            } else {
+                this.$store.commit(StoreMutations.INPUT_STATE, InputState.READY);
             }
 
             StatusBus.$emit(BusEvents.UPDATE_INPUT);

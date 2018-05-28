@@ -1,5 +1,5 @@
 import {InputSource} from "./InputSource";
-import {ControlState} from "./Common";
+import {InputState, StoreMutations} from "./Common";
 
 export const KeyboardInputSource = {
     mixins: [InputSource],
@@ -29,7 +29,7 @@ export const KeyboardInputSource = {
                     down: 's',
                     left: 'a',
                     right: 'd',
-                    slow: 'shift'
+                    slow: 'z'
                 },
                 rightStick: {
                     up: 'i',
@@ -42,10 +42,7 @@ export const KeyboardInputSource = {
         };
     },
     mounted: function() {
-        let controlState = this.$store.state.controlState;
-        if (controlState === ControlState.UNSUPPORTED_CONTROLLER || controlState === ControlState.NO_CONTROLLER) {
-            this.$store.commit('setControlState', ControlState.INACTIVE);
-        }
+        this.$store.commit(StoreMutations.INPUT_STATE, InputState.READY);
     },
     methods: {
         isButtonPressed: function(name) {

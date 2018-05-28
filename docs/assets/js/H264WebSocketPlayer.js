@@ -1,4 +1,4 @@
-import {PlayerState} from "./Common";
+import {PlayerState, StoreMutations} from "./Common";
 import {WebSocketClient} from "./lib/WebSocketClient";
 
 export const PlayerBus = new Vue();
@@ -33,40 +33,39 @@ export const H264Player = {
                 if (document.visibilityState ==='visible') {
                     console.log('Resuming stream because page received focus');
                     self.player.playStream();
-                    self.$store.commit('setPlayerState', PlayerState.PLAYING);
+                    self.$store.commit(StoreMutations.PLAYER_STATE, PlayerState.PLAYING);
                 } else {
                     console.log('Pausing stream because page lost focus');
                     self.player.stopStream();
-                    self.$store.commit('setPlayerState', PlayerState.PAUSED);
+                    self.$store.commit(StoreMutations.PLAYER_STATE, PlayerState.PAUSED);
                 }
             }
         }, false);
+
+        this.internalCanvas.width = 960;
+        this.internalCanvas.height = 540;
+
+        this.$store.commit(StoreMutations.PLAYER_STATE, PlayerState.CONNECTING);
 
         this.ws = new WebSocketClient(this.endpoint, null, {
             backoff: 'fibonacci'
         });
 
-        this.$store.commit('setPlayerState', PlayerState.CONNECTING);
-
-        this.ws.addEventListener('open', function(e) {
-            self.$store.commit('setPlayerState', PlayerState.PLAYING);
-        });
-
         this.ws.addEventListener('close', function(e) {
-            self.$store.commit('setPlayerState', PlayerState.NOT_CONNECTED);
+            self.$store.commit(StoreMutations.PLAYER_STATE, PlayerState.NOT_CONNECTED);
         });
 
         this.ws.addEventListener('error', function(e) {
-            self.$store.commit('setPlayerState', PlayerState.ERROR);
+            self.$store.commit(StoreMutations.PLAYER_STATE, PlayerState.ERROR);
         });
 
         this.ws.addEventListener('reconnect', function(e) {
-            self.$store.commit('setPlayerState', PlayerState.CONNECTING);
+            self.$store.commit(StoreMutations.PLAYER_STATE, PlayerState.CONNECTING);
         });
 
         this.player = new WSAvcPlayer(this.internalCanvas, "webgl", 1, 35);
         this.player.on('canvasReady', function(w, h){
-            console.log('Player canvas is ready');
+            self.$store.commit(StoreMutations.PLAYER_STATE, PlayerState.PLAYING);
             PlayerBus.$emit(PlayerEvents.READY, {
                 width: w,
                 height: h

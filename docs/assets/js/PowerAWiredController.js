@@ -34,6 +34,10 @@ export const PowerAWiredControllerMacFirefox = {
                 dpadDown: 15,
                 dpadLeft: 16,
                 dpadRight: 17
+            },
+            stickMapping: {
+                leftStick: {axisX: 0, axisY: 1},
+                rightStick: {axisX: 2, axisY: 3}
             }
         };
     }
@@ -62,6 +66,10 @@ export const PowerAWiredControllerChromeOS = {
                 dpadDown: {axis: 5, sign: 1},
                 dpadLeft: {axis: 4, sign: -1},
                 dpadRight: {axis: 4, sign: 1}
+            },
+            stickMapping: {
+                leftStick: {axisX: 0, axisY: 1},
+                rightStick: {axisX: 2, axisY: 3}
             }
         };
     },
@@ -150,6 +158,10 @@ export const PowerAWiredControllerWinFirefox = {
                 dpadDown: 12,
                 dpadLeft: null,
                 dpadRight: null
+            },
+            stickMapping: {
+                leftStick: {axisX: 0, axisY: 1},
+                rightStick: {axisX: 2, axisY: 3}
             },
             notifyMessage: 'The D-Pad does not work properly in Firefox on Windows. The Share button has been mapped to D-Pad Up. If this doesn\'t work for you, try using Chrome.'
         }

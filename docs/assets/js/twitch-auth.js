@@ -1,7 +1,8 @@
-Vue.component('twitch-auth', {
+import {AuthState, StoreMutations} from "./Common";
+import {SocketBus, SocketEvents} from "./ControlWebSocket";
 
+export const TwitchAuth = {
     props: ['mode'],
-
     data: function() {
         if (typeof window.twitch_auth_config === 'undefined')
             throw new Error("Missing twitch-auth-config");
@@ -55,7 +56,7 @@ Vue.component('twitch-auth', {
                     return log;
                 }, {});
             return logger;
-        };
+        }
 
         const logger = createLogger("twitch-auth");
 
@@ -75,7 +76,11 @@ Vue.component('twitch-auth', {
             me.lastErrorObject = null;
             logger.info('event: userLoaded', loadedUser);
 
-            getChannel();
+            me.$store.commit(StoreMutations.TWITCH_USER, loadedUser);
+            me.$store.commit(StoreMutations.AUTH_STATE, AuthState.SIGNED_IN);
+            getChannel().then(function() {
+                SocketBus.$emit(SocketEvents.QUEUE_MESSAGE, `TWITCH_LOGIN ${loadedUser.id_token} ${me.picture}`);
+            });
         }
 
         function unloadUser()
@@ -86,6 +91,9 @@ Vue.component('twitch-auth', {
             me.lastError = null;
             me.lastErrorObject = null;
             logger.info('event: userUnloaded');
+
+            me.$store.commit(StoreMutations.AUTH_STATE, null);
+            SocketBus.$emit(SocketEvents.QUEUE_MESSAGE, 'TWITCH_LOGOUT');
         }
 
         function authError(message, er)
@@ -111,31 +119,31 @@ Vue.component('twitch-auth', {
         let twitchChannel = null;
 
         function getChannel() {
-            let deferred = new $.Deferred();
-            let twitchUserId = me.user && me.user.profile && me.user.profile.sub;
-            if (twitchChannel && twitchUserId && twitchChannel.id === twitchUserId) {
-                logger.debug("Twitch user profile already loaded");
-                me.picture = twitchChannel.profile_image_url;
-                deferred.resolve(twitchChannel);
-            }
-            else {
-                logger.debug("Loading Twitch user profile");
-                twitchChannel = null;
-                me.picture = null;
-                jQuery.ajax({
-                    url: `https://api.twitch.tv/helix/users?id=${me.user.profile.sub}`,
-                    headers: { "Client-ID": oidcSettings.client_id }
-                })
-                    .then(function(data) {
+            return new Promise(function(resolve, reject) {
+                let twitchUserId = me.user && me.user.profile && me.user.profile.sub;
+                if (twitchChannel && twitchUserId && twitchChannel.id === twitchUserId) {
+                    logger.debug("Twitch user profile already loaded");
+                    me.picture = twitchChannel.profile_image_url;
+                    resolve(twitchChannel);
+                }
+                else {
+                    logger.debug("Loading Twitch user profile");
+                    twitchChannel = null;
+                    me.picture = null;
+                    return fetch(`https://api.twitch.tv/helix/users?id=${me.user.profile.sub}`, {
+                        headers: {
+                            'Client-ID': oidcSettings.client_id
+                        }
+                    }).then(function(response) {
+                        return response.json();
+                    }).then(function(data) {
                         twitchChannel = data.data && data.data[0];
                         me.picture = twitchChannel.profile_image_url;
-                        deferred.resolve(twitchChannel);
+                        resolve(twitchChannel);
                     });
-            }
-            return deferred.promise();
+                }
+            });
         }
-
-        
 
         let oidcManager = new Oidc.UserManager(oidcSettings);
         oidcManager.events.addUserLoaded(loadUser);
@@ -191,6 +199,17 @@ Vue.component('twitch-auth', {
         };
     },
 
+    created: function() {
+        let self = this;
+        SocketBus.$on('TWITCH_VERIFIED', function() {
+            self.$store.commit('setAuthState', AuthState.SERVER_SIGNED_IN);
+        });
+        SocketBus.$on('TWITCH_INVALID', function() {
+            self.$store.commit('setAuthState', AuthState.NOT_SIGNED_IN);
+            self.signout();
+        });
+    },
+
     mounted: function() {
         if (this.isRedirect())
             this.handleRedirect()
@@ -229,7 +248,7 @@ Vue.component('twitch-auth', {
         },
         authState: function() {
             if (this.canSignin) return 'Sign-in with Twitch';
-            if (this.canSignout) return 'Sign-out Twitch';
+            if (this.canSignout) return 'Sign-out from Twitch';
             if (this.state === 'waiting') return 'Please wait...';
             return '';
         },
@@ -249,5 +268,5 @@ Vue.component('twitch-auth', {
         // +'</div>'
     +'</div>'
 
-});
+};
 

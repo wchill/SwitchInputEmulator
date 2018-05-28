@@ -1,9 +1,10 @@
-import {ConnectionState} from "./Common"
+import {ConnectionState, StoreMutations} from "./Common"
 import {WebSocketClient} from "./lib/WebSocketClient";
 
 export const SocketBus = new Vue();
 export const SocketEvents = Object.freeze({
     SEND_MESSAGE: 'send',
+    QUEUE_MESSAGE: 'queue',
     PONG: 'pong'
 });
 
@@ -13,7 +14,9 @@ export const ControlWs = {
     data: function() {
         return {
             ws: null,
-            pendingPings: {}
+            pendingPings: {},
+            serverClockRequestTime: 0,
+            queuedMessages: []
         };
     },
     created: function() {
@@ -23,22 +26,28 @@ export const ControlWs = {
             backoff: 'fibonacci'
         });
 
-        this.$store.commit('setConnectionState', ConnectionState.CONNECTING);
+        this.$store.commit(StoreMutations.CONNECTION_STATE, ConnectionState.CONNECTING);
 
         this.ws.addEventListener('open', function(e) {
-            self.$store.commit('setConnectionState', ConnectionState.CONNECTED);
+            self.$store.commit(StoreMutations.CONNECTION_STATE, ConnectionState.CONNECTED);
+            while (self.queuedMessages.length > 0) {
+                let message = self.queuedMessages.shift();
+                self.sendMessage(message);
+            }
         });
 
         this.ws.addEventListener('close', function(e) {
-            self.$store.commit('setConnectionState', ConnectionState.NOT_CONNECTED);
+            self.$store.commit(StoreMutations.CONNECTION_STATE, ConnectionState.NOT_CONNECTED);
         });
 
         this.ws.addEventListener('error', function(e) {
-            self.$store.commit('setConnectionState', ConnectionState.ERROR);
+            self.$store.commit(StoreMutations.CONNECTION_STATE, ConnectionState.ERROR);
         });
 
         this.ws.addEventListener('reconnect', function(e) {
-            self.$store.commit('setConnectionState', ConnectionState.CONNECTING);
+            if (self.ws.readyState === self.ws.CONNECTING) {
+                self.$store.commit(StoreMutations.CONNECTION_STATE, ConnectionState.CONNECTING);
+            }
         });
 
         this.ws.addEventListener('message', function(e) {
@@ -50,24 +59,40 @@ export const ControlWs = {
             }
 
             let command = match[1];
-            let args = match[2];
+            let args = (match[2] || '').split(' ');
 
             if (command === 'PONG') {
-                if (self.pendingPings.hasOwnProperty(args)) {
-                    let time = performance.now();
-                    let duration = (time - self.pendingPings[args]) / 2;
-                    delete self.pendingPings[args];
+                let time = performance.now();
+                let serverTime = args[0];
+                let id = args[1];
+                if (self.pendingPings.hasOwnProperty(id)) {
+                    let duration = (time - self.pendingPings[id]) / 2;
+                    let actualServerTime = parseInt(serverTime);
+                    let calculatedServerTime = performance.timing.navigationStart + self.pendingPings[id] + duration;
+                    delete self.pendingPings[id];
+                    self.$store.commit(StoreMutations.SERVER_CLOCK_SKEW, actualServerTime - calculatedServerTime);
                     SocketBus.$emit('pong', duration);
                 }
             } else {
+                console.log(command, args);
                 SocketBus.$emit(command, args);
             }
         });
 
         SocketBus.$on(SocketEvents.SEND_MESSAGE, this.sendMessage);
-        setInterval(this.ping, 1000);
+        SocketBus.$on(SocketEvents.QUEUE_MESSAGE, this.queueMessage);
+        setInterval(this.ping, 3000);
     },
     methods: {
+        queueMessage: function(message) {
+            if (this.ws && this.ws.readyState === this.ws.OPEN) {
+                this.ws.send(message);
+                return true;
+            } else {
+                console.log(`WebSocket not connected, so message was queued: ${message}`);
+                this.queuedMessages.push(message);
+            }
+        },
         sendMessage: function(message) {
             if (this.ws && this.ws.readyState === this.ws.OPEN) {
                 this.ws.send(message);

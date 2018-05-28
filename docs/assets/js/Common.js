@@ -13,12 +13,16 @@ export const PlayerState = Object.freeze({
     PAUSED: 5
 });
 
-export const ControlState = Object.freeze({
-    NO_CONTROLLER: 1,
-    UNSUPPORTED_CONTROLLER: 2,
-    INACTIVE: 3,
-    WAITING: 4,
-    ACTIVE: 5
+export const InputState = Object.freeze({
+    NOT_CONNECTED: 1,
+    UNSUPPORTED: 2,
+    READY: 3
+});
+
+export const AuthState = Object.freeze({
+    NOT_SIGNED_IN: 1,
+    SIGNED_IN: 2,
+    SERVER_SIGNED_IN: 3
 });
 
 export const SwitchButtons = Object.freeze({
@@ -52,8 +56,10 @@ export const BusEvents = Object.freeze({
     RENDER_TIME_END: 'finish-render',
     BEFORE_UPDATE_INPUT: 'before-update-input',
     UPDATE_INPUT: 'update-input',
-    INPUT_CHANGED: 'input-changed',
-    SEND_MESSAGE: 'send'
+    SEND_MESSAGE: 'send',
+    TWITCH_LOGGED_IN: 'twitch-login',
+    TWITCH_LOGGED_OUT: 'twitch-logout',
+    TWITCH_LOGIN_OK: 'twitch-authenticated',
 });
 
 export const StatusBus = new Vue();
@@ -66,62 +72,150 @@ function enumToName(sourceEnum, val) {
     return val;
 }
 
+export const StoreMutations = Object.freeze({
+    CONNECTION_STATE: 'setConnectionState',
+    PLAYER_STATE: 'setPlayerState',
+    AUTH_STATE: 'setAuthState',
+    TWITCH_USER: 'setTwitchUser',
+    GAMEPAD_STATE: 'setGamepadState',
+    SERVER_CLOCK_SKEW: 'updateServerClockSkew',
+    CURRENT_PLAYER_INFO: 'setCurrentPlayerInfo',
+    INPUT_STATE: 'setInputState'
+});
+
 export const store = new Vuex.Store({
+    strict: true,
     state: {
         connectionState: ConnectionState.NOT_CONNECTED,
-        controlState: ControlState.NO_CONTROLLER,
+        inputState: InputState.NOT_CONNECTED,
         playerState: PlayerState.NOT_CONNECTED,
+        authState: AuthState.NOT_SIGNED_IN,
+        twitchUser: null,
+        currentPlayerInfo: {
+            id: null,
+            name: null,
+            picture: null,
+            expire: -1
+        },
+        serverClockSkew: null,
         gamepadState: {
             buttons: {
                 faceDown: false,
-                    faceRight: false,
-                    faceLeft: false,
-                    faceUp: false,
-                    leftTop: false,
-                    rightTop: false,
-                    leftTrigger: false,
-                    rightTrigger: false,
-                    select: false,
-                    start: false,
-                    leftStick: false,
-                    rightStick: false,
-                    home: false,
-                    share: false,
-                    dpadUp: false,
-                    dpadDown: false,
-                    dpadLeft: false,
-                    dpadRight: false
+                faceRight: false,
+                faceLeft: false,
+                faceUp: false,
+                leftTop: false,
+                rightTop: false,
+                leftTrigger: false,
+                rightTrigger: false,
+                select: false,
+                start: false,
+                leftStick: false,
+                rightStick: false,
+                home: false,
+                share: false,
+                dpadUp: false,
+                dpadDown: false,
+                dpadLeft: false,
+                dpadRight: false
             },
             sticks: {
                 leftStick: {
                     x: 0.0,
-                        y: 0.0,
-                        pressed: false
+                    y: 0.0,
+                    pressed: false
                 },
                 rightStick: {
                     x: 0.0,
-                        y: 0.0,
-                        pressed: false
+                    y: 0.0,
+                    pressed: false
                 }
+            },
+            stateObj: {
+                buttons: 0,
+                dpad: 8,
+                lx: 0,
+                ly: 0,
+                rx: 0,
+                ry: 0
             }
         },
     },
+    getters: {
+        canControl: function(state) {
+            if (state.connectionState !== ConnectionState.CONNECTED) return false;
+            if (state.authState !== AuthState.SERVER_SIGNED_IN) return false;
+            if (!state.twitchUser) return false;
+            if (state.twitchUser.profile.sub !== state.currentPlayerInfo.id) return false;
+
+            return true;
+        },
+        connectionState: function(state) {
+            return state.connectionState;
+        },
+        inputState: function(state) {
+            return state.inputState;
+        },
+        playerState: function(state) {
+            return state.playerState;
+        },
+        authState: function(state) {
+            return state.authState;
+        },
+        twitchUser: function(state) {
+            return state.twitchUser;
+        },
+        currentPlayerInfo: function(state) {
+            return state.currentPlayerInfo;
+        },
+        gamepadState: function(state) {
+            return state.gamepadState;
+        },
+        serverClockSkew: function(state) {
+            return state.serverClockSkew || 0;
+        }
+    },
     mutations: {
-        setConnectionState: function(state, newState) {
+        [StoreMutations.CONNECTION_STATE] (state, newState) {
             console.log(`Changing connection state from ${enumToName(ConnectionState, state.connectionState)} to ${enumToName(ConnectionState, newState)}`);
             state.connectionState = newState;
+            if (newState === ConnectionState.NOT_CONNECTED) {
+                console.log(`Changing auth state from ${enumToName(AuthState, state.authState)} to ${enumToName(AuthState, AuthState.SIGNED_IN)}`);
+                state.authState = AuthState.SIGNED_IN;
+            }
         },
-        setControlState: function(state, newState) {
-            console.log(`Changing control state from ${enumToName(ControlState, state.controlState)} to ${enumToName(ControlState, newState)}`);
-            state.controlState = newState;
+        [StoreMutations.INPUT_STATE] (state, newState) {
+            console.log(`Changing input state from ${enumToName(InputState, state.inputState)} to ${enumToName(InputState, newState)}`);
+            state.inputState = newState;
         },
-        setPlayerState: function(state, newState) {
+        [StoreMutations.PLAYER_STATE] (state, newState) {
             console.log(`Changing player state from ${enumToName(PlayerState, state.playerState)} to ${enumToName(PlayerState, newState)}`);
             state.playerState = newState;
         },
-        setGamepadState: function(state, newState) {
+        [StoreMutations.AUTH_STATE] (state, newState) {
+            console.log(`Changing auth state from ${enumToName(AuthState, state.authState)} to ${enumToName(AuthState, newState)}`);
+            state.authState = newState;
+        },
+        [StoreMutations.TWITCH_USER] (state, newUser) {
+            state.twitchUser = newUser;
+            if (!newUser) {
+                console.log(`Changing auth state from ${enumToName(AuthState, state.authState)} to ${enumToName(AuthState, AuthState.NOT_SIGNED_IN)}`);
+                state.authState = AuthState.NOT_SIGNED_IN;
+            }
+        },
+        [StoreMutations.CURRENT_PLAYER_INFO] (state, newInfo) {
+            state.currentPlayerInfo = newInfo;
+        },
+        [StoreMutations.GAMEPAD_STATE] (state, newState) {
             if (newState) {
                 state.gamepadState = newState;
+            }
+        },
+        [StoreMutations.SERVER_CLOCK_SKEW] (state, newSkew) {
+            if (state.serverClockSkew === null) {
+                state.serverClockSkew = Math.round(newSkew);
+            } else {
+                state.serverClockSkew = Math.round((40 * state.serverClockSkew + 60 * newSkew) / 100);
             }
         }
     }

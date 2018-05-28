@@ -8,8 +8,8 @@
      * @author mrdoob / http://mrdoob.com/
      */
 
-    var Stats = function () {
-        var container = document.createElement( 'div' );
+    let Stats = function () {
+        let container = document.createElement( 'div' );
         container.style.cssText = 'position:fixed;opacity:0.9;z-index:10000';
 
         //
@@ -22,7 +22,7 @@
         }
 
         function showPanel( id ) {
-            for ( var i = 0; i < container.children.length; i ++ ) {
+            for ( let i = 0; i < container.children.length; i ++ ) {
                 if (i === id) {
                     container.children[i].style.display = 'block';
                 }
@@ -30,7 +30,7 @@
         }
 
         function hidePanel( id ) {
-            for ( var i = 0; i < container.children.length; i ++ ) {
+            for ( let i = 0; i < container.children.length; i ++ ) {
                 if (i === id) {
                     container.children[i].style.display = 'none';
                 }
@@ -39,10 +39,10 @@
 
         //
 
-        var beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;
+        let beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;
 
-        var fpsPanel = addPanel( new Stats.Panel( 'FPS', '#0ff', '#002' ) );
-        var msPanel = addPanel( new Stats.Panel( 'ms render', '#0f0', '#020' ) );
+        let fpsPanel = addPanel( new Stats.Panel( 'FPS', '#0ff', '#002' ) );
+        let msPanel = addPanel( new Stats.Panel( 'ms render', '#0f0', '#020' ) );
 
         return {
 
@@ -63,7 +63,7 @@
 
                 frames ++;
 
-                var time = ( performance || Date ).now();
+                let time = ( performance || Date ).now();
 
                 msPanel.update( time - beginTime, 200 );
 
@@ -96,20 +96,20 @@
 
     Stats.Panel = function ( name, fg, bg ) {
 
-        var min = Infinity, max = 0, round = Math.round;
-        var PR = round( window.devicePixelRatio || 1 );
+        let min = Infinity, max = 0, round = Math.round;
+        let PR = round( window.devicePixelRatio || 1 );
 
-        var WIDTH = 120 * PR, HEIGHT = 48 * PR,
+        let WIDTH = 120 * PR, HEIGHT = 48 * PR,
             TEXT_X = 4.5 * PR, TEXT_Y = 2 * PR,
             GRAPH_X = 4.5 * PR, GRAPH_Y = 15 * PR,
             GRAPH_WIDTH = 111 * PR, GRAPH_HEIGHT = 30 * PR;
 
-        var canvas = document.createElement( 'canvas' );
+        let canvas = document.createElement( 'canvas' );
         canvas.width = WIDTH;
         canvas.height = HEIGHT;
         canvas.style.cssText = 'width:120px;height:48px';
 
-        var context = canvas.getContext( '2d' );
+        let context = canvas.getContext( '2d' );
         context.font = 'bold ' + ( 9 * PR ) + 'px Helvetica,Arial,sans-serif';
         context.textBaseline = 'top';
 

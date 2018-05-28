@@ -63,7 +63,11 @@ export class WebSocketClient {
         // keep binaryType used on previous WebSocket connection
         let binaryType = this.ws && this.ws.binaryType;
 
-        this.ws = new WebSocket(this.url, this.protocols);
+        if (this.protocols) {
+            this.ws = new WebSocket(this.url, this.protocols);
+        } else {
+            this.ws = new WebSocket(this.url);
+        }
         this.ws.onclose = this.onCloseCallback.bind(this);
         this.ws.onerror = this.onErrorCallback.bind(this);
         this.ws.onmessage = this.onMessageCallback.bind(this);
