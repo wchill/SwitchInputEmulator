@@ -94,8 +94,6 @@ export const ControllerRenderer = {
             let context = canvas.getContext('2d');
             let spriteSheet = this.$refs.spriteSheet;
 
-            StatusBus.$emit(BusEvents.RENDER_TIME_START);
-
             context.clearRect(0, 0, this.canvasSize.width, this.canvasSize.height);
             context.drawImage(spriteSheet, this.canvasSize.x, this.canvasSize.y, this.canvasSize.width, this.canvasSize.height, 0, 0, this.canvasSize.width, this.canvasSize.height);
 
@@ -124,7 +122,6 @@ export const ControllerRenderer = {
                     that.renderStick(context, spriteSheet, stick, pressed, x, y);
                 });
             }
-            StatusBus.$emit(BusEvents.RENDER_TIME_END);
         },
         renderButton: function(context, spriteSheet, name, pressed) {
             let sprite = this.buttonSprites[name];
@@ -251,8 +248,6 @@ export const JoyconStreamRenderer = {
             let context = canvas.getContext('2d');
             let spriteSheet = this.$refs.spriteSheet;
 
-            StatusBus.$emit(BusEvents.RENDER_TIME_START);
-
             context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
             // draw body
             context.drawImage(spriteSheet, this.console.body.x, this.console.body.y, this.console.body.w, this.console.body.h, this.controllers.w, this.consoleYOffset, this.console.body.w, this.console.body.h);
@@ -288,8 +283,6 @@ export const JoyconStreamRenderer = {
                 let y = sticks[stick].y;
                 self.renderStick(context, spriteSheet, stick, pressed, x, y);
             });
-
-            StatusBus.$emit(BusEvents.RENDER_TIME_END);
 
             requestAnimationFrame(this.renderImage);
         },

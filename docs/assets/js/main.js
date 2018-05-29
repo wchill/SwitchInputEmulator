@@ -35,11 +35,14 @@ new Vue({
     },
     methods: {
         update: function() {
+
+            StatusBus.$emit(BusEvents.RENDER_TIME_START);
             // Give input sources a chance to perform operations before actually updating
             StatusBus.$emit(BusEvents.BEFORE_UPDATE_INPUT);
             StatusBus.$emit(BusEvents.UPDATE_INPUT);
 
             requestAnimationFrame(this.update);
+            StatusBus.$emit(BusEvents.RENDER_TIME_END);
         }
     }
 });

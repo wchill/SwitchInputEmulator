@@ -74,7 +74,6 @@ export const ControlWs = {
                     SocketBus.$emit('pong', duration);
                 }
             } else {
-                console.log(command, args);
                 SocketBus.$emit(command, args);
             }
         });

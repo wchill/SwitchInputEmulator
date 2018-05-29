@@ -564,7 +564,6 @@
                         SocketBus.$emit('pong', duration);
                     }
                 } else {
-                    console.log(command, args);
                     SocketBus.$emit(command, args);
                 }
             });
@@ -2096,8 +2095,6 @@
                 let context = canvas.getContext('2d');
                 let spriteSheet = this.$refs.spriteSheet;
 
-                StatusBus.$emit(BusEvents.RENDER_TIME_START);
-
                 context.clearRect(0, 0, this.canvasSize.width, this.canvasSize.height);
                 context.drawImage(spriteSheet, this.canvasSize.x, this.canvasSize.y, this.canvasSize.width, this.canvasSize.height, 0, 0, this.canvasSize.width, this.canvasSize.height);
 
@@ -2126,7 +2123,6 @@
                         that.renderStick(context, spriteSheet, stick, pressed, x, y);
                     });
                 }
-                StatusBus.$emit(BusEvents.RENDER_TIME_END);
             },
             renderButton: function(context, spriteSheet, name, pressed) {
                 let sprite = this.buttonSprites[name];
@@ -2253,8 +2249,6 @@
                 let context = canvas.getContext('2d');
                 let spriteSheet = this.$refs.spriteSheet;
 
-                StatusBus.$emit(BusEvents.RENDER_TIME_START);
-
                 context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
                 // draw body
                 context.drawImage(spriteSheet, this.console.body.x, this.console.body.y, this.console.body.w, this.console.body.h, this.controllers.w, this.consoleYOffset, this.console.body.w, this.console.body.h);
@@ -2290,8 +2284,6 @@
                     let y = sticks[stick].y;
                     self.renderStick(context, spriteSheet, stick, pressed, x, y);
                 });
-
-                StatusBus.$emit(BusEvents.RENDER_TIME_END);
 
                 requestAnimationFrame(this.renderImage);
             },
@@ -2811,11 +2803,14 @@
         },
         methods: {
             update: function() {
+
+                StatusBus.$emit(BusEvents.RENDER_TIME_START);
                 // Give input sources a chance to perform operations before actually updating
                 StatusBus.$emit(BusEvents.BEFORE_UPDATE_INPUT);
                 StatusBus.$emit(BusEvents.UPDATE_INPUT);
 
                 requestAnimationFrame(this.update);
+                StatusBus.$emit(BusEvents.RENDER_TIME_END);
             }
         }
     });
