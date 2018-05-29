@@ -24,7 +24,7 @@ new Vue({
         return {
             controlEndpoint: 'wss://api.twitchplays.gg/switch/ws',
             streamEndpoint: 'wss://api.twitchplays.gg/switch/stream',
-            webRtcEndpoint: 'wss://webrtc.twitchplays.gg/one2many',
+            webRtcEndpoint: 'wss://webrtc.twitchplays.gg/stream',
         };
     },
     mounted: function() {
