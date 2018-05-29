@@ -7,7 +7,8 @@ layout: default
 <div id="app" v-cloak>
     <twitch-auth></twitch-auth>
     <control-mode-select class="center-text min-padding"></control-mode-select>
-    <joycon-stream-renderer v-bind:endpoint="streamEndpoint"></joycon-stream-renderer>
+    <!-- <joycon-stream-renderer v-bind:endpoint="streamEndpoint"></joycon-stream-renderer> -->
+    <joycon-stream-renderer-webrtc v-bind:endpoint="webRtcEndpoint"></joycon-stream-renderer-webrtc>
     <control-ws v-bind:endpoint="controlEndpoint"></control-ws>
     <server-status></server-status>
     <!--
@@ -40,4 +41,6 @@ layout: default
 <script src="assets/js/stats.js"></script>
 <script src="assets/js/oidc-client.min.js"></script>
 <script src="assets/js/twitch-auth-config.js"></script>
+<script src="assets/js/lib/adapter.js"></script>
+<script src="assets/js/lib/kurento-utils.js"></script>
 <script src="assets/js/bundle.js"></script>

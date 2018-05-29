@@ -1,7 +1,9 @@
 import {StatusBus, store, BusEvents} from "./Common";
 import {ControlModeSelect} from "./ControlModeSelect";
 import {ControlWs} from "./ControlWebSocket";
-import {ControllerRenderer, JoyconStreamRenderer} from "./ControllerRenderer";
+import {ControllerRenderer} from "./ControllerRenderer";
+import {JoyconStreamRenderer} from "./JoyconStreamRenderer";
+import {JoyconStreamRendererWebRTC} from "./JoyconStreamRendererWebRTC";
 import {TwitchAuth} from "./twitch-auth";
 import {ServerStatus} from "./ServerStatus";
 import * as Utils from "./Utils";
@@ -13,6 +15,7 @@ new Vue({
         'control-ws': ControlWs,
         'controller-renderer': ControllerRenderer,
         'joycon-stream-renderer': JoyconStreamRenderer,
+        'joycon-stream-renderer-webrtc': JoyconStreamRendererWebRTC,
         'control-mode-select': ControlModeSelect,
         'twitch-auth': TwitchAuth,
         'server-status': ServerStatus
@@ -20,7 +23,8 @@ new Vue({
     data: function() {
         return {
             controlEndpoint: 'wss://api.twitchplays.gg/switch/ws',
-            streamEndpoint: 'wss://api.twitchplays.gg/switch/stream'
+            streamEndpoint: 'wss://api.twitchplays.gg/switch/stream',
+            webRtcEndpoint: 'wss://webrtc.twitchplays.gg/one2many',
         };
     },
     mounted: function() {
