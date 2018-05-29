@@ -95,6 +95,7 @@ export const ControllerInputSource = {
     },
     watch: {
         currentController: function() {
+            console.log(this.currentController);
             if (!this.isControllerConnected) {
                 this.$store.commit(StoreMutations.INPUT_STATE, InputState.NOT_CONNECTED);
             } else if (!this.isControllerSupported) {
@@ -218,6 +219,7 @@ export const ControllerInputSource = {
     },
     created: function() {
         let self = this;
+        self.allControllers = self.getGamepads();
         window.addEventListener('gamepadconnected', function(e) {
             console.log('Detected gamepad: ' + e.gamepad.id);
             if (self.currentController < 0 || self.currentControllerComponent === 'unsupported-controller') {

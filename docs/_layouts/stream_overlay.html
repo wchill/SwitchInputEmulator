@@ -332,6 +332,11 @@
                     requestAnimationFrame(self.updateProgressBar);
                 }
             });
+            setInterval(function() {
+                if (self.ws.readyState === self.ws.OPEN) {
+                    self.ws.send('PING');
+                }
+            }, 3000);
         },
         beforeDestroy: function() {
             this.spriteSheetReady = false;

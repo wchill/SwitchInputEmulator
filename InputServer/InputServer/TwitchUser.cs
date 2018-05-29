@@ -22,7 +22,11 @@ namespace InputServer
             var modulus =
                 "6lq9MQ-q6hcxr7kOUp-tHlHtdcDsVLwVIw13iXUCvuDOeCi0VSuxCCUY6UmMjy53dX00ih2E4Y4UvlrmmurK0eG26b-HMNNAvCGsVXHU3RcRhVoHDaOwHwU72j7bpHn9XbP3Q3jebX6KIfNbei2MiR0Wyb8RZHE-aZhRYO8_-k9G2GycTpvc-2GBsP8VHLUKKfAs2B6sW3q3ymU6M0L-cFXkZ9fHkn9ejs-sqZPhMJxtBPBxoUIUQFTgv4VXTSv914f_YkNw-EjuwbgwXMvpyr06EyfImxHoxsZkFYB-qBYHtaMxTnFsZBr6fn8Ha2JqT1hoP7Z5r5wxDu3GQhKkHw";
             var exponent = "AQAB";
-            var audience = "6ilamg1dh1d2fwi30x5ryiarfq6y86";
+            var audiences = new []
+            {
+                "6ilamg1dh1d2fwi30x5ryiarfq6y86",
+                "sa5pewo51b3fi5d70le38sj5916iz5"
+            };
             var issuer = "https://id.twitch.tv/oauth2";
 
             var decodedMod = FromBase64Url(modulus);
@@ -39,7 +43,7 @@ namespace InputServer
                 RequireExpirationTime = true,
                 RequireSignedTokens = true,
                 ValidateAudience = true,
-                ValidAudience = audience,
+                ValidAudiences = audiences,
                 ValidateIssuer = true,
                 ValidIssuer = issuer,
                 ValidateLifetime = false,
