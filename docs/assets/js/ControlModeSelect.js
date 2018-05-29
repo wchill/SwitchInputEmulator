@@ -1,13 +1,13 @@
 import {KeyboardInputSource} from "./KeyboardInputSource";
 import {ControllerInputSource} from "./ControllerInputSource";
-import * as Utils from "./Utils";
 import {JoyConInputSource} from "./JoyConInputSource";
+import * as Utils from "./Utils";
 
 export const ControlMode = Object.freeze({
-    SINGLE_CONTROLLER: 1,
-    MULTIPLE_CONTROLLERS: 2,
-    KEYBOARD: 3,
-    TOUCH: 4
+    SINGLE_CONTROLLER: 'controller-input',
+    MULTIPLE_CONTROLLERS: 'multiple-controller-input',
+    KEYBOARD: 'keyboard-input',
+    TOUCH: 'touch-input'
 });
 
 export const ControlModeSelect = {
@@ -19,12 +19,12 @@ export const ControlModeSelect = {
     data: function() {
         return {
             selectedMode: ControlMode.KEYBOARD,
-            enabledModes: [
-                ControlMode.KEYBOARD,
-                ControlMode.SINGLE_CONTROLLER,
-                ControlMode.MULTIPLE_CONTROLLERS,
-                ControlMode.TOUCH
-            ]
+            modeEnabled: {
+                [ControlMode.KEYBOARD]: [true, ''],
+                [ControlMode.SINGLE_CONTROLLER]: [false, ''],
+                [ControlMode.MULTIPLE_CONTROLLERS]: [false, ''],
+                [ControlMode.TOUCH]: [false, '']
+            }
         }
     },
     computed: {
@@ -43,24 +43,41 @@ export const ControlModeSelect = {
     watch: {
         selectedMode: function() {
             this.$refs.select.blur();
-            if (this.getDisabledReason(parseInt(this.selectedMode)).length > 0) {
-                this.mode = ControlMode.KEYBOARD;
+            if (!this.modeEnabled[this.selectedMode][0]) {
+                this.selectedMode = ControlMode.KEYBOARD;
             }
         }
     },
     methods: {
+        updateModeState: function() {
+            let newState = {};
+
+            let modes = Object.keys(this.modeEnabled);
+            for (let i = 0; i < modes.length; i++) {
+                let reason = this.getDisabledReason(modes[i]);
+                if (reason && reason.length > 0) {
+                    newState[modes[i]] = [false, reason];
+                } else {
+                    newState[modes[i]] = [true, ''];
+                }
+            }
+
+            this.modeEnabled = newState;
+        },
         getModeText: function(mode){
             let text;
             if (mode === ControlMode.SINGLE_CONTROLLER) {
                 text = 'Controller';
             } else if (mode === ControlMode.MULTIPLE_CONTROLLERS) {
-                text =  'Joycons';
+                text = 'Joycons';
             } else if (mode === ControlMode.TOUCH) {
-                text =  'Touch controls';
+                text = 'Touch controls';
             } else {
                 text = 'Keyboard';
             }
-            text += this.getDisabledReason(mode);
+            if (!this.modeEnabled[mode][0]) {
+                text += ` (${this.modeEnabled[mode][1]})`;
+            }
             return text;
         },
         getDisabledReason: function(mode) {
@@ -69,13 +86,13 @@ export const ControlModeSelect = {
                 for(let i = 0; i < gp.length; i++) {
                     if (gp[i]) return '';
                 }
-                return ' (No controllers detected)';
+                return 'No controllers detected';
             } else if (mode === ControlMode.MULTIPLE_CONTROLLERS) {
                 let browser = Utils.detectBrowser();
                 if (browser === 'Firefox') {
-                    return ' (Not supported in Firefox)';
+                    return 'Not supported in Firefox';
                 } else if (browser === 'Edge') {
-                    return ' (Not supported in Edge';
+                    return 'Not supported in Edge';
                 }
                 let left = false, right = false;
                 let gp = navigator.getGamepads();
@@ -84,18 +101,28 @@ export const ControlModeSelect = {
                     else if (gp[i] && Utils.checkVidPid(gp[i].id, '57e', '2007')) right = true;
                 }
                 if (left && right) return '';
-                else if (left) return ' (Right JoyCon not connected)';
-                else if (right) return ' (Left JoyCon not connected)';
-                else return ' (No JoyCons connected)';
+                else if (left) return 'Right JoyCon not connected';
+                else if (right) return 'Left JoyCon not connected';
+                else return 'No JoyCons connected';
             } else if (mode === ControlMode.TOUCH) {
-                return ' (Not implemented yet)';
+                return 'Not implemented yet';
             } else {
                 return '';
             }
         }
     },
     mounted: function() {
+        let self = this;
+        window.addEventListener('gamepadconnected', function(e) {
+            console.log('Detected gamepad: ' + e.gamepad.id);
+            self.updateModeState();
+        });
+
+        window.addEventListener('gamepaddisconnected', function(e) {
+            console.log('Gamepad disconnected: ' + e.gamepad.id);
+            self.updateModeState();
+        });
     },
-    template: '<div><select ref="select" v-model="selectedMode"><option v-for="mode in enabledModes" v-bind:value="mode" v-text="getModeText(mode)" :disabled="getDisabledReason(mode).length > 0"></option></select>' +
+    template: '<div><select ref="select" v-model="selectedMode"><option v-for="mode in Object.keys(modeEnabled)" v-bind:value="mode" v-text="getModeText(mode)" :disabled="!modeEnabled[mode][0]"></option></select>' +
     '<component v-bind:is="currentControlModeComponent"></component></div>'
 };
