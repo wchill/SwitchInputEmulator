@@ -47,7 +47,7 @@ layout: help
     <td>Xbox One/360 and XInput controllers</td>
     <td>✔️</td>
     <td>✔️</td>
-    <td>❌</td>
+    <td>✔️</td>
     <td>✔️</td>
     <td>❗</td>
     <td>❔</td>

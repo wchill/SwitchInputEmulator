@@ -2381,8 +2381,11 @@
             return {
                 spriteSheetReady: false,
                 ws: null,
-                webRtcPeer: null
-            };
+                webRtcPeer: null,
+                iceServers: [
+                    {url: 'stun:stun1.l.google.com:19302'}
+                ]
+            }
         },
         computed: {
             rightControllerX: function () {
@@ -2532,8 +2535,13 @@
                 if (!this.webRtcPeer) {
                     let options = {
                         remoteVideo: this.$refs.webRTCVideo,
-                        onicecandidate: this.onIceCandidate
+                        onicecandidate: this.onIceCandidate,
+                        configuration: {
+                            iceServers: this.iceServers
+                        }
                     };
+                    
+                    console.log(`Using ${this.iceServers.length} ICE servers`);
 
                     let self = this;
                     this.webRtcPeer = kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function (error) {
@@ -2560,7 +2568,7 @@
                 this.sendMessage(message);
             },
             stop: function () {
-                if (webRtcPeer) {
+                if (this.webRtcPeer) {
                     let message = {
                         id: 'stop'
                     };
@@ -2600,7 +2608,6 @@
                         id: 'ping'
                     });
                 }, 3000);
-                self.viewer();
             });
 
             this.ws.addEventListener('message', function (message) {
@@ -2618,6 +2625,14 @@
                         break;
                     case 'iceCandidate':
                         self.webRtcPeer.addIceCandidate(parsedMessage.candidate);
+                        break;
+                    case 'credentials':
+                        this.iceServers.push({
+                            url: parsedMessage.url,
+                            username: parsedMessage.username,
+                            credential: parsedMessage.credential
+                        });
+                        self.viewer();
                         break;
                     case 'pong':
                         break;

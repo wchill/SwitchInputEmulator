@@ -182,7 +182,6 @@
                         var canvas = document.createElement('canvas');
                         canvas.width = remoteVideo.videoWidth;
                         canvas.height = remoteVideo.videoHeight;
-                        console.log('text');
                         canvas.getContext('2d').drawImage(remoteVideo, 0, 0);
                         return canvas;
                     }
