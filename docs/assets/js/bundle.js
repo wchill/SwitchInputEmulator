@@ -2382,9 +2382,10 @@
                 spriteSheetReady: false,
                 ws: null,
                 webRtcPeer: null,
-                iceServers: [
+                defaultIceServers: [
                     {url: 'stun:stun1.l.google.com:19302'}
-                ]
+                ],
+                iceServers: []
             }
         },
         computed: {
@@ -2537,11 +2538,11 @@
                         remoteVideo: this.$refs.webRTCVideo,
                         onicecandidate: this.onIceCandidate,
                         configuration: {
-                            iceServers: this.iceServers
+                            iceServers: this.defaultIceServers.concat(this.iceServers)
                         }
                     };
                     
-                    console.log(`Using ${this.iceServers.length} ICE servers`);
+                    console.log(`Using ${options.configuration.iceServers.length} ICE servers`);
 
                     let self = this;
                     this.webRtcPeer = kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function (error) {
@@ -2627,11 +2628,11 @@
                         self.webRtcPeer.addIceCandidate(parsedMessage.candidate);
                         break;
                     case 'credentials':
-                        self.iceServers.push({
+                        self.iceServers = [{
                             url: parsedMessage.url,
                             username: parsedMessage.username,
                             credential: parsedMessage.credential
-                        });
+                        }];
                         self.viewer();
                         break;
                     case 'pong':
