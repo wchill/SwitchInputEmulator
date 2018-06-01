@@ -2627,7 +2627,7 @@
                         self.webRtcPeer.addIceCandidate(parsedMessage.candidate);
                         break;
                     case 'credentials':
-                        this.iceServers.push({
+                        self.iceServers.push({
                             url: parsedMessage.url,
                             username: parsedMessage.username,
                             credential: parsedMessage.credential
