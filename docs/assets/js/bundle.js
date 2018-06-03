@@ -2182,7 +2182,7 @@
             $('.slider').slider({
                 min: 0,
                 max: 100,
-                value: 50,
+                value: 0,
                 range: 'min',
                 slide: function(event, ui) {
                     self.setVolume(ui.value / 100);
