@@ -3,12 +3,12 @@ layout: default
 ---
 
 <link rel="stylesheet" type="text/css" href="assets/css/gamepad.css">
+<link rel="stylesheet" type="text/css" href="assets/css/volume-slider.css">
 
 <div id="app" v-cloak>
     <twitch-auth></twitch-auth>
     <control-mode-select class="center-text min-padding"></control-mode-select>
-    <!-- <joycon-stream-renderer v-bind:endpoint="streamEndpoint"></joycon-stream-renderer> -->
-    <joycon-stream-renderer-webrtc v-bind:endpoint="webRtcEndpoint"></joycon-stream-renderer-webrtc>
+    <joycon-stream-renderer v-bind:video="videoEndpoint" v-bind:audio="audioEndpoint"></joycon-stream-renderer>
     <control-ws v-bind:endpoint="controlEndpoint"></control-ws>
     <server-status></server-status>
     <!--
@@ -35,12 +35,15 @@ layout: default
     window.vueNotification = window["vue-notification"].default;
     Vue.use(vueNotification);
 </script>
-<script src="https://embed.twitch.tv/embed/v1.js"></script>
-<script src="assets/js/lib/keymaster.js"></script>
-<script src="assets/js/lib/h264-websocket.min.js"></script>
-<script src="assets/js/stats.js"></script>
-<script src="assets/js/oidc-client.min.js"></script>
-<script src="assets/js/twitch-auth-config.js"></script>
-<script src="assets/js/lib/adapter.js"></script>
-<script src="assets/js/lib/kurento-utils.js"></script>
-<script src="assets/js/bundle.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<script defer src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+<script defer src="https://embed.twitch.tv/embed/v1.js"></script>
+<script defer src="assets/js/lib/keymaster.js"></script>
+<script defer src="assets/js/lib/h264-websocket.min.js"></script>
+<script defer src="assets/js/stats.js"></script>
+<script defer src="assets/js/oidc-client.min.js"></script>
+<script defer src="assets/js/twitch-auth-config.js"></script>
+<script defer src="assets/js/lib/libopus.js"></script>
+<script defer src="assets/js/lib/opus.js"></script>
+<script defer src="assets/js/lib/xaudio.js"></script>
+<script defer src="assets/js/bundle.js"></script>

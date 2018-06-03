@@ -269,6 +269,22 @@ export const JoyconStreamRendererWebRTC = {
             }
         });
 
+        /*
+        window.setInterval(function() {
+            if (self.webRtcPeer) {
+                self.webRtcPeer.peerConnection.getStats(null, function(d) {
+                    let keys = Object.keys(d);
+                    for(let i = 0; i < keys.length; i++) {
+                        if (d[keys[i]].mediaType === 'video') {
+                            let track = d[keys[i]];
+                            console.log(track.googCurrentDelayMs, track.googJitterBufferMs, track.googTargetDelayMs);
+                        }
+                    }
+                })
+            }
+        }, 1000);
+        */
+
         this.renderImage();
     },
     beforeDestroy: function () {

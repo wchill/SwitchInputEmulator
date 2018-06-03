@@ -78,7 +78,7 @@ namespace InputServer
                     }
                     else
                     {
-                        _listenerClients.Remove(client, out var value);
+                        _listenerClients.TryRemove(client, out var value);
                     }
                 }
             });

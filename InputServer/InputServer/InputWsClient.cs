@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Fleck;
 using Microsoft.IdentityModel.Tokens;
 using WebSocketSharp;
 using WebSocketSharp.Server;
@@ -44,13 +43,13 @@ namespace InputServer
                 try
                 {
                     MyUser = new TwitchUser(wsArgs[1], wsArgs[2]);
-                    Console.WriteLine($"{MyUser.UserName} logged in");
+                    //Console.WriteLine($"{MyUser.UserName} logged in");
                     Send("TWITCH_VERIFIED");
                 }
                 catch (SecurityTokenValidationException)
                 {
                     MyUser = null;
-                    Console.WriteLine("Invalid login attempt");
+                    //Console.WriteLine("Invalid login attempt");
                     Send("TWITCH_INVALID");
                 }
             }

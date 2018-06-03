@@ -75,6 +75,7 @@ export const TwitchAuth = {
             me.lastError = null;
             me.lastErrorObject = null;
             logger.info('event: userLoaded', loadedUser);
+            console.log(loadedUser);
 
             me.$store.commit(StoreMutations.TWITCH_USER, loadedUser);
             me.$store.commit(StoreMutations.AUTH_STATE, AuthState.SIGNED_IN);

@@ -31,7 +31,7 @@ namespace InputServer
     {
         private SwitchInputState _state;
         private SerialPort _serialPort;
-        private readonly ConcurrentQueue<InputFrame> _queuedFrames;
+        private ConcurrentQueue<InputFrame> _queuedFrames;
         private OnUpdateCallback _callback;
         private readonly object _lock = new object();
 
@@ -133,7 +133,7 @@ namespace InputServer
                 RightX = 128,
                 RightY = 128
             };
-            _queuedFrames.Clear();
+            _queuedFrames = new ConcurrentQueue<InputFrame>();
             Update(newFrame);
         }
 

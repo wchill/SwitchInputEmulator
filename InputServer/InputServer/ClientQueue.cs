@@ -24,7 +24,7 @@ namespace InputServer
 
         public void RemoveFromQueue(T client)
         {
-            _dict.Remove(client, out var value);
+            _dict.TryRemove(client, out var value);
         }
 
         public bool Dequeue(out T result)
@@ -35,7 +35,7 @@ namespace InputServer
                 {
                     if (_dict.ContainsKey(result))
                     {
-                        _dict.Remove(result, out var value);
+                        _dict.TryRemove(result, out var value);
                         return true;
                     }
                 }

@@ -1,5 +1,6 @@
 import {PlayerState} from "./Common";
 import {H264Player, PlayerBus, PlayerEvents} from "./H264WebSocketPlayer";
+import {OpusWebSocketPlayer} from "./OpusWebSocketPlayer";
 
 export const JoyconSprites = {
     data: function() {
@@ -39,9 +40,10 @@ export const JoyconSprites = {
 
 export const JoyconStreamRenderer = {
     mixins: [JoyconSprites],
-    props: ['endpoint'],
+    props: ['video', 'audio'],
     components: {
-        'h264-ws-player': H264Player
+        'h264-ws-player': H264Player,
+        'opus-ws-player': OpusWebSocketPlayer
     },
     data: function() {
         return {
@@ -217,5 +219,5 @@ export const JoyconStreamRenderer = {
         this.spriteSheetReady = false;
         this.streamReady = false;
     },
-    template: '<div><h264-ws-player v-bind:endpoint="endpoint" v-bind:canvas="streamCanvas"></h264-ws-player><canvas class="controlCanvas" ref="controlCanvas"></canvas><img ref="spriteSheet" v-bind:src="spriteSheetUrl" style="display:none;" @load="imageLoaded"/></div>'
+    template: '<div><h264-ws-player v-bind:endpoint="video" v-bind:canvas="streamCanvas"></h264-ws-player><canvas class="controlCanvas" ref="controlCanvas"></canvas><opus-ws-player v-bind:endpoint="audio"></opus-ws-player><img ref="spriteSheet" v-bind:src="spriteSheetUrl" style="display:none;" @load="imageLoaded"/></div>'
 };

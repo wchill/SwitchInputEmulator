@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<script src="assets/js/lib/libopus.js"></script>
+<script src="assets/js/lib/opus.js"></script>
+<script src="assets/js/lib/xaudio.js"></script>
+<script src="assets/js/lib/ws-audio-api.js"></script>
+<script>
+    var player = new WSAudioAPI.Player({
+        server: {
+            host: 'wss://api.twitchplays.gg/switch/stream/audio', //websockets server addres. In this example - localhost
+        }
+    });
+</script>
+<button onclick="window.testContext.resume();player.start()">Play stream</button>
+<button onclick="player.stop()">Stop playing</button>
+</body>
+</html>

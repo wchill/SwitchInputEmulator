@@ -23,8 +23,9 @@ new Vue({
     data: function() {
         return {
             controlEndpoint: 'wss://api.twitchplays.gg/switch/ws',
-            streamEndpoint: 'wss://api.twitchplays.gg/switch/stream',
-            webRtcEndpoint: 'wss://webrtc.twitchplays.gg/stream',
+            videoEndpoint: 'wss://api.twitchplays.gg/switch/stream/video',
+            audioEndpoint: 'wss://api.twitchplays.gg/switch/stream/audio'
+            //webRtcEndpoint: 'wss://webrtc.twitchplays.gg/stream',
         };
     },
     mounted: function() {
