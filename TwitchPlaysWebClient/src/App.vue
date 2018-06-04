@@ -1,13 +1,28 @@
 <template>
   <v-app id="twitchplays" dark>
     <v-navigation-drawer
-      v-model="drawer"
+      v-bind:value="true"
       clipped
       fixed
       app
+      v-bind:mini-variant="drawer"
     >
-      <v-list dense>
+      <!-- TODO: Use Twitch logged in user -->
+      <v-toolbar flat class="transparent">
+        <v-list class="pa-0">
+          <v-list-tile avatar>
+            <v-list-tile-avatar>
+              <img src="https://static-cdn.jtvnw.net/jtv_user_pictures/wchill-profile_image-9355f3d7dfe0720b-300x300.jpeg" >
+            </v-list-tile-avatar>
+            <v-list-tile-content>
+              <v-list-tile-title>wchill</v-list-tile-title>
+            </v-list-tile-content>
+          </v-list-tile>
+        </v-list>
+      </v-toolbar>
 
+      <v-list dense>
+        <!-- TODO: Create keyboard remap modal -->
         <v-list-tile @click="">
           <v-list-tile-action>
             <v-icon>keyboard</v-icon>
@@ -17,6 +32,7 @@
           </v-list-tile-content>
         </v-list-tile>
 
+        <!-- TODO: Create settings modal -->
         <v-list-tile @click="">
           <v-list-tile-action>
             <v-icon>settings</v-icon>
@@ -60,9 +76,9 @@
     </v-toolbar>
     <v-content>
       <v-container fluid fill-height>
-        <v-layout justify-center align-center>
-          <v-flex grow>
-
+        <v-layout row justify-center align-content-center wrap>
+          <v-flex xs2 sm3 md4 lg5></v-flex>
+          <v-flex xs8 sm6 md4 lg2>
             <v-select
               :items="people"
               v-model="e11"
@@ -90,9 +106,13 @@
                 </template>
               </template>
             </v-select>
+          </v-flex>
+          <v-flex xs2 sm3 md4 lg5></v-flex>
+          <v-flex xs12 sm12 md12 lg12>
+            <control-ws v-bind:endpoint="controlEndpoint"></control-ws>
 
             <joycon-stream-renderer v-bind:video="videoEndpoint" v-bind:audio="audioEndpoint"></joycon-stream-renderer>
-            <v-btn color="twitch-purple"><v-icon>mdi-twitch</v-icon>&nbsp;<span>Login with Twitch</span></v-btn>
+            <server-status></server-status>
           </v-flex>
         </v-layout>
       </v-container>
@@ -106,17 +126,21 @@
 <script>
   // import { detectBrowser, detectOS } from './mixins/Utils';
   import { StatusBus, BusEvents } from './mixins/Common';
+  import ControlWebSocket from './components/ControlWebSocket';
   import JoyconStreamRenderer from './components/JoyconStreamRenderer';
+  import ServerStatus from './components/ServerStatus';
 
   export default {
     props: {
       source: String,
     },
     components: {
+      'server-status': ServerStatus,
+      'control-ws': ControlWebSocket,
       'joycon-stream-renderer': JoyconStreamRenderer,
     },
     data: () => ({
-      drawer: true,
+      drawer: false,
       name: 'Twitch Plays',
       controlEndpoint: 'wss://api.twitchplays.gg/switch/ws',
       videoEndpoint: 'wss://api.twitchplays.gg/switch/stream/video',
@@ -188,5 +212,8 @@
 <style>
   .twitch-purple {
     background-color: #6441A4 !important;
+  }
+  .light-twitch-purple {
+    background-color: #815fc0 !important;
   }
 </style>

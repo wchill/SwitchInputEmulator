@@ -4,9 +4,11 @@
       <v-flex xs12>
         <h264-ws-player v-bind:endpoint="video" v-bind:canvas="streamCanvas"></h264-ws-player>
         <canvas class="controlCanvas" ref="controlCanvas"></canvas>
-        <opus-ws-player v-bind:endpoint="audio"></opus-ws-player>
         <img ref="spriteSheet" v-bind:src="spriteSheetUrl" style="display:none;" @load="imageLoaded"/>
       </v-flex>
+    </v-layout>
+    <v-layout row justify-center class="text-xs-center">
+      <opus-ws-player v-bind:endpoint="audio"></opus-ws-player>
     </v-layout>
   </v-container>
 </template>
@@ -30,6 +32,7 @@
         spriteSheetReady: false,
         streamCanvas: document.createElement('canvas'),
         streamReady: false,
+        globalScaleFactor: 0.9,
       };
     },
     computed: {
@@ -179,7 +182,7 @@
       resizeCanvasIfNecessary() {
         const canvas = this.$refs.controlCanvas;
         const rect = canvas.parentNode.getBoundingClientRect();
-        const scale = (rect.width * 0.75) / this.canvasWidth;
+        const scale = (rect.width * this.globalScaleFactor) / this.canvasWidth;
         const calculatedWidth = this.canvasWidth * scale;
         const calculatedHeight = this.canvasHeight * scale;
 
@@ -202,7 +205,7 @@
     mounted() {
       const canvas = this.$refs.controlCanvas;
       const rect = canvas.parentNode.getBoundingClientRect();
-      const scale = (rect.width * 0.75) / this.canvasWidth;
+      const scale = (rect.width * this.globalScaleFactor) / this.canvasWidth;
       canvas.width = this.canvasWidth * scale;
       canvas.height = this.canvasHeight * scale;
       const context = canvas.getContext('2d');

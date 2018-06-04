@@ -1,11 +1,10 @@
 <template>
-  <v-container fluid>
-    <v-layout justify-center>
-      <v-flex xs6>
-        <v-slider ref="volumeSlider" dark color="grey" v-model="volume" min="0" max="1" step="0.001" prepend-icon="volume_down" append-icon="volume_up"></v-slider>
-      </v-flex>
-    </v-layout>
-  </v-container>
+  <v-flex xs6 class="no-height" justify-center>
+    <v-tooltip top>
+      <v-slider ref="volumeSlider" dark color="blue" :hide-details="true" :toggle-keys="[]" v-model="volume" min="0" max="1" step="0.001" prepend-icon="volume_down" append-icon="volume_up" slot="activator"></v-slider>
+      <span v-text="'Volume: ' + ((volume * 100) | 0)"></span>
+    </v-tooltip>
+  </v-flex>
 </template>
 
 <script>
@@ -142,5 +141,7 @@
 </script>
 
 <style scoped>
-
+  .no-height {
+    height: 0%;
+  }
 </style>
