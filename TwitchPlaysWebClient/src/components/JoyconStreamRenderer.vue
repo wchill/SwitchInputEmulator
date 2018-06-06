@@ -94,7 +94,7 @@
         context.fillRect(x + ((w - textW) / 2), y + ((h - textH) / 2), textW, textH);
 
         context.textAlign = 'center';
-        context.font = '48px Arial';
+        context.font = '48px Roboto';
         context.fillStyle = '#fff';
 
         context.fillText(text, x + (w / 2), y + (h / 2));

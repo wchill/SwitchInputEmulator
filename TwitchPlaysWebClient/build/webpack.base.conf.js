@@ -1,11 +1,30 @@
-'use strict'
-const path = require('path')
-const utils = require('./utils')
-const config = require('../config')
-const vueLoaderConfig = require('./vue-loader.conf')
+'use strict';
+const webpack = require('webpack');
+const path = require('path');
+const utils = require('./utils');
+const config = require('../config');
+const vueLoaderConfig = require('./vue-loader.conf');
 
 function resolve (dir) {
   return path.join(__dirname, '..', dir)
+}
+
+function padNumber(num) {
+  let res = '' + num;
+  if (res.length < 2) {
+    res = '0' + res;
+  }
+  return res;
+}
+
+function getDateString() {
+  const date = new Date();
+  let month = padNumber(date.getMonth() + 1);
+  let day = padNumber(date.getDate());
+  let hours = padNumber(date.getHours());
+  let minutes = padNumber(date.getMinutes());
+  let seconds = padNumber(date.getSeconds());
+  return `${date.getFullYear()}${month}${day}${hours}${minutes}${seconds}`;
 }
 
 const createLintingRule = () => ({
@@ -17,7 +36,7 @@ const createLintingRule = () => ({
     formatter: require('eslint-friendly-formatter'),
     emitWarning: !config.dev.showEslintErrorsInOverlay
   }
-})
+});
 
 module.exports = {
   context: path.resolve(__dirname, '../'),
@@ -38,6 +57,11 @@ module.exports = {
       '@': resolve('src'),
     }
   },
+  plugins: [
+    new webpack.DefinePlugin({
+      __VERSION__: getDateString()
+    })
+  ],
   module: {
     rules: [
       ...(config.dev.useEslint ? [createLintingRule()] : []),

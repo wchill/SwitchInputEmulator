@@ -1,7 +1,7 @@
 export default {
   data() {
     return {
-      spriteSheetUrl: 'static/img/joyconSpritesheet2.png',
+      spriteSheetUrl: 'static/img/joyconSpritesheet.png',
       buttonSprites: {
         faceRight: {
           controller: 'right',

@@ -14,10 +14,10 @@
       </v-flex>
     </v-layout>
     <v-layout row justify-center ma-2>
-      <v-flex xs2 mr-4>
-        <v-btn block round color="twitch-purple" class="elevation-3"><v-icon left>mdi-twitch</v-icon><span>Login with Twitch</span></v-btn>
+      <v-flex xs12 sm6 md4 lg4 xl2 mr-4>
+        <twitch-auth></twitch-auth>
       </v-flex>
-      <v-flex xs2 ml-4>
+      <v-flex xs12 sm6 md4 lg4 xl2 ml-4>
         <v-tooltip bottom>
           <v-btn block round color="twitch-purple" class="elevation-3" @click="requestTurn" v-bind:disabled="!canRequestTurn" slot="activator">
             <v-icon left>mdi-nintendo-switch</v-icon>
@@ -34,9 +34,13 @@
   import { mapGetters } from 'vuex';
   import { StoreMutations, StatusBus, BusEvents, ConnectionState, InputState, AuthState } from '../mixins/Common';
   import { SocketBus, SocketEvents } from './ControlWebSocket';
+  import TwitchAuth from './TwitchAuth';
 
   export default {
     name: 'ServerStatus',
+    components: {
+      'twitch-auth': TwitchAuth,
+    },
     data() {
       return {
         pendingPings: {},
