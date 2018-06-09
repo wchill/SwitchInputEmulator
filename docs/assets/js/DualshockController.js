@@ -1,5 +1,4 @@
 import {BaseController, StandardMappings} from "./BaseController";
-import {SwitchButtons} from "./Common";
 
 const dualShockControllerBase = {
     mixins: [BaseController],

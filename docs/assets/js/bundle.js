@@ -2425,9 +2425,9 @@
                 let context = canvas.getContext('2d');
                 let spriteSheet = this.$refs.spriteSheet;
 
-                context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+                // context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
                 // draw body
-                context.drawImage(spriteSheet, this.console.body.x, this.console.body.y, this.console.body.w, this.console.body.h, this.controllers.w, this.consoleYOffset, this.console.body.w, this.console.body.h);
+                // context.drawImage(spriteSheet, this.console.body.x, this.console.body.y, this.console.body.w, this.console.body.h, this.controllers.w, this.consoleYOffset, this.console.body.w, this.console.body.h);
                 // draw left controller
                 context.drawImage(spriteSheet, this.controllers.left.x, this.controllers.left.y, this.controllers.w, this.controllers.h, this.leftControllerX, 0, this.controllers.w, this.controllers.h);
                 // draw right controller
@@ -2484,6 +2484,14 @@
                 let sprite = this.stickSprites[name];
                 if (!sprite) return;
 
+                // Clear the stick bounding box
+                let bbLeftX = this.getAbsoluteX(sprite.controller, sprite.x - sprite.travel);
+                let bbTopY = this.getAbsoluteY(sprite.controller, sprite.y - sprite.travel);
+
+                context.clearRect(bbLeftX, bbTopY, sprite.w + (2 * sprite.travel), sprite.h + (2 * sprite.travel));
+                context.drawImage(spriteSheet, this.controllers[sprite.controller].x + (sprite.x - sprite.travel), this.controllers[sprite.controller].y + (sprite.y - sprite.travel), sprite.w + (2 * sprite.travel), sprite.h + (2 * sprite.travel), bbLeftX, bbTopY, sprite.w + (2 * sprite.travel), sprite.h + (2 * sprite.travel));
+
+                // draw stick
                 let relX = sprite.x + x * sprite.travel;
                 let relY = sprite.y + y * sprite.travel;
 
@@ -2495,6 +2503,9 @@
             },
             imageLoaded: function() {
                 this.spriteSheetReady = true;
+                const canvas = this.$refs.controlCanvas;
+                const context = canvas.getContext('2d');
+                context.drawImage(this.$refs.spriteSheet, this.console.body.x, this.console.body.y, this.console.body.w, this.console.body.h, this.controllers.w, this.consoleYOffset, this.console.body.w, this.console.body.h);
                 this.renderImage();
             }
         },
