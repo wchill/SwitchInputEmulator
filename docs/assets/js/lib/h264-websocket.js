@@ -5139,9 +5139,7 @@ var WSAvcPlayer = new Class({
 
 
       if(frame) {
-        var t1 = performance.now();
         this.decode(frame);
-        console.log(performance.now() - t1);
       }
 
       requestAnimationFrame(shiftFrame);
