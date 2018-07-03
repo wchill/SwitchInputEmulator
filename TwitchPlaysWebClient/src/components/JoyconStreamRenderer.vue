@@ -1,4 +1,4 @@
-<template>
+x<template>
   <v-container fluid>
     <v-layout row justify-center class="text-xs-center">
       <v-flex xs12>
@@ -123,15 +123,7 @@
         const context = canvas.getContext('2d');
         const spriteSheet = this.$refs.spriteSheet;
 
-        /*
-        context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-        // draw body
-        context.drawImage(spriteSheet, this.console.body.x, this.console.body.y, this.console.body.w, this.console.body.h, this.controllers.w, this.consoleYOffset, this.console.body.w, this.console.body.h);
-        // draw left controller
-        context.drawImage(spriteSheet, this.controllers.left.x, this.controllers.left.y, this.controllers.w, this.controllers.h, this.leftControllerX, 0, this.controllers.w, this.controllers.h);
-        // draw right controller
-        context.drawImage(spriteSheet, this.controllers.right.x, this.controllers.right.y, this.controllers.w, this.controllers.h, this.rightControllerX, 0, this.controllers.w, this.controllers.h);
-        */
+        // draw the player
         context.drawImage(this.streamCanvas, this.playerX, this.playerY, this.playerWidth, this.playerHeight);
         if (this.playerState !== PlayerState.PLAYING && this.playerState !== PlayerState.PAUSED) {
           let text;
@@ -215,7 +207,6 @@
           canvas.width = calculatedWidth;
           canvas.height = calculatedHeight;
           context.scale(scale, scale);
-
           this.drawConsole();
         }
       },
