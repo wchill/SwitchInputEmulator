@@ -140,21 +140,19 @@
         this.canvasWrapper.renderFrame(width, height, buffer);
 
         // Used to transfer ownership of memory back to the worker
-        // this.decodeWorker.postMessage({ reuse: buffer.buffer }, [buffer.buffer]);
+        this.decodeWorker.postMessage({ reuse: buffer.buffer }, [buffer.buffer]);
       },
       decode(data, info) {
         // Transfers ownership of memory directly to worker
-        /*
         this.decodeWorker.postMessage({
           buf: data.buffer,
           offset: data.byteOffset,
           length: data.length,
           info,
         }, [data.buffer]);
-        */
 
         // Safe implementation, copies memory and then transfers that to worker
-
+        /*
         const copyU8 = new Uint8Array(data.length);
         copyU8.set(data);
         this.decodeWorker.postMessage({
@@ -163,6 +161,7 @@
           length: data.length,
           info,
         }, [copyU8.buffer]);
+        */
       },
     },
     mounted() {
