@@ -9,11 +9,13 @@
 <body>
 <script src="js/lib/oidc-client.min.js"></script>
 <script>
-  var mgr = new Oidc.UserManager({userStore: new Oidc.WebStorageStateStore()});
+  /* global Oidc */
+  const mgr = new Oidc.UserManager({ userStore: new Oidc.WebStorageStateStore() });
 
-  mgr.signinPopupCallback().then(function (user) {
+  mgr.signinPopupCallback().then((user) => {
+    console.log(user);
     window.location.href = '../index.html';
-  }).catch(function (err) {
+  }).catch((err) => {
     console.log(err);
   });
 

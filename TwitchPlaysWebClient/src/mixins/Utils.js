@@ -44,3 +44,17 @@ export const enumToName = (sourceEnum, val) => {
   }
   return val;
 };
+
+
+export const isWebGLSupported = () => {
+  try {
+    if (!window.WebGLRenderingContext) {
+      return false;
+    }
+    const testCanvas = document.createElement('canvas');
+    const ctx = testCanvas.getContext('webgl');
+    return !!ctx;
+  } catch (e) {
+    return false;
+  }
+};
