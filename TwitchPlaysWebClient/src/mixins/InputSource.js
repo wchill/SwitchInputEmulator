@@ -2,7 +2,6 @@ import mapGetters from 'vuex';
 import { BusEvents, StatusBus, StoreMutations, SwitchButtons } from './Common';
 import { SocketBus, SocketEvents } from '../components/ControlWebSocket';
 
-/* eslint-disable no-bitwise */
 export default {
   data() {
     return {
@@ -117,6 +116,8 @@ export default {
       return false;
     },
     updateState() {
+      if (!this.enabled) return;
+
       const buttons = Object.keys(this.prevState.buttons);
       const sticks = Object.keys(this.prevState.sticks);
 
@@ -154,20 +155,18 @@ export default {
     },
     isButtonPressed() {
       // Should be overridden
-      // console.warn('Tried calling default isButtonPressed!');
-      return false;
+      throw new Error('Tried calling default isButtonPressed!');
     },
     getStickX() {
       // Should be overridden
-      // console.warn('Tried calling default getStickX!');
-      return 0.0;
+      throw new Error('Tried calling default getStickX!');
     },
     getStickY() {
       // Should be overridden
-      // console.warn('Tried calling default getStickY!');
-      return 0.0;
+      throw new Error('Tried calling default getStickY!');
     },
     generateStateStr(prevState, currState) {
+      /* eslint-disable no-bitwise */
       const pressed = currState.buttons & ~(prevState.buttons);
       const released = prevState.buttons & ~(currState.buttons);
       const dpadChanged = currState.dpad !== prevState.dpad;
@@ -218,6 +217,7 @@ export default {
       // Applies dead zone calculations and then maps the range [-1.0, 1.0] to [0, 255]
       // Reference: http://www.third-helix.com/2013/04/12/doing-thumbstick-dead-zones-right.html
 
+      /* eslint-disable no-bitwise */
       const x = this.getStickX(stick);
       const y = this.getStickY(stick);
 

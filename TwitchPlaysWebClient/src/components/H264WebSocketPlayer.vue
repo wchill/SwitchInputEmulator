@@ -5,7 +5,7 @@
 <script>
   import Vue from 'vue';
   import { PlayerState, StoreMutations } from '../mixins/Common';
-  import { isWebGLSupported } from '../mixins/Utils';
+  import { isWebGLSupported } from '../utils/Utils';
   import WebSocketClient from '../assets/js/WebSocketClient';
   import WebGLCanvas from '../../static/js/lib/YUVCanvas';
 
@@ -17,13 +17,11 @@
   });
 
   const webGLContextOptions = {
-    /*
-    alpha: true,
+    alpha: false,
     antialias: true,
-    preserveDrawingBuffer: true,
+    preserveDrawingBuffer: false,
     // TODO: Add proper fallback so I can enable this option
     failIfMajorPerformanceCaveat: false,
-    */
   };
 
   const workerFilePath = '/static/js/lib/Decoder.js';
@@ -95,7 +93,6 @@
     data: () => ({
       ws: null,
       decodeWorker: null,
-      queuedFrames: [],
       canvasWrapper: null,
       useWebGL: isWebGLSupported(),
     }),
@@ -142,13 +139,12 @@
         // Used to transfer ownership of memory back to the worker
         this.decodeWorker.postMessage({ reuse: buffer.buffer }, [buffer.buffer]);
       },
-      decode(data, info) {
+      decode(data) {
         // Transfers ownership of memory directly to worker
         this.decodeWorker.postMessage({
           buf: data.buffer,
           offset: data.byteOffset,
           length: data.length,
-          info,
         }, [data.buffer]);
 
         // Safe implementation, copies memory and then transfers that to worker

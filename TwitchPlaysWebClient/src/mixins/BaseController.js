@@ -1,6 +1,6 @@
 import { InputSource } from './InputSource';
 
-export const StandardMappings = {
+export const StandardMappings2 = {
   data() {
     return {
       buttonMapping: {

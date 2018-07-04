@@ -7,6 +7,7 @@
   import { InputState, StoreMutations } from '../mixins/Common';
 
   // TODO: Replace keymaster.js with a better key handling implementation
+  // TODO: Handle key remapping
   /* eslint-disable no-undef */
   export default {
     name: 'KeyboardInputSource',

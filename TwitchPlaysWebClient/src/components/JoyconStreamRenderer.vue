@@ -66,8 +66,7 @@ x<template>
         return 960 * this.playerScale;
       },
       playerHeight() {
-        if (this.streamReady) return this.streamCanvas.height * this.playerScale;
-        return 540 * this.playerScale;
+        return (this.playerWidth * 9) / 16;
       },
       ...mapGetters([
         'gamepadState',
@@ -124,7 +123,12 @@ x<template>
         const spriteSheet = this.$refs.spriteSheet;
 
         // draw the player
-        context.drawImage(this.streamCanvas, this.playerX, this.playerY, this.playerWidth, this.playerHeight);
+        // Calculate the canvas height by hand using width and aspect ratio.
+        // H.264 requires video sizes divisible by 16, which is a problem for a resolution like 640x360,
+        // so it gets stretched to 640x368. We only need to draw 640x360 and can skip the bottom 8 rows of pixels.
+        context.drawImage(this.streamCanvas, 0, 0, this.streamCanvas.width, (this.streamCanvas.width * 9) / 16, this.playerX, this.playerY, this.playerWidth, this.playerHeight);
+
+        // TODO: Fix this (it currently doesn't clear the text bounding box)
         if (this.playerState !== PlayerState.PLAYING && this.playerState !== PlayerState.PAUSED) {
           let text;
           if (this.playerState === PlayerState.NOT_CONNECTED) {
@@ -141,6 +145,8 @@ x<template>
         const buttons = myState.buttons;
         const sticks = myState.sticks;
 
+        // TODO: Diff the gamepad state against the previous state to prevent unnecessary redrawing
+        // Need to also handle cases where we have to redraw everything (canvas resize, etc)
         Object.keys(this.buttonSprites).forEach((button) => {
           const pressed = buttons[button];
           self.renderButton(context, spriteSheet, button, pressed);

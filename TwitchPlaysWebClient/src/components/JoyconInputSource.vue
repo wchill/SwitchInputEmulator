@@ -5,7 +5,7 @@
 <script>
   import { StatusBus, BusEvents, StoreMutations, InputState } from '../mixins/Common';
   import BaseController from '../mixins/BaseController';
-  import { checkVidPid } from '../mixins/Utils';
+  import { checkVidPid } from '../utils/Utils';
 
   const Controller = Object.freeze({
     LEFT: 1,
