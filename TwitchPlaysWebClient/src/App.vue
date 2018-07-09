@@ -91,11 +91,11 @@
     <v-content>
       <v-container fluid fill-height>
         <v-layout row justify-center align-content-center wrap>
-          <v-flex xs2 sm3 md4 lg5></v-flex>
-          <v-flex xs8 sm6 md4 lg2>
+          <v-flex xs2 sm3 md4></v-flex>
+          <v-flex xs8 sm6 md4>
             <input-source-select></input-source-select>
           </v-flex>
-          <v-flex xs2 sm3 md4 lg5></v-flex>
+          <v-flex xs2 sm3 md4></v-flex>
           <v-flex xs12 sm12 md12 lg12>
             <control-ws v-bind:endpoint="controlEndpoint"></control-ws>
 

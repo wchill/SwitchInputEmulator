@@ -1,21 +1,26 @@
-import Controller, { StandardMappings } from './Controller';
+import Controller from './Controller';
 
 const ControllerName = 'Xbox Controller';
+const ControllerIcon = 'mdi-xbox-controller';
 
 export default class extends Controller {
-  constructor(updateFunc) {
-    super(StandardMappings.buttonMapping, StandardMappings.stickMapping, false, updateFunc);
+  constructor(gamepad, environment, gamepadFunc) {
+    super(gamepadFunc);
   }
 
-  static canHandle(gamepad, options) {
-    return gamepad.mapping === 'standard' && !options.edgeDetectionHackActive;
+  static canHandle(gamepad, environment) {
+    return gamepad.mapping === 'standard' && !environment.edgeDetectionHackActive;
   }
 
-  static isRecognized(gamepad, options) {
-    return gamepad.mapping === 'standard' && !options.edgeDetectionHackActive;
+  static isRecognized(gamepad, environment) {
+    return this.canHandle(gamepad, environment);
   }
 
   static get name() {
     return ControllerName;
+  }
+
+  static get icon() {
+    return ControllerIcon;
   }
 }

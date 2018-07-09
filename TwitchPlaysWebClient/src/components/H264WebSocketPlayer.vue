@@ -6,7 +6,7 @@
   import Vue from 'vue';
   import { PlayerState, StoreMutations } from '../mixins/Common';
   import { isWebGLSupported } from '../utils/Utils';
-  import WebSocketClient from '../assets/js/WebSocketClient';
+  import WebSocketClient from '../utils/WebSocketClient';
   import WebGLCanvas from '../../static/js/lib/YUVCanvas';
 
   export const PlayerBus = new Vue();

@@ -5,7 +5,7 @@
 <script>
   import Vue from 'vue';
   import { ConnectionState, StoreMutations } from '../mixins/Common';
-  import WebSocketClient from '../assets/js/WebSocketClient';
+  import WebSocketClient from '../utils/WebSocketClient';
 
   export const SocketBus = new Vue();
   export const SocketEvents = Object.freeze({

@@ -25,11 +25,17 @@ export const StandardMappings = {
 
 /* eslint-disable no-underscore-dangle */
 class Controller {
-  constructor(buttonMapping, stickMapping, isExperimental, updateFunc) {
-    this._buttonMapping = buttonMapping;
-    this._stickMapping = stickMapping;
-    this._isExperimental = isExperimental;
-    this._updateFunc = updateFunc;
+  constructor(gamepadFunc, profile) {
+    this._buttonMapping = StandardMappings.buttonMapping;
+    this._stickMapping = StandardMappings.stickMapping;
+    this._isExperimental = false;
+    this.getGamepad = gamepadFunc;
+
+    if (profile) {
+      this._buttonMapping = profile.buttonMapping || this._buttonMapping;
+      this._stickMapping = profile.stickMapping || this._stickMapping;
+      this._isExperimental = profile.experimental || this._isExperimental;
+    }
   }
 
   isButtonPressed(name) {
@@ -48,15 +54,10 @@ class Controller {
   }
 
   update() {
-    const gamepad = this._updateFunc();
+    const gamepad = this.getGamepad();
     if (!gamepad) {
-      this.connected = false;
       return;
     }
-
-    this.connected = true;
-    this.prevAxes = this.axes;
-    this.prevButtons = this.buttons;
 
     const newButtons = [];
     const newAxes = [];
@@ -73,16 +74,20 @@ class Controller {
   }
 
   /* eslint-disable no-unused-vars */
-  static canHandle(gamepad, options) {
+  static canHandle(gamepad, environment) {
     return false;
   }
 
-  static isRecognized(gamepad, options) {
+  static isRecognized(gamepad, environment) {
     return false;
   }
 
   static get name() {
     return 'Generic controller';
+  }
+
+  static get icon() {
+    return 'mdi-google-controller';
   }
 }
 

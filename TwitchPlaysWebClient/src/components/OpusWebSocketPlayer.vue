@@ -8,7 +8,7 @@
 </template>
 
 <script>
-  import WebSocketClient from '../assets/js/WebSocketClient';
+  import WebSocketClient from '../utils/WebSocketClient';
 
   export default {
     props: ['endpoint'],

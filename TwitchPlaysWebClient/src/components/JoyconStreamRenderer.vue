@@ -2,7 +2,7 @@ x<template>
   <v-container fluid>
     <v-layout row justify-center class="text-xs-center">
       <v-flex xs12>
-        <h264-ws-player v-bind:endpoint="video" v-bind:canvas="streamCanvas"></h264-ws-player>
+        <!-- <h264-ws-player v-bind:endpoint="video" v-bind:canvas="streamCanvas"></h264-ws-player> -->
         <canvas class="controlCanvas" ref="controlCanvas"></canvas>
         <img ref="spriteSheet" v-bind:src="spriteSheetUrl" style="display:none;" @load="imageLoaded"/>
       </v-flex>

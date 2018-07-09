@@ -1,14 +1,32 @@
+export const Browsers = Object.freeze({
+  EDGE: 'Edge',
+  CHROME: 'Chrome',
+  FIREFOX: 'Firefox',
+  SAFARI: 'Safari',
+  UNKNOWN: 'Unknown',
+});
+
+export const OperatingSystems = Object.freeze({
+  MAC_OS: 'Mac OS',
+  IOS: 'iOS',
+  WINDOWS: 'Windows',
+  ANDROID: 'Android',
+  CHROME_OS: 'Chrome OS',
+  LINUX: 'Linux',
+  UNKNOWN: 'Unknown',
+});
+
 export function detectBrowser() {
   if (navigator.userAgent.indexOf('Edge') !== -1) {
-    return 'Edge';
+    return Browsers.EDGE;
   } else if (navigator.userAgent.indexOf('Chrome') !== -1) {
-    return 'Chrome';
+    return Browsers.CHROME;
   } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
-    return 'Firefox';
+    return Browsers.FIREFOX;
   } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-    return 'Safari';
+    return Browsers.SAFARI;
   }
-  return 'unknown';
+  return Browsers.UNKNOWN;
 }
 
 export function detectOS() {
@@ -19,20 +37,20 @@ export function detectOS() {
   const iosPlatforms = ['iPhone', 'iPad', 'iPod'];
 
   if (macosPlatforms.indexOf(platform) !== -1) {
-    return 'Mac OS';
+    return OperatingSystems.MAC_OS;
   } else if (iosPlatforms.indexOf(platform) !== -1) {
-    return 'iOS';
+    return OperatingSystems.IOS;
   } else if (windowsPlatforms.indexOf(platform) !== -1) {
-    return 'Windows';
+    return OperatingSystems.WINDOWS;
   } else if (/Android/.test(userAgent)) {
-    return 'Android';
+    return OperatingSystems.ANDROID;
   } else if (/CrOS/.test(userAgent)) {
-    return 'Chrome OS';
+    return OperatingSystems.CHROME_OS;
   } else if (/Linux/.test(platform)) {
-    return 'Linux';
+    return OperatingSystems.LINUX;
   }
 
-  return 'unknown';
+  return OperatingSystems.UNKNOWN;
 }
 
 export function checkVidPid(id, vid, pid) {
@@ -61,11 +79,35 @@ export function isWebGLSupported() {
   }
 }
 
+// TODO: Replace these strings with actual objects/functions defining how to read controllers
+/*
+export const ControllerProfiles = Object.freeze({
+  NONE: 'no-controller',
+  UNSUPPORTED: 'unsupported-controller',
+
+  // Switch Pro Controller profiles
+  PRO_CONTROLLER_STANDARD: 'switch-pro-controller-standard',
+  PRO_CONTROLLER_EDGE: 'switch-pro-controller-edge',
+  PRO_CONTROLLER_FIREFOX_WIN: 'switch-pro-controller-firefox-win',
+  PRO_CONTROLLER_FIREFOX_MAC: 'switch-pro-controller-firefox-mac',
+
+  // DualShock 4 profiles
+  DUALSHOCK4_STANDARD: 'dualshock4-standard',
+  DUALSHOCK4_FIREFOX_WIN: 'dualshock4-firefox-win',
+  DUALSHOCK4_FIREFOX_MAC: 'dualshock4-firefox-mac',
+
+  // PowerA Wired Controller Plus profiles
+  POWERA_WIRED_CONTROLLER_PLUS_STANDARD: 'powera-wired-controller-standard',
+  POWERA_WIRED_CONTROLLER_PLUS_CHROMEOS: 'powera-wired-controller-chromeos',
+  POWERA_WIRED_CONTROLLER_PLUS_CHROME: 'powera-wired-controller-chrome',
+  POWERA_WIRED_CONTROLLER_PLUS_FIREFOX_WIN: 'powera-wired-controller-firefox-win',
+  POWERA_WIRED_CONTROLLER_PLUS_FIREFOX_MAC: 'powera-wired-controller-firefox-mac',
+
+  // Xbox Controller profiles
+  XBOX_CONTROLLER_STANDARD: 'xbox-controller',
+});
+
 export function getControllerProfile(browser, os, index, id, mapping) {
-  const resultObj = {
-    name: 'Unknown',
-    componentname: null,
-  };
 
   if (mapping === 'standard') {
     // Check for Pro Controller (2009) or Joycon Grip (200e) connected via cable (won't work)
@@ -132,3 +174,4 @@ export function getControllerProfile(browser, os, index, id, mapping) {
   // No supported profile found
   return 'unsupported-controller';
 }
+*/
