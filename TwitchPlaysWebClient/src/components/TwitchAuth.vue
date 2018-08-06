@@ -10,6 +10,9 @@
   // credit to psam/@sbenedict for the original version of this code
   import { UserManager, WebStorageStateStore } from 'oidc-client';
 
+  import { StoreMutations, AuthState } from '../mixins/Common';
+  import { SocketBus, SocketEvents } from './ControlWebSocket';
+
   const localhostClientId = 'sa5pewo51b3fi5d70le38sj5916iz5';
   const productionClientId = '6ilamg1dh1d2fwi30x5ryiarfq6y86';
   const clientId = (window.location.origin.indexOf('localhost') > -1 ? localhostClientId : productionClientId);
@@ -50,6 +53,9 @@
     },
     created() {
       this.oidcManager = new UserManager(this.oidcSettings);
+      const self = this;
+      SocketBus.$on('TWITCH_VERIFIED', () => self.$store.commit('setAuthState', AuthState.SERVER_SIGNED_IN));
+      SocketBus.$on('TWITCH_INVALID', self.logout);
     },
     mounted() {
       if (this.isRedirect()) {
@@ -62,11 +68,6 @@
     },
     methods: {
       clearUserInfo() {
-        this.userInfo = {
-          avatar: null,
-          id_token: null,
-          user: null,
-        };
       },
       getAvatarAsync(id) {
         return fetch(`https://api.twitch.tv/helix/users?id=${id}`, {
@@ -88,16 +89,25 @@
                 user,
               };
               self.successAlert = true;
+              // TODO: fix this
+              this.$store.commit(StoreMutations.TWITCH_USER, user);
+              this.$store.commit(StoreMutations.AUTH_STATE, AuthState.SIGNED_IN);
+              SocketBus.$emit(SocketEvents.QUEUE_MESSAGE, `TWITCH_LOGIN ${user.id_token} ${avatar}`);
             }))
           .catch(() => {
-            self.clearUserInfo();
+            self.logout();
             self.cancelledAlert = true;
           });
       },
       logout() {
         const self = this;
+        self.$store.commit('setAuthState', AuthState.NOT_SIGNED_IN);
         this.oidcManager.removeUser().then(() => {
-          self.clearUserInfo();
+          self.userInfo = {
+            avatar: null,
+            id_token: null,
+            user: null,
+          };
         });
       },
       handleRedirect() {

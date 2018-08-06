@@ -98,7 +98,6 @@
           <v-flex xs2 sm3 md4></v-flex>
           <v-flex xs12 sm12 md12 lg12>
             <control-ws v-bind:endpoint="controlEndpoint"></control-ws>
-
             <joycon-stream-renderer v-bind:video="videoEndpoint" v-bind:audio="audioEndpoint"></joycon-stream-renderer>
             <server-status></server-status>
           </v-flex>

@@ -67,4 +67,14 @@ class KeyboardInputSource extends InputSource {
     // if (key.isPressed(this.stickMapping[stick].slow)) val *= 0.5;
     return val;
   }
+
+  static get name() {
+    return 'Keyboard';
+  }
+
+  static get icon() {
+    return 'mdi-keyboard';
+  }
 }
+
+export const KeyboardInputSourceObj = new KeyboardInputSource();

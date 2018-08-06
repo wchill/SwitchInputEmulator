@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@mdi/font": "^2.4.85",
+    "driftless": "^2.0.3",
     "exports-loader": "^0.7.0",
     "oidc-client": "^1.5.1-beta.1",
     "script-loader": "^0.7.2",

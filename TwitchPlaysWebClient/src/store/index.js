@@ -54,14 +54,6 @@ export default new Vuex.Store({
           pressed: false,
         },
       },
-      stateObj: {
-        buttons: 0,
-        dpad: 8,
-        lx: 0,
-        ly: 0,
-        rx: 0,
-        ry: 0,
-      },
     },
   },
   getters: {

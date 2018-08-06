@@ -89,6 +89,7 @@
     },
     methods: {
       queueMessage(message) {
+        console.log('Message queued: ' + message);
         if (this.ws && this.ws.readyState === this.ws.OPEN) {
           this.ws.send(message);
         } else {

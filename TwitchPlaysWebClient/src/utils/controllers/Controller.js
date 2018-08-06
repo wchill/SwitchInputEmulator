@@ -1,3 +1,5 @@
+import InputSource from '../InputSource';
+
 export const StandardMappings = {
   buttonMapping: {
     faceDown: 0,
@@ -24,8 +26,9 @@ export const StandardMappings = {
 };
 
 /* eslint-disable no-underscore-dangle */
-class Controller {
+class Controller extends InputSource {
   constructor(gamepadFunc, profile) {
+    super();
     this._buttonMapping = StandardMappings.buttonMapping;
     this._stickMapping = StandardMappings.stickMapping;
     this._isExperimental = false;
@@ -40,9 +43,7 @@ class Controller {
 
   isButtonPressed(name) {
     // May need to override for certain controllers due to dpad
-    const index = this._buttonMapping[name];
-    if (index === null || index === undefined || index < 0) return false;
-    return !!this.buttons[index];
+    return !!this.buttons[this._buttonMapping[name]];
   }
 
   getStickX(name) {

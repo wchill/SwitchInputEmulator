@@ -184,6 +184,10 @@ class InputSource {
     */
   }
 
+  update() {
+    // Should be overridden if necessary
+  }
+
   /* eslint-disable class-methods-use-this */
   isButtonPressed() {
     // Should be overridden
@@ -252,6 +256,53 @@ class InputSource {
       return newAccumulator;
     }, 0);
   }
+
+  static get name() {
+    return 'InputSource';
+  }
+
+  static get icon() {
+    return 'mdi-alert';
+  }
 }
+/*
+
+        updateState: function() {
+            let buttons = Object.keys(this.prevState.buttons);
+            let sticks = Object.keys(this.prevState.sticks);
+
+            this.prevState = this.gamepadState;
+            let gamepadState = {
+                buttons: {},
+                sticks: {},
+                stateObj: this.generateStateObj()
+            };
+
+            for (let i = 0; i < buttons.length; i++) {
+                let button = buttons[i];
+                gamepadState.buttons[button] = this.isButtonPressed(button);
+            }
+
+            for (let i = 0; i < sticks.length; i++) {
+                let stick = sticks[i];
+                gamepadState.sticks[stick] = {
+                    x: this.getStickX(stick),
+                    y: this.getStickY(stick),
+                    pressed: this.isButtonPressed(stick)
+                };
+            }
+
+            if (this.compareState(gamepadState)) {
+                let stateStr = this.generateStateStr(this.prevState.stateObj, gamepadState.stateObj);
+                if (stateStr.length > 0) {
+                    this.$store.commit(StoreMutations.GAMEPAD_STATE, gamepadState);
+
+                    if (this.canControl) {
+                        SocketBus.$emit(SocketEvents.SEND_MESSAGE, `UPDATE ${stateStr}`);
+                    }
+                }
+            }
+        },
+ */
 
 export default InputSource;
