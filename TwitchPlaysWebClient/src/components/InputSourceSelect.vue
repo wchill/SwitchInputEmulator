@@ -49,6 +49,9 @@
     'rightStick',
   ];
 
+  // TODO: Make this user configurable
+  const deadzone = 0.15;
+
   export default {
     name: 'InputSourceSelect',
     data() {
@@ -152,12 +155,12 @@
 
         const res = [128, 128];
         let mag = Math.sqrt((x * x) + (y * y));
-        if (mag >= this.deadzone) {
+        if (mag >= deadzone) {
           if (mag === 0) mag = 1;
           const normX = Math.abs(x / mag);
           const normY = Math.abs(y / mag);
-          const outX = normX * ((x - this.deadzone) / (1 - this.deadzone));
-          const outY = normY * ((y - this.deadzone) / (1 - this.deadzone));
+          const outX = normX * ((x - deadzone) / (1 - deadzone));
+          const outY = normY * ((y - deadzone) / (1 - deadzone));
 
           res[0] += outX * 128;
           if (res[0] < 0) res[0] = 0;
